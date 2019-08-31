@@ -1,17 +1,24 @@
 # https://docs.python.org/3/library/time.html
-from time import localtime, strftime
-from os import listdir
+from time import localtime, strftime, strptime
+from os import listdir, mkdir, rmdir
 from os.path import exists as path_exists
 from os.path import getctime, getmtime
-from subsystem import Popen
+from subprocess import Popen
+from hashlib import sha256
 import shutil
 
 
 class iPhoneLocError(Exception):
     pass
 
+class DirectoryNameError(Exception):
+    pass
+
+class RawOffloadError(Exception):
+    pass
+
 class CurrentTimeStamp(object):
-# Is this needed or can strftime('%Y-%m-%d T %H:%M:%S') be used?
+# Is this needed or can strftime('%Y-%m-%dT%H%M%S') be used?
 
     def __init__(self):
         # Get date and time to put in filename
@@ -39,7 +46,7 @@ today = date_stamp.short_form()
 # iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
 # path changes depending on which USB port phone is plugged into.
 
-class iPhone_DCIM(object):
+class iPhoneDCIM(object):
     def __init__(self):
         self.find_root()
 
@@ -65,7 +72,7 @@ class iPhone_DCIM(object):
         return self.iphone_DCIM_path
 
     def get_APPLE_folders(self):
-        return listdir(self.iphone_DCIM_path)
+        return listdir(self.get_root())
 
     def update_path(self):
         self.find_root()
@@ -77,69 +84,152 @@ class iPhone_DCIM(object):
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
 # How to determine if they're new? Look at modified time but also check for collisions.
-# If mtime is newer, is it necessarily newer?
+# If two files have same name but different mtime, check sha256 sum. If same, don't
+# copy. If different, display both files and timestamps, prompting user how to handle.
+
+class RawOffloadDirectory(object):
+    def __init__(self, full_path):
+        if full_path[-1] != '/':
+            full_path += '/'
+        self.full_path = full_path
+        dirs = full_path.split('/')
+        self.leaf_dir = dirs[-1]
+
+    def get_leaf_dir(self):
+        return self.get_full_path().split('/')[-1]
+
+    def get_full_path(self):
+        return self.full_path
+
+    def list_children(self):
+        # not full paths
+        return listdir(self.get_full_path())
+
+    def get_timestamp_str(self):
+        if len(self.get_leaf_dir()) != 17:
+            raise DirectoryNameError("Raw_Offload directory name '%s' not in"
+                                            "expected format." % leaf_dir)
+        else:
+            return self.get_leaf_dir()
+
+    def get_timestamp(self):
+        strptime(self.get_leaf_dir(), '%Y-%m-%dT%H%M%S')
+
+    def create_dir(self):
+        if path_exists(self.get_full_path()):
+            # Make sure folder w/ today's date doesn't already exist.
+            raise RawOffloadError("Tried to create directory at %s, but that"
+                                "directory already exists. No changes made."
+                                                    % self.get_full_path())
+        else:
+            mkdir(self.get_full_path())
+
+    def __repr__(self):
+        return "Raw_Offload directory object with path:\n\t" + self.full_path
+
+
 
 # Prompt to confirm location of pic BU directory or allow different directory to be input.
 # Program creates new folder with today’s date in raw offload directory.
-# Copies from buffer all that don’t exist in previous-date folder.
-# At end, flush anything left in buffer.
+# Copies from all with timestamps newer than previous-date folder.
+
+bu_root = input("Confirm BU folder is the following"
+                "or input a new directory path:\n"
+                "\t/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures")
+if bu_root:
+    pass
+else:
+    bu_root = "/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures"
+
+# Double-check Raw_Offload folder is there.
+RO_root = bu_root + "/Raw_Offload/"
+if not path_exists(RO_root):
+    raise RawOffloadError("Raw_Offload dir not found! Pics not offloaded. Terminating")
+
+# Create object for most recent Raw_Offload folder
+# Folders should be in chronological order since they are named by datestamp.
+prev_RO_dir = RawOffloadDirectory(RO_root + '%s/' % listdir(RO_root)[-1] + '/')
+# Find the last (newest) APPLE dir in the most recent offload. Not full path.
+prev_RO_newest_APPLE_dir = prev_RO_dir.list_children()[-1]
+prev_RO_newest_APPLE_full_path = prev_RO_dir + prev_RO_newest_APPLE_dir + '/'
+
+# Create new directory w/ today's date in Raw_Offload.
+new_RO_timestamp = strftime('%Y-%m-%dT%H%M%S')
+new_RO_dir = RawOffloadDirectory(RO_root + '%s/' % new_RO_timestamp + '/')
+new_RO_dir.create_dir()
+
+# Create a destination folder in the new Raw Offload directory with the same APPLE name.
+new_RO_APPLE_dir = new_RO_dir.get_full_path() + prev_RO_newest_APPLE_dir + '/'
+mkdir(new_RO_APPLE_dir)
+# If the iPhone contains any APPLE folders later than this, copy them in wholesale.
 
 
-# Compare creation and modification times
-iPhone_root = iPhone_DCIM()
-
-all_APPLE_folders = iPhone_root.get_APPLE_folders()
-
-for APPLE_folder in all_APPLE_folders:
-    APPLE_folder_path = iPhone_root.get_root() + APPLE_folder + '/'
-
-    for img in listdir(APPLE_folder_path):
-        full_img_path = APPLE_folder_path + img
-        ctime_str = strftime('%Y-%m-%d T %H:%M:%S', localtime(getctime(full_img_path)))
-        mtime_str = strftime('%Y-%m-%d T %H:%M:%S', localtime(getmtime(full_img_path)))
-        # print("%s created: %s; modified: %s" % (img, ctime_str, mtime_str))
-        if ctime_str != mtime_str:
-            print("%s created/modified:\n\t%s\n\t%s" % (APPLE_folder +'/'+ img,
-                                                        ctime_str, mtime_str))
-            print("\t\t\t\t^----ctime/mtime discrepancy")
+# Address for matching iPhone source folder
+iPhone_dir = iPhoneDCIM()
+src_APPLE_dir = iPhone_dir.get_root() + prev_RO_newest_APPLE_dir + '/'
+src_APPLE_pics = listdir(src_APPLE_dir)
 
 
+# Create empty dir for special cases
+quar_path = new_RO_dir + "QUARANTINE"
+mkdir(quar)
 
-# bu_root = input("Confirm BU folder is the following"
-#                 "or input a new directory path:\n"
-#                 "\t/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures")
-# if not bu_root:
-#     bu_root = "/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures"
-#
-# raw_offoad_dir = bu_root + "/Raw_Offload"
-# org_dir = bu_root + "/Organized"
-#
-# raw_dst_path = raw_offoad_dir + '/%s' % (today)
-#
-# # Double-check root folder is there and that Raw_Offload and Organized folders are there.
-# # Make sure folder w/ today's date doesn't already exist.
-# if not path_exists(bu_root):
-#     print("BU Root not found! Pics not offloaded. Terminating")
-#     return
-# elif path_exists(raw_dst_path):
-#     print("\nCopy aborted. Folder with today's date already exists in [%s]."
-#         % raw_dst_path)
-# else:
-#     # algorithm to determine which photos are new.
-#     shutil.copytree([src], [dest]])
-#
-#
-# raw_BU_folder_list = listdir(raw_dst_path)
-# org_BU_folder_list = listdir(raw_dst_path)
+# algorithm to determine which photos are new.
+for img_name in src_APPLE_pics:
+    src_img_path = src_APPLE_dir + img_name
+    # Get last modified time as a struct_time, compare to last BU struct_time
+    img_mod_time = localtime(getmtime(src_img_path))
+    if img_mod_time > prev_RO_dir.get_timestamp():
+        # Check for duplication. Required since datestamps update by themselves on iPhone.
+        if img_name in prev_RO_newest_APPLE_dir.list_children():
+            old_img_file_obj = open(prev_RO_newest_APPLE_full_path + img_name, 'rb')
+            new_img_file_obj = open(src_img_path, 'rb')
+            if sha256(new_img_file_obj) != sha256(old_img_file_obj):
+                shutil.copy2(src_img_path, quar_path)
+            else:
+                pass
+                # do nothing if the files have different mod dates but same SHA sum.
+            old_img_file_obj.close()
+            new_img_file_obj.close()
+        else:
+            shutil.copy2(src_img_path, new_RO_APPLE_dir)
+    else:
+        continue
+        # If mod time earlier than last offload, pic should have been offloaded last time.
+
+# Display output on screen of quarantined files.
+# If no special cases were found, delete the quarantine directory.
+if listdir(quar_path):
+    print("Quarantined files:")
+    for file in listdir(quar_path):
+        print("\t" + file)
+else:
+    os.rmdir(quar_path)
+
+
+
+
+
+
+#Copy file or directory w/ contents:
+# shutil.copy2([src file], [dest dir])
+# shutil.copytree([src], [dest]])
+
+# Display image:
+# subsystem.Popen(['xdg-open', [filename in quotes])
+
+
 
 
 
 # Phase 2: Organize files by date into dated directory.
 # Create new folder if none exists
 
+# img_mod_time = strftime('%Y-%m-%d T %H:%M:%S', localtime(getmtime(src_img_path)))
+
+
+
 # Phase 3: Display pics one by one and prompt for where to copy each.
 # Have a Manual Sort folder to use in case of no correct choice available.
 # Prepend date to each file name when copying to various folders.
 # Handle name collisions.
-
-# subsystem.Popen(['xdg-open', [filename in quotes])
