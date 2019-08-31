@@ -2,6 +2,10 @@ import time
 import os
 import shutil
 
+
+class iPhoneLocError(Exception):
+    pass
+
 class TimeStamp(object):
 
     def __init__(self):
@@ -27,27 +31,40 @@ today = date_stamp.short_form()
 
 
 # Phase 0: Find iPhone in GVFS.
-# iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM
+# iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
 # path changes depending on which USB port phone is plugged into.
 
-iphone_DCIM_prefix = "/run/user/1000/gvfs/"
-gvfs_handles = os.listdir(iphone_DCIM_prefix)
-iphone_handle = ""
-count = 0
+class iPhone_DCIM(object):
+    def __init__(self):
+        self.find_root()
 
-for i, handle in enumerate(gvfs_handles):
-    if 'gphoto' in gvfs_handles[i]:
-        iphone_handle = handle
-        count += 1
+    def find_root(self):
+        iphone_DCIM_prefix = "/run/user/1000/gvfs/"
+        gvfs_handles = os.listdir(iphone_DCIM_prefix)
+        iphone_handle = ""
+        count = 0
 
-if not iphone_handle:
-    print("Error: Can't find iPhone in %s" % iphone_DCIM_prefix)
-    return
-elif iphone_count > 1:
-    print("Error: Multiple 'gphoto' handles in %s" % iphone_DCIM_prefix)
-    return
+        for i, handle in enumerate(gvfs_handles):
+            if 'gphoto' in gvfs_handles[i]:
+                iphone_handle = handle
+                count += 1
 
-iphone_DCIM_path = iphone_DCIM_prefix + iphone_handle + "DCIM"
+        if not iphone_handle:
+            raise iPhoneLocError("Error: Can't find iPhone in %s" % iphone_DCIM_prefix)
+        elif count > 1:
+            raise iPhoneLocError("Error: Multiple 'gphoto' handles in %s" % iphone_DCIM_prefix)
+        else:
+            self.iphone_DCIM_path = iphone_DCIM_prefix + iphone_handle + "/DCIM/"
+
+    def get_root(self):
+        return self.iphone_DCIM_path
+
+    def get_APPLE_folders(self):
+        return os.listdir(self.iphone_DCIM_path)
+
+    def update_path(self):
+        self.find_root()
+        return self.get_root()
 
 
 #Phase 1: Copy any new pics from iPhone to raw_offload folder.
@@ -57,32 +74,32 @@ iphone_DCIM_path = iphone_DCIM_prefix + iphone_handle + "DCIM"
 # At end, flush anything left in buffer.
 
 
-bu_root = input("Confirm BU folder is the following"
-                "or input a new directory path:\n"
-                "\t/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures")
-if not bu_root:
-    bu_root = "/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures"
-
-raw_offoad_dir = bu_root + "/Raw_Offload"
-org_dir = bu_root + "/Organized"
-
-raw_dst_path = raw_offoad_dir + '/%s' % (today)
-
-# Double-check root folder is there and that Raw_Offload and Organized folders are there.
-# Make sure folder w/ today's date doesn't already exist.
-if not os.path.exists(bu_root):
-    print("BU Root not found! Pics not offloaded. Terminating")
-    return
-elif os.path.exists(raw_dst_path):
-    print("\nCopy aborted. Folder with today's date already exists in [%s]."
-        % raw_dst_path)
-else:
-    # algorithm to determine which photos are new.
-    shutil.copytree([src], [dest]])
-
-
-raw_BU_folder_list = os.listdir(raw_dst_path)
-org_BU_folder_list = os.listdir(raw_dst_path)
+# bu_root = input("Confirm BU folder is the following"
+#                 "or input a new directory path:\n"
+#                 "\t/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures")
+# if not bu_root:
+#     bu_root = "/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures"
+#
+# raw_offoad_dir = bu_root + "/Raw_Offload"
+# org_dir = bu_root + "/Organized"
+#
+# raw_dst_path = raw_offoad_dir + '/%s' % (today)
+#
+# # Double-check root folder is there and that Raw_Offload and Organized folders are there.
+# # Make sure folder w/ today's date doesn't already exist.
+# if not os.path.exists(bu_root):
+#     print("BU Root not found! Pics not offloaded. Terminating")
+#     return
+# elif os.path.exists(raw_dst_path):
+#     print("\nCopy aborted. Folder with today's date already exists in [%s]."
+#         % raw_dst_path)
+# else:
+#     # algorithm to determine which photos are new.
+#     shutil.copytree([src], [dest]])
+#
+#
+# raw_BU_folder_list = os.listdir(raw_dst_path)
+# org_BU_folder_list = os.listdir(raw_dst_path)
 
 
 
