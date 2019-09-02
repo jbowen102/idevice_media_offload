@@ -8,6 +8,20 @@ from hashlib import sha256
 import shutil
 
 
+
+# DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures'
+# IPHONE_DCIM_PREFIX = '/run/user/1000/gvfs/'
+
+# Test directories:
+DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/BU_root_dir'
+IPHONE_DCIM_PREFIX = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/gvfs_dir'
+
+# Small test directories:
+DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/small_BU_root_dir'
+IPHONE_DCIM_PREFIX = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/small_gvfs_dir'
+
+
+
 class iPhoneLocError(Exception):
     pass
 
@@ -41,7 +55,6 @@ class CurrentTimeStamp(object):
 date_stamp = CurrentTimeStamp()
 today = date_stamp.short_form()
 
-
 # Phase 0: Find iPhone in GVFS.
 # iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
 # path changes depending on which USB port phone is plugged into.
@@ -51,22 +64,20 @@ class iPhoneDCIM(object):
         self.find_root()
 
     def find_root(self):
-        iphone_DCIM_prefix = "/run/user/1000/gvfs/"
-        gvfs_handles = listdir(iphone_DCIM_prefix)
-        iphone_handle = ""
+        gvfs_handles = listdir(IPHONE_DCIM_PREFIX)
         count = 0
 
         for i, handle in enumerate(gvfs_handles):
-            if 'gphoto' in gvfs_handles[i]:
+            if handle[0:5] == 'gphoto':
                 iphone_handle = handle
                 count += 1
 
-        if not iphone_handle:
-            raise iPhoneLocError("Error: Can't find iPhone in %s" % iphone_DCIM_prefix)
+        if count == 0:
+            raise iPhoneLocError("Error: Can't find iPhone in %s" % IPHONE_DCIM_PREFIX)
         elif count > 1:
-            raise iPhoneLocError("Error: Multiple 'gphoto' handles in %s" % iphone_DCIM_prefix)
+            raise iPhoneLocError("Error: Multiple 'gphoto' handles in %s" % IPHONE_DCIM_PREFIX)
         else:
-            self.iphone_DCIM_path = iphone_DCIM_prefix + iphone_handle + "/DCIM/"
+            self.iphone_DCIM_path = IPHONE_DCIM_PREFIX + iphone_handle + "/DCIM/"
 
     def get_root(self):
         return self.iphone_DCIM_path
@@ -135,11 +146,11 @@ class RawOffloadDirectory(object):
 
 bu_root = input("Confirm BU folder is the following"
                 "or input a new directory path:\n"
-                "\t/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures")
+                "\t%s" % DEFAULT_BU_ROOT)
 if bu_root:
     pass
 else:
-    bu_root = "/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures"
+    bu_root = DEFAULT_BU_ROOT
 
 # Double-check Raw_Offload folder is there.
 RO_root = bu_root + "/Raw_Offload/"
@@ -196,6 +207,16 @@ for img_name in src_APPLE_pics:
     else:
         continue
         # If mod time earlier than last offload, pic should have been offloaded last time.
+
+
+# need code to look for new APPLE folders to offload.
+#
+#
+#
+#
+#
+#
+
 
 # Display output on screen of quarantined files.
 # If no special cases were found, delete the quarantine directory.
