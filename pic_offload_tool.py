@@ -13,12 +13,12 @@ import shutil
 # IPHONE_DCIM_PREFIX = '/run/user/1000/gvfs/'
 
 # Test directories:
-DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/BU_root_dir'
-IPHONE_DCIM_PREFIX = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/gvfs_dir'
+# DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/BU_root_dir'
+# IPHONE_DCIM_PREFIX = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/gvfs_dir'
 
 # Small test directories:
-DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/small_BU_root_dir'
-IPHONE_DCIM_PREFIX = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/TEST/small_gvfs_dir'
+DEFAULT_BU_ROOT = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/small_BU_root_dir'
+IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/small_gvfs_dir'
 
 
 
@@ -30,30 +30,28 @@ class DirectoryNameError(Exception):
 
 class RawOffloadError(Exception):
     pass
+#
+# class CurrentTimeStamp(object):
+# # Is this needed or can strftime('%Y-%m-%dT%H%M%S') be used?
+#
+#     def __init__(self):
+#         # Get date and time to put in filename
+#         # These are integers
+#         self.yr = localtime().tm_year
+#         self.mon = localtime().tm_mon
+#         self.day = localtime().tm_mday
+#         self.hr = localtime().tm_hour
+#         self.minute = localtime().tm_min
+#         self.sec = localtime().tm_sec
+#
+#     def short_form(self):
+#         return '%.4i-%.2i-%.2i' % (self.yr, self.mon, self.day)
+#
+#     def long_form(self):
+#         return ('%.4i-%.2i-%.2i' % (self.yr, self.mon, self.day) + 'T' +
+#                 '%.2i%.2i%.2i' % (self.hr, self.minute, self.sec))
 
-class CurrentTimeStamp(object):
-# Is this needed or can strftime('%Y-%m-%dT%H%M%S') be used?
 
-    def __init__(self):
-        # Get date and time to put in filename
-        # These are integers
-        self.yr = localtime().tm_year
-        self.mon = localtime().tm_mon
-        self.day = localtime().tm_mday
-        self.hr = localtime().tm_hour
-        self.minute = localtime().tm_min
-        self.sec = localtime().tm_sec
-
-    def short_form(self):
-        return '%.4i-%.2i-%.2i' % (self.yr, self.mon, self.day)
-
-    def long_form(self):
-        return ('%.4i-%.2i-%.2i' % (self.yr, self.mon, self.day) + 'T' +
-                '%.2i%.2i%.2i' % (self.hr, self.minute, self.sec))
-
-# use current date to label new BU folder.
-date_stamp = CurrentTimeStamp()
-today = date_stamp.short_form()
 
 # Phase 0: Find iPhone in GVFS.
 # iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
@@ -89,6 +87,9 @@ class iPhoneDCIM(object):
         self.find_root()
         return self.get_root()
 
+    def __str__(self):
+        return self.get_root()
+
     def __repr__(self):
         return "iPhone DCIM directory object with root path:\n\t" + self.get_root()
 
@@ -107,7 +108,7 @@ class RawOffloadDirectory(object):
         self.leaf_dir = dirs[-1]
 
     def get_leaf_dir(self):
-        return self.get_full_path().split('/')[-1]
+        return self.get_full_path().split('/')[-2]
 
     def get_full_path(self):
         return self.full_path
@@ -119,7 +120,7 @@ class RawOffloadDirectory(object):
     def get_timestamp_str(self):
         if len(self.get_leaf_dir()) != 17:
             raise DirectoryNameError("Raw_Offload directory name '%s' not in"
-                                            "expected format." % leaf_dir)
+                                            "expected format." % self.get_leaf_dir())
         else:
             return self.get_leaf_dir()
 
@@ -135,22 +136,30 @@ class RawOffloadDirectory(object):
         else:
             mkdir(self.get_full_path())
 
-    def __repr__(self):
-        return "Raw_Offload directory object with path:\n\t" + self.full_path
+    def __str__(self):
+        return self.get_full_path()
 
+    def __repr__(self):
+        return "Raw_Offload directory object with path:\n\t" + self.get_full_path()
+
+
+
+# # use current date to label new BU folder.
+# date_stamp = CurrentTimeStamp()
+# today = date_stamp.short_form()
+# # are these needed at all? Trying to do without for now
 
 
 # Prompt to confirm location of pic BU directory or allow different directory to be input.
 # Program creates new folder with today’s date in raw offload directory.
 # Copies from all with timestamps newer than previous-date folder.
 
-bu_root = input("Confirm BU folder is the following"
+bu_root = input("Confirm BU folder is the following "
                 "or input a new directory path:\n"
-                "\t%s" % DEFAULT_BU_ROOT)
-if bu_root:
-    pass
-else:
+                "\t%s\n" % DEFAULT_BU_ROOT)
+if not bu_root:
     bu_root = DEFAULT_BU_ROOT
+    print("\tProceeding with above default.\n")
 
 # Double-check Raw_Offload folder is there.
 RO_root = bu_root + "/Raw_Offload/"
@@ -159,10 +168,10 @@ if not path_exists(RO_root):
 
 # Create object for most recent Raw_Offload folder
 # Folders should be in chronological order since they are named by datestamp.
-prev_RO_dir = RawOffloadDirectory(RO_root + '%s/' % listdir(RO_root)[-1] + '/')
+prev_RO_dir = RawOffloadDirectory(RO_root + '%s' % listdir(RO_root)[-1] + '/')
 # Find the last (newest) APPLE dir in the most recent offload. Not full path.
 prev_RO_newest_APPLE_dir = prev_RO_dir.list_children()[-1]
-prev_RO_newest_APPLE_full_path = prev_RO_dir + prev_RO_newest_APPLE_dir + '/'
+prev_RO_newest_APPLE_full_path = prev_RO_dir.get_full_path() + prev_RO_newest_APPLE_dir + '/'
 
 # Create new directory w/ today's date in Raw_Offload.
 new_RO_timestamp = strftime('%Y-%m-%dT%H%M%S')
@@ -175,38 +184,40 @@ mkdir(new_RO_APPLE_dir)
 # If the iPhone contains any APPLE folders later than this, copy them in wholesale.
 
 
-# Address for matching iPhone source folder
-iPhone_dir = iPhoneDCIM()
-src_APPLE_dir = iPhone_dir.get_root() + prev_RO_newest_APPLE_dir + '/'
-src_APPLE_pics = listdir(src_APPLE_dir)
-
-
-# Create empty dir for special cases
-quar_path = new_RO_dir + "QUARANTINE"
-mkdir(quar)
-
-# algorithm to determine which photos are new.
-for img_name in src_APPLE_pics:
-    src_img_path = src_APPLE_dir + img_name
-    # Get last modified time as a struct_time, compare to last BU struct_time
-    img_mod_time = localtime(getmtime(src_img_path))
-    if img_mod_time > prev_RO_dir.get_timestamp():
-        # Check for duplication. Required since datestamps update by themselves on iPhone.
-        if img_name in prev_RO_newest_APPLE_dir.list_children():
-            old_img_file_obj = open(prev_RO_newest_APPLE_full_path + img_name, 'rb')
-            new_img_file_obj = open(src_img_path, 'rb')
-            if sha256(new_img_file_obj) != sha256(old_img_file_obj):
-                shutil.copy2(src_img_path, quar_path)
-            else:
-                pass
-                # do nothing if the files have different mod dates but same SHA sum.
-            old_img_file_obj.close()
-            new_img_file_obj.close()
-        else:
-            shutil.copy2(src_img_path, new_RO_APPLE_dir)
-    else:
-        continue
-        # If mod time earlier than last offload, pic should have been offloaded last time.
+# COMMENTED OUT FOR TESTING
+# ------------------------------------------
+# # Address for matching iPhone source folder
+# iPhone_dir = iPhoneDCIM()
+# src_APPLE_dir = iPhone_dir.get_root() + prev_RO_newest_APPLE_dir + '/'
+# src_APPLE_pics = listdir(src_APPLE_dir)
+#
+#
+# # Create empty dir for special cases
+# quar_path = new_RO_dir + "QUARANTINE"
+# mkdir(quar)
+#
+# # algorithm to determine which photos are new.
+# for img_name in src_APPLE_pics:
+#     src_img_path = src_APPLE_dir + img_name
+#     # Get last modified time as a struct_time, compare to last BU struct_time
+#     img_mod_time = localtime(getmtime(src_img_path))
+#     if img_mod_time > prev_RO_dir.get_timestamp():
+#         # Check for duplication. Required since datestamps update by themselves on iPhone.
+#         if img_name in prev_RO_newest_APPLE_dir.list_children():
+#             old_img_file_obj = open(prev_RO_newest_APPLE_full_path + img_name, 'rb')
+#             new_img_file_obj = open(src_img_path, 'rb')
+#             if sha256(new_img_file_obj) != sha256(old_img_file_obj):
+#                 shutil.copy2(src_img_path, quar_path)
+#             else:
+#                 pass
+#                 # do nothing if the files have different mod dates but same SHA sum.
+#             old_img_file_obj.close()
+#             new_img_file_obj.close()
+#         else:
+#             shutil.copy2(src_img_path, new_RO_APPLE_dir)
+#     else:
+#         continue
+#         # If mod time earlier than last offload, pic should have been offloaded last time.
 
 
 # need code to look for new APPLE folders to offload.
@@ -217,15 +228,16 @@ for img_name in src_APPLE_pics:
 #
 #
 
-
-# Display output on screen of quarantined files.
-# If no special cases were found, delete the quarantine directory.
-if listdir(quar_path):
-    print("Quarantined files:")
-    for file in listdir(quar_path):
-        print("\t" + file)
-else:
-    os.rmdir(quar_path)
+# COMMENTING OUT FOR TESTING
+# --------------------------------
+# # Display output on screen of quarantined files.
+# # If no special cases were found, delete the quarantine directory.
+# if listdir(quar_path):
+#     print("QUARANTINED FILES:")
+#     for file in listdir(quar_path):
+#         print("\t" + file)
+# else:
+#     os.rmdir(quar_path)
 
 
 
