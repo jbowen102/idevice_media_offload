@@ -2,7 +2,7 @@
 from time import localtime, strftime, strptime
 from os import listdir, mkdir, rmdir
 from os.path import exists as path_exists
-from os.path import getctime, getmtime, getsize, isfile
+from os.path import getmtime, getsize, isfile
 from subprocess import Popen
 from tqdm import tqdm
 import shutil
@@ -365,9 +365,9 @@ class NewRawOffload(RawOffload):
     def __repr__(self):
         return "NewRawOffload object with path:\n\t" + self.full_path
 
-
-rog = RawOffloadGroup()
-nro = rog.create_new_offload()
+# TEST
+# rog = RawOffloadGroup()
+# nro = rog.create_new_offload()
 
 
 # Phase 2: Organize files by date into dated directory.
@@ -375,12 +375,22 @@ nro = rog.create_new_offload()
 
 # img_mod_time = strftime('%Y-%m-%d T %H:%M:%S', localtime(getmtime(src_img_path)))
 
+class PicOrganize(object):
+    def __init__(self):
+        pass
+
+# can more metadata be accessed in photo files? Another library?
+
+# prompt user to enter which photo is the break point between multiple months.
+# make initial guess, open that photo, allow user to browse through photos and
+# enter which one ends up being right based on manual check of iPhone metadata.
+# always check for existing file before copying into date folders to avoid overwriting.
 
 
 
 
-
-
+# TEST
+por = PicOrganize()
 
 
 # Phase 3: Display pics one by one and prompt for where to copy each.
