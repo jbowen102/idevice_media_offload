@@ -11,6 +11,12 @@ import exiftool
 # https://stackoverflow.com/questions/48631908/python-extract-metadata-from-png#51249611
 # https://www.vice.com/en_us/article/aekn58/hack-this-extra-image-metadata-using-python
 
+# https://stackoverflow.com/questions/21355316/getting-metadata-for-mov-video#21395803
+# https://github.com/smarnach/pyexiftool
+# https://smarnach.github.io/pyexiftool/
+# https://sno.phy.queensu.ca/~phil/exiftool/
+
+
 def comparef(dir):
     if dir[-1] != '/':
         dir += '/'
@@ -32,6 +38,10 @@ def comparef(dir):
                  if "DateTime" in decoded_key:
                      metadata[decoded_key] = value
 
+            with exiftool.ExifTool() as et:
+                metadata2 = et.get_metadata(dir + img)
+                dt_orig = metadata2.get("EXIF:DateTimeOriginal", None)
+
             if ('DateTimeOriginal' in metadata and
                 'DateTimeDigitized' in metadata and
                 'DateTime' in metadata):
@@ -40,25 +50,24 @@ def comparef(dir):
                             "\tEXIF DateTimeOriginal: %s\n"
                             "\tEXIF DateTimeDigitized: %s\n"
                             "\tEXIF DateTime:\t\t %s\n"
+                            "\tEXIF:DateTimeOriginal:\t %s\n"
                             % (img_mod_time, metadata['DateTimeOriginal'],
                                              metadata['DateTimeDigitized'],
-                                             metadata['DateTime']))
+                                             metadata['DateTime'],
+                                             metadata2['EXIF:DateTimeOriginal']))
             else:
                 print(img + ":\n"
                             "\timg_mod_time: %s\n" % img_mod_time)
 
         elif img_ext == ".MOV":
-            with exiftool.Exiftool() as et:
-                img_obj = PIL.Image.open(dir + img)
-                et.get_metadata(img_obj)
-                et.get_tag(img_obj)
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(dir + img)
+                qt_creation_date = metadata["QuickTime:CreationDate"]
 
-                # start()
-                # terminate()
-                # https://stackoverflow.com/questions/21355316/getting-metadata-for-mov-video#21395803
-                # https://github.com/smarnach/pyexiftool
-                # https://smarnach.github.io/pyexiftool/
-                # https://sno.phy.queensu.ca/~phil/exiftool/
+            print(img + ":\n"
+                        "\timg_mod_time:\t\t %s\n"
+                        "\tEXIF QuickTime:CreationDate: %s\n"
+                        % (img_mod_time, qt_creation_date))
 
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(dir + img)
@@ -66,10 +75,15 @@ def comparef(dir):
             # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             date_created = img_obj.info['XML:com.adobe.xmp'].split("<photoshop:DateCreated>")[1].split("</photoshop:DateCreated>")[0]
 
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(dir + img)
+                xmp_date_created = metadata["XMP:DateCreated"]
+
             print(img + ":\n"
                         "\timg_mod_time:\t %s\n"
                         "\tPNG date_created: %s\n"
-                        % (img_mod_time, date_created))
+                        "\tXMP:DateCreated: %s\n"
+                        % (img_mod_time, date_created, xmp_date_created))
 
             # Example output of print(img_obj.info):
             # {'srgb': 0, 'XML:com.adobe.xmp': '<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 5.4.0">\n
@@ -90,10 +104,277 @@ def comparef(dir):
                 if '<date>' in line:
                     adjustmentTimestamp = line.split("<date>")[1].split("Z</date>")[0]
 
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(dir + img)
+                adj_time = metadata["PLIST:AdjustmentTimestamp:"]
+
             print(img + ":\n"
-                        "\timg_mod_time: %s"
+                        "\timg_mod_time:\t %s"
                         "\tAAE adjustmentTimestamp: %s"
-                        % (img_mod_time, adjustmentTimestamp))
+                        "\tPLIST:AdjustmentTimestamp: %s"
+                        % (img_mod_time, adjustmentTimestamp, adj_time))
+
+
+# AAE
+# >>> with exiftool.ExifTool() as et:
+# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7611.AAE")
+# ...
+# >>> for key in metadata:
+# ...     print(str(key) + ": " + str(metadata[key]))
+# ...
+# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7611.AAE
+# ExifTool:ExifToolVersion: 11.65
+# File:FileName: IMG_7611.AAE
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE
+# File:FileSize: 829
+# File:FileModifyDate: 2019:07:05 10:32:50-04:00
+# File:FileAccessDate: 2019:09:08 21:45:01-04:00
+# File:FileInodeChangeDate: 2019:09:08 21:45:01-04:00
+# File:FilePermissions: 700
+# File:FileType: AAE
+# File:FileTypeExtension: AAE
+# File:MIMEType: application/vnd.apple.photos
+# PLIST:AdjustmentBaseVersion: 0
+# PLIST:AdjustmentData: (Binary data 150 bytes, use -b option to extract)
+# PLIST:AdjustmentEditorBundleID: com.apple.mobileslideshow
+# PLIST:AdjustmentFormatIdentifier: com.apple.photo
+# PLIST:AdjustmentFormatVersion: 1.4
+# PLIST:AdjustmentRenderTypes: 0
+# PLIST:AdjustmentTimestamp: 2019:07:05 12:46:46Z
+
+
+
+# PNG
+# >>> with exiftool.ExifTool() as et:
+# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8552.PNG")
+# ...
+# >>> for key in metadata:
+# ...     print(str(key) + ": " + str(metadata[key]))
+# ...
+# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8552.PNG
+# ExifTool:ExifToolVersion: 11.65
+# File:FileName: IMG_8552.PNG
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:FileSize: 85705
+# File:FileModifyDate: 2019:09:02 00:06:12-04:00
+# File:FileAccessDate: 2019:09:15 09:16:32-04:00
+# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
+# File:FilePermissions: 700
+# File:FileType: PNG
+# File:FileTypeExtension: PNG
+# File:MIMEType: image/png
+# PNG:ImageWidth: 750
+# PNG:ImageHeight: 1334
+# PNG:BitDepth: 8
+# PNG:ColorType: 2
+# PNG:Compression: 0
+# PNG:Filter: 0
+# PNG:Interlace: 0
+# PNG:SRGBRendering: 0
+# XMP:XMPToolkit: XMP Core 5.4.0
+# XMP:DateCreated: 2019:08:26 03:51:19
+# XMP:UserComment: Screenshot
+# Composite:ImageSize: 750 1334
+# Composite:Megapixels: 1.0005
+
+
+
+
+# MOV
+# >>> with exiftool.ExifTool() as et:
+# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8621.MOV")
+# ...
+# >>> for key in metadata:
+# ...     print(str(key) + ": " + str(metadata[key]))
+# ...
+# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8621.MOV
+# ExifTool:ExifToolVersion: 11.65
+# ExifTool:Warning: [minor] The ExtractEmbedded option may find more tags in the movie data
+# File:FileName: IMG_8621.MOV
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:FileSize: 77769964
+# File:FileModifyDate: 2019:08:26 23:26:42-04:00
+# File:FileAccessDate: 2019:09:15 09:16:34-04:00
+# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
+# File:FilePermissions: 700
+# File:FileType: MOV
+# File:FileTypeExtension: MOV
+# File:MIMEType: video/quicktime
+# QuickTime:MajorBrand: qt
+# QuickTime:MinorVersion: 0.0.0
+# QuickTime:CompatibleBrands: ['qt  ']
+# QuickTime:MovieDataSize: 77750760
+# QuickTime:MovieDataOffset: 36
+# QuickTime:MovieHeaderVersion: 0
+# QuickTime:CreateDate: 2019:08:26 23:24:43
+# QuickTime:ModifyDate: 2019:08:26 23:24:43
+# QuickTime:TimeScale: 600
+# QuickTime:Duration: 39.5466666666667
+# QuickTime:PreferredRate: 1
+# QuickTime:PreferredVolume: 1
+# QuickTime:PreviewTime: 0
+# QuickTime:PreviewDuration: 0
+# QuickTime:PosterTime: 0
+# QuickTime:SelectionTime: 0
+# QuickTime:SelectionDuration: 0
+# QuickTime:CurrentTime: 0
+# QuickTime:NextTrackID: 5
+# QuickTime:TrackHeaderVersion: 0
+# QuickTime:TrackCreateDate: 2019:08:26 23:24:43
+# QuickTime:TrackModifyDate: 2019:08:26 23:24:43
+# QuickTime:TrackID: 1
+# QuickTime:TrackDuration: 39.5466666666667
+# QuickTime:TrackLayer: 0
+# QuickTime:TrackVolume: 1
+# QuickTime:ImageWidth: 1920
+# QuickTime:ImageHeight: 1080
+# QuickTime:CleanApertureDimensions: 1920 1080
+# QuickTime:ProductionApertureDimensions: 1920 1080
+# QuickTime:EncodedPixelsDimensions: 1920 1080
+# QuickTime:GraphicsMode: 64
+# QuickTime:OpColor: 32768 32768 32768
+# QuickTime:CompressorID: avc1
+# QuickTime:SourceImageWidth: 1920
+# QuickTime:SourceImageHeight: 1080
+# QuickTime:XResolution: 72
+# QuickTime:YResolution: 72
+# QuickTime:CompressorName: H.264
+# QuickTime:BitDepth: 24
+# QuickTime:VideoFrameRate: 29.9787827099888
+# QuickTime:Balance: 0
+# QuickTime:AudioFormat: mp4a
+# QuickTime:AudioBitsPerSample: 16
+# QuickTime:AudioSampleRate: 44100
+# QuickTime:LayoutFlags: 100
+# QuickTime:AudioChannels: 1
+# QuickTime:PurchaseFileFormat: mp4a
+# QuickTime:MatrixStructure: 1 0 0 0 1 0 0 0 1
+# QuickTime:ContentDescribes: 1
+# QuickTime:MediaHeaderVersion: 0
+# QuickTime:MediaCreateDate: 2019:08:26 23:24:43
+# QuickTime:MediaModifyDate: 2019:08:26 23:24:43
+# QuickTime:MediaTimeScale: 600
+# QuickTime:MediaDuration: 91.065
+# QuickTime:MediaLanguageCode: und
+# QuickTime:GenMediaVersion: 0
+# QuickTime:GenFlags: 0 0 0
+# QuickTime:GenGraphicsMode: 64
+# QuickTime:GenOpColor: 32768 32768 32768
+# QuickTime:GenBalance: 0
+# QuickTime:HandlerClass: dhlr
+# QuickTime:HandlerVendorID: appl
+# QuickTime:HandlerDescription: Core Media Data Handler
+# QuickTime:MetaFormat: mebx
+# QuickTime:HandlerType: mdta
+# QuickTime:Make: Apple
+# QuickTime:Model: iPhone 6s
+# QuickTime:Software: 12.4
+# QuickTime:CreationDate: 2019:08:26 19:22:27-04:00
+# Composite:ImageSize: 1920 1080
+# Composite:Megapixels: 2.0736
+# Composite:AvgBitrate: 15728407
+# Composite:Rotation: 90
+
+
+
+
+# JPG
+# >>> with exiftool.ExifTool() as et:
+# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8563.JPG")
+#
+# >>> for key in metadata:
+# ...     print(str(key) + ": " + str(metadata[key]))
+# ...
+# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8563.JPG
+# ExifTool:ExifToolVersion: 11.65
+# File:FileName: IMG_8563.JPG
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:FileSize: 2340281
+# File:FileModifyDate: 2019:08:26 09:11:21-04:00
+# File:FileAccessDate: 2019:09:15 09:16:33-04:00
+# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
+# File:FilePermissions: 700
+# File:FileType: JPEG
+# File:FileTypeExtension: JPG
+# File:MIMEType: image/jpeg
+# File:ExifByteOrder: MM
+# File:ImageWidth: 4032
+# File:ImageHeight: 3024
+# File:EncodingProcess: 0
+# File:BitsPerSample: 8
+# File:ColorComponents: 3
+# File:YCbCrSubSampling: 2 2
+# EXIF:Make: Apple
+# EXIF:Model: iPhone 6s
+# EXIF:Orientation: 1
+# EXIF:XResolution: 72
+# EXIF:YResolution: 72
+# EXIF:ResolutionUnit: 2
+# EXIF:Software: 12.4
+# EXIF:ModifyDate: 2019:08:26 09:11:21
+# EXIF:YCbCrPositioning: 1
+# EXIF:ExposureTime: 0.01666666667
+# EXIF:FNumber: 2.2
+# EXIF:ExposureProgram: 2
+# EXIF:ISO: 32
+# EXIF:ExifVersion: 0221
+# EXIF:DateTimeOriginal: 2019:08:26 09:11:21
+# EXIF:CreateDate: 2019:08:26 09:11:21
+# EXIF:ComponentsConfiguration: 1 2 3 0
+# EXIF:ShutterSpeedValue: 0.0166649999460157
+# EXIF:ApertureValue: 2.20000000038133
+# EXIF:BrightnessValue: 4.780345489
+# EXIF:ExposureCompensation: 0
+# EXIF:MeteringMode: 5
+# EXIF:Flash: 24
+# EXIF:FocalLength: 4.15
+# EXIF:SubjectArea: 2015 1511 2217 1330
+# EXIF:SubSecTimeOriginal: 184
+# EXIF:SubSecTimeDigitized: 184
+# EXIF:FlashpixVersion: 0100
+# EXIF:ColorSpace: 1
+# EXIF:ExifImageWidth: 4032
+# EXIF:ExifImageHeight: 3024
+# EXIF:SensingMethod: 2
+# EXIF:SceneType: 1
+# EXIF:ExposureMode: 0
+# EXIF:WhiteBalance: 0
+# EXIF:FocalLengthIn35mmFormat: 29
+# EXIF:SceneCaptureType: 0
+# EXIF:LensInfo: 4.15 4.15 2.2 2.2
+# EXIF:LensMake: Apple
+# EXIF:LensModel: iPhone 6s back camera 4.15mm f/2.2
+# EXIF:Compression: 6
+# EXIF:ThumbnailOffset: 1772
+# EXIF:ThumbnailLength: 10680
+# EXIF:ThumbnailImage: (Binary data 10680 bytes, use -b option to extract)
+# MakerNotes:RunTimeFlags: 1
+# MakerNotes:RunTimeValue: 34717646045291
+# MakerNotes:RunTimeScale: 1000000000
+# MakerNotes:RunTimeEpoch: 0
+# MakerNotes:AccelerationVector: -0.9088873265 -0.01614983752 -0.4305499197
+# Composite:RunTimeSincePowerUp: 34717.646045291
+# Composite:Aperture: 2.2
+# Composite:ImageSize: 4032 3024
+# Composite:Megapixels: 12.192768
+# Composite:ScaleFactor35efl: 6.98795180722891
+# Composite:ShutterSpeed: 0.01666666667
+# Composite:SubSecCreateDate: 2019:08:26 09:11:21.184
+# Composite:SubSecDateTimeOriginal: 2019:08:26 09:11:21.184
+# Composite:CircleOfConfusion: 0.00429972350378608
+# Composite:FOV: 63.6549469203797
+# Composite:FocalLength35efl: 29
+# Composite:HyperfocalDistance: 1.8206773258829
+# Composite:LightValue: 9.82575383259457
+
+
+
+
+
+
+
+
+
 
 
 
