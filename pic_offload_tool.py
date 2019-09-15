@@ -2,9 +2,8 @@
 from time import localtime, strftime, strptime
 from os import listdir, mkdir, rmdir
 from os.path import exists as path_exists
-from os.path import getctime, getmtime, getsize
+from os.path import getctime, getmtime, getsize, isfile
 from subprocess import Popen
-from hashlib import sha256
 from tqdm import tqdm
 import shutil
 
@@ -97,13 +96,8 @@ class iPhoneDCIM(object):
 class RawOffloadGroup(object):
     """Requires no input. Creates object representing Raw_Offload root struct."""
     def __init__(self):
-        self.bu_root_path = input("Confirm BU folder is the following "
-                        "or input a new directory path:\n"
-                        "\t%s\n" % DEFAULT_BU_ROOT)
-        if not self.bu_root_path:
-            self.bu_root_path = DEFAULT_BU_ROOT
-            print("\tProceeding with above default.\n")
 
+        self.bu_root_path = self.confirm_BU_root()
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
         # Double-check Raw_Offload folder is there.
         if not path_exists(self.RO_root_path):
@@ -115,9 +109,28 @@ class RawOffloadGroup(object):
 
         self.find_overlap_offloads()
 
+    def confirm_BU_root(self):
+        bu_root_path = input("Confirm BU folder is the following or input "
+                            "a new directory path:\n\t%s\n" % DEFAULT_BU_ROOT)
+        if not bu_root_path:
+            bu_root_path = DEFAULT_BU_ROOT
+            print("Proceeding with above default.\n")
+        elif not path_exists(bu_root_path):
+            while not path_exists(bu_root_path):
+                bu_root_path = input("Invalid path. Specify different path:\n")
+            print("Proceeding with new folder %s\n" % bu_root_path)
+        else:
+            print("Proceeding with new folder %s\n" % bu_root_path)
+
+        return bu_root_path
+
     def find_overlap_offloads(self):
         # Create a RawOffload instance representing most recent offload.
-        LastOffload = RawOffload(self.offload_list[-1], self)
+        if isfile(self.offload_list[-1]):
+            raise DirectoryNameError("File found where only offload folders should "
+            "be in %s. Cannot determine last offload." % self.offload_list)
+        else:
+            LastOffload = RawOffload(self.offload_list[-1], self)
         self.prev_offload_list = [LastOffload]
         overlap_folder = LastOffload.newest_APPLE_folder()
         # Find every other offload that shares the overlap folder.
@@ -132,12 +145,18 @@ class RawOffloadGroup(object):
 
     def get_offload_list(self):
         return self.offload_list.copy()
+    #
+    # def get_prev_offload(self):
+    #     return self.prev_offload_list[-1]
 
-    def get_prev_offload(self):
-        return self.prev_offload_list[-1]
-
-    def get_prev_offload_list(self):
+    def overlap_offload_list(self):
         return self.prev_offload_list.copy()
+
+    def newest_APPLE_folder(self):
+        if isfile(self.prev_offload_list[-1].list_APPLE_folders()[-1]):
+            raise DirectoryNameError("File found where only APPLE folders should "
+            "be in %s. Cannot determine newest APPLE folder." % self.prev_offload_list[-1])
+        return self.prev_offload_list[-1].list_APPLE_folders()[-1]
 
     def create_new_offload(self):
         NewOffload = NewRawOffload(self)
@@ -179,7 +198,11 @@ class RawOffload(object):
         return APPLE_folders
 
     def newest_APPLE_folder(self):
-        return self.list_APPLE_folders()[-1]
+        if isfile(self.list_APPLE_folders()[-1]):
+            raise DirectoryNameError("File found where only APPLE folders should "
+            "be in %s. Cannot determine newest APPLE folder." % self.full_path)
+        else:
+            return self.list_APPLE_folders()[-1]
 
     def APPLE_folder_path(self, APPLE_folder_name):
         if APPLE_folder_name in self.list_APPLE_folders():
@@ -212,7 +235,7 @@ class RawOffload(object):
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
 # How to determine if they're new? Look at modified time but also check for collisions.
-# If two files have same name but different mtime, check sha256 sum. If same, don't
+# If two files have same name but different mtime, check file size. If same, don't
 # copy. If different, display both files and timestamps, prompting user how to handle.
 
 class NewRawOffload(RawOffload):
@@ -250,10 +273,9 @@ class NewRawOffload(RawOffload):
             mkdir(self.quar_path)
 
     def run_overlap_offload(self):
-        self.PrevOffload = self.Parent.get_prev_offload()
 
         # Find the last (newest) APPLE dir in the most recent offload.
-        self.overlap_folder = self.PrevOffload.newest_APPLE_folder()
+        self.overlap_folder = self.Parent.newest_APPLE_folder()
         print("Overlap folder: " + self.overlap_folder)
 
         # Create a destination folder in the new Raw Offload directory with the same APPLE name.
@@ -262,26 +284,32 @@ class NewRawOffload(RawOffload):
 
         self.create_quar_folder(self.overlap_folder)
 
-        # algorithm to determine which photos are new.
-        prev_overlap_path = self.PrevOffload.APPLE_folder_path(self.overlap_folder)
-        prev_APPLE_pics = self.PrevOffload.APPLE_contents(self.overlap_folder)
-
-        # tqdm provides the console status bar
+        src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
         src_APPLE_pics = self.src_iPhone_dir.APPLE_contents(self.overlap_folder)
         src_APPLE_pics.sort()
+
+        # iterate through each folder that contains the overlap folder.
+        # store the img names and sizes as key-val pair.
+        prev_APPLE_pics = {}
+        for PrevOffload in self.Parent.overlap_offload_list():
+            prev_overlap_path = PrevOffload.APPLE_folder_path(self.overlap_folder)
+            for pic in PrevOffload.APPLE_contents(self.overlap_folder):
+                prev_APPLE_pics[pic] = getsize(prev_overlap_path + pic)
+
+        # algorithm to determine which photos are new.
         print("Overlap-transfer progress:")
+        # tqdm provides the terminal status bar
         for img_name in tqdm(src_APPLE_pics):
             # print("\t%s" % img_name)
-            src_APPLE_dir = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
-            src_img_path = src_APPLE_dir + img_name
+            src_img_path = src_APPLE_path + img_name
             # Get last modified time as a struct_time, compare to last BU struct_time
             img_mod_time = localtime(getmtime(src_img_path))
             # If mod time earlier than last offload, pic should have been offloaded last time.
-            if img_mod_time > self.PrevOffload.get_timestamp():
+            if img_mod_time > PrevOffload.get_timestamp():
                 # Check for duplication. Required since existing pic datestamps update unnecessarily on iPhone.
                 if img_name in prev_APPLE_pics:
 
-                    if getsize(src_img_path) != getsize(prev_overlap_path + img_name):
+                    if getsize(src_img_path) != prev_APPLE_pics[img_name]:
                         # Put in quarantine for later manual sorting if they are truly different.
                         # One possible reason for this is if an image was cropped or a video trimmed after offload.
                         shutil.copy2(src_img_path, self.quar_path)
@@ -294,7 +322,7 @@ class NewRawOffload(RawOffload):
             else:
                 continue
 
-        # If the overlap APPLE folder ends up being empty, delete it.
+        # If the target overlap APPLE folder ends up being empty, delete it.
         if not self.APPLE_contents(self.overlap_folder):
             rmdir(self.new_overlap_path)
             rmdir(self.quar_path)
