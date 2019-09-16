@@ -85,19 +85,8 @@ def comparef(dir):
                         "\tXMP:DateCreated: %s\n"
                         % (img_mod_time, date_created, xmp_date_created))
 
-            # Example output of print(img_obj.info):
-            # {'srgb': 0, 'XML:com.adobe.xmp': '<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 5.4.0">\n
-            # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n
-            # <rdf:Description rdf:about=""\n
-            # xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"\n
-            # xmlns:exif="http://ns.adobe.com/exif/1.0/">\n
-            # <photoshop:DateCreated>2019-08-26T03:51:19</photoshop:DateCreated>\n
-            # <exif:UserComment>Screenshot</exif:UserComment>\n
-            # </rdf:Description>\n
-            # </rdf:RDF>\n</x:xmpmeta>\n'}
-
         elif img_ext == ".AAE":
-            img_obj = open(img, 'r')
+            img_obj = open(dir + img, 'r')
 
             # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             for line in img_obj:
@@ -106,13 +95,16 @@ def comparef(dir):
 
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(dir + img)
-                adj_time = metadata["PLIST:AdjustmentTimestamp:"]
+                adj_time = metadata["PLIST:AdjustmentTimestamp"]
 
             print(img + ":\n"
                         "\timg_mod_time:\t %s"
                         "\tAAE adjustmentTimestamp: %s"
                         "\tPLIST:AdjustmentTimestamp: %s"
                         % (img_mod_time, adjustmentTimestamp, adj_time))
+
+
+comparef("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/gphoto2_host__5Busb_3A002_2C015_5D/DCIM/148APPLE/")
 
 
 # AAE
