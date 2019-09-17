@@ -369,7 +369,7 @@ class NewRawOffload(RawOffload):
     #             create_time_str = "EXIF:DateTimeOriginal"
     #             format = "%Y:%m:%d %H:%M:%S"
     #             # ex. 2019:08:26 09:11:21
-    #             '%Y-%m-%dT%H%M%S'
+    #             # '%Y-%m-%dT%H%M%S'
     #         elif img_ext == ".MOV":
     #             create_time_str = "QuickTime:CreationDate"
     #             # non-standard format - adjust manually before passing to strftime

@@ -1,7 +1,7 @@
 import PIL.Image
 from PIL.ExifTags import TAGS
 from os import listdir
-from os.path import getmtime
+from os.path import getmtime, isdir
 from time import localtime, strftime, strptime
 import exiftool
 
@@ -17,19 +17,31 @@ import exiftool
 # https://sno.phy.queensu.ca/~phil/exiftool/
 
 
-def comparef(dir):
-    if dir[-1] != '/':
-        dir += '/'
+def list_all_img_dates(path):
+    """Function that takes either a directory or single image path and prints
+    all available timestamps for each JPG, PNG, AAE, or MOV file for comparison."""
+    # add functionality to show all date data from EXIFtool as well.
+    if isdir(path):
+        if path[-1] != '/':
+            path += '/'
+        image_list = listdir(path)
+        image_list.sort()
+    else:
+        # If path is only a single image instead of a directory, separate out
+        # the image name from the path to conform to path + img convention in
+        # rest of code. Create a length-one list with that image name to
+        # loop through.
+        single_image = path.split('/')[-1]
+        path = path.split(single_image)[0]
+        image_list = [single_image]
 
-    image_list = listdir(dir)
-    image_list.sort()
     for img in image_list:
         # print(img)
         img_ext = img.upper()[-4:]
-        img_mod_time = strftime('%Y-%m-%dT%H%M%S', localtime(getmtime(dir + img)))
+        img_mod_time = strftime('%Y-%m-%dT%H%M%S', localtime(getmtime(path + img)))
 
         if img_ext == ".JPG" or img_ext == "JPEG":
-            img_obj = PIL.Image.open(dir + img)
+            img_obj = PIL.Image.open(path + img)
 
             encoded_exif = img_obj._getexif()
             metadata = {}
@@ -39,7 +51,7 @@ def comparef(dir):
                      metadata[decoded_key] = value
 
             with exiftool.ExifTool() as et:
-                metadata2 = et.get_metadata(dir + img)
+                metadata2 = et.get_metadata(path + img)
                 dt_orig = metadata2.get("EXIF:DateTimeOriginal", None)
 
             if ('DateTimeOriginal' in metadata and
@@ -61,7 +73,7 @@ def comparef(dir):
 
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(dir + img)
+                metadata = et.get_metadata(path + img)
                 qt_creation_date = metadata["QuickTime:CreationDate"]
 
             print(img + ":\n"
@@ -70,13 +82,13 @@ def comparef(dir):
                         % (img_mod_time, qt_creation_date))
 
         elif img_ext == ".PNG":
-            img_obj = PIL.Image.open(dir + img)
+            img_obj = PIL.Image.open(path + img)
 
             # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             date_created = img_obj.info['XML:com.adobe.xmp'].split("<photoshop:DateCreated>")[1].split("</photoshop:DateCreated>")[0]
 
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(dir + img)
+                metadata = et.get_metadata(path + img)
                 xmp_date_created = metadata["XMP:DateCreated"]
 
             print(img + ":\n"
@@ -86,7 +98,7 @@ def comparef(dir):
                         % (img_mod_time, date_created, xmp_date_created))
 
         elif img_ext == ".AAE":
-            img_obj = open(dir + img, 'r')
+            img_obj = open(path + img, 'r')
 
             # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             for line in img_obj:
@@ -94,7 +106,7 @@ def comparef(dir):
                     adjustmentTimestamp = line.split("<date>")[1].split("Z</date>")[0]
 
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(dir + img)
+                metadata = et.get_metadata(path + img)
                 adj_time = metadata["PLIST:AdjustmentTimestamp"]
 
             print(img + ":\n"
@@ -103,8 +115,60 @@ def comparef(dir):
                         "\tPLIST:AdjustmentTimestamp: %s"
                         % (img_mod_time, adjustmentTimestamp, adj_time))
 
+# TEST
+# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/gphoto2_host__5Busb_3A002_2C015_5D/DCIM/148APPLE/")
+list_all_img_dates("C:/Users/jbowen/OneDrive - Textron/Desktop/RXV_model.PNG")
 
-comparef("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/gphoto2_host__5Busb_3A002_2C015_5D/DCIM/148APPLE/")
+
+
+def get_img_date(self, img_path):
+    """Function that prints best available timestamp for any single JPG, PNG,
+    AAE, or MOV file located at img_path."""
+    # modify to look for each metadata type and fall back on mtime if needed.
+    with exiftool.ExifTool() as et:
+        img_ext = img_path.upper()[-4:]
+        metadata = et.get_metadata(img_path)
+
+        # Different files have different names for the creation date in the metadata.
+        if img_ext == ".JPG" or img_ext == "JPEG":
+            create_time_str = "EXIF:DateTimeOriginal"
+            format = "%Y:%m:%d %H:%M:%S"
+            # ex. 2019:08:26 09:11:21
+        elif img_ext == ".MOV":
+            create_time_str = "QuickTime:CreationDate"
+            # non-standard format - adjust manually before passing to strftime
+            # ex. 2019:08:26 19:22:27-04:00
+            create_time_str = create_time_str[0:22] + create_time_str[23:]
+            # Now formatted this way: 2019:08:26 19:22:27-0400
+            format = "%Y:%m:%d %H:%M:%S%z"
+        elif img_ext == ".PNG":
+            create_time_str = "XMP:DateCreated"
+            format = "%Y:%m:%d %H:%M:%S"
+            # ex. 2019:08:26 03:51:19
+        elif img_ext == ".AAE":
+            create_time_str = "PLIST:AdjustmentTimestamp"
+            format = "%Y:%m:%d %H:%M:%SZ"
+            # ex. 2019:07:05 12:46:46Z
+        else:
+            raise ImgTypeError("Unexpected extension encountered at " + img_path)
+
+        create_time = metadata.get(create_time_str, None)
+        if create_time:
+            create_time_obj = strptime(create_time, format)
+            return create_time_obj
+        else:
+            return None
+
+
+
+
+
+
+
+
+
+
+
 
 
 # AAE
