@@ -110,6 +110,7 @@ class RawOffloadGroup(object):
 
         self.offload_list = listdir(self.RO_root_path)
         self.offload_list.sort()
+        # should these be put into a method to update the list whenever called?
 
         self.find_overlap_offloads()
 
@@ -128,6 +129,12 @@ class RawOffloadGroup(object):
 
         return bu_root_path
 
+    def get_BU_root(self):
+        return self.bu_root_path
+
+    def get_RO_root(self):
+        return self.RO_root_path
+
     def find_overlap_offloads(self):
         # Create a RawOffload instance representing most recent offload.
         if isfile(self.offload_list[-1]):
@@ -143,9 +150,6 @@ class RawOffloadGroup(object):
                 PrevOL = RawOffload(offload, self)
                 self.prev_offload_list += [PrevOL]
         self.prev_offload_list.sort()
-
-    def get_root_path(self):
-        return self.RO_root_path
 
     def get_offload_list(self):
         return self.offload_list.copy()
@@ -167,10 +171,10 @@ class RawOffloadGroup(object):
         return NewOffload
 
     def __str__(self):
-        return self.get_root_path()
+        return self.get_RO_root()
 
     def __repr__(self):
-        return "RawOffloadGroup object with path:\n\t" + self.get_root_path()
+        return "RawOffloadGroup object with path:\n\t" + self.get_RO_root()
 
 
 class RawOffload(object):
@@ -178,7 +182,7 @@ class RawOffload(object):
     APPLE folders."""
     def __init__(self, leaf_name, Parent):
         self.Parent = Parent
-        self.full_path = self.Parent.get_root_path() + leaf_name + '/'
+        self.full_path = self.Parent.get_RO_root() + leaf_name + '/'
 
         if len(leaf_name) != 17:
             raise DirectoryNameError("Raw_Offload directory name '%s' not in "
@@ -258,7 +262,7 @@ class NewRawOffload(RawOffload):
         # Create new directory w/ today's date in Raw_Offload.
         new_timestamp = strftime('%Y-%m-%dT%H%M%S')
         self.leaf_dir = new_timestamp
-        self.full_path = (self.Parent.get_root_path() + self.leaf_dir + '/')
+        self.full_path = (self.Parent.get_RO_root() + self.leaf_dir + '/')
         if path_exists(self.full_path):
             # Make sure folder w/ today's date doesn't already exist.
             raise RawOffloadError("Tried to create directory at\n%s\nbut that "
@@ -432,45 +436,3 @@ class NewRawOffload(RawOffload):
 # TEST
 # rog = RawOffloadGroup()
 # nro = rog.create_new_offload()
-
-
-# Phase 2: Organize files by date into dated directory.
-# Create new folder if none exists
-
-# img_mod_time = strftime('%Y-%m-%d T %H:%M:%S', localtime(getmtime(src_img_path)))
-
-# class PicOrganize(object):
-#     def __init__(self):
-#         pass
-
-# can more metadata be accessed in photo files? Another library?
-
-# prompt user to enter which photo is the break point between multiple months.
-# make initial guess, open that photo, allow user to browse through photos and
-# enter which one ends up being right based on manual check of iPhone metadata.
-# always check for existing file before copying into date folders to avoid overwriting.
-
-
-# TEST
-# por = PicOrganize()
-
-
-# Phase 3: Display pics one by one and prompt for where to copy each.
-# Have a Manual Sort folder to use in case of no correct choice available.
-# Prepend date to each file name when copying to various folders.
-# Handle name collisions.
-
-
-
-
-
-
-
-
-
-#Copy file or directory w/ contents:
-# shutil.copy2([src file], [dest dir])
-# shutil.copytree([src], [dest]])
-
-# Display image:
-# subsystem.Popen(['xdg-open', [filename in quotes])
