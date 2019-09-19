@@ -430,8 +430,8 @@ class NewRawOffload(RawOffload):
         return "NewRawOffload object with path:\n\t" + self.full_path
 
 # TEST
-rog = RawOffloadGroup()
-nro = rog.create_new_offload()
+# rog = RawOffloadGroup()
+# nro = rog.create_new_offload()
 
 
 # Phase 2: Organize files by date into dated directory.

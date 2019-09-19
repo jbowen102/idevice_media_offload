@@ -47,26 +47,35 @@ def list_all_img_dates(path):
             img_obj = PIL.Image.open(path + img)
 
             encoded_exif = img_obj._getexif()
-            metadata = {}
+            pil_metadata = {}
             for tag, value in encoded_exif.items():
                  decoded_key = TAGS.get(tag, tag)
                  if "DateTime" in decoded_key:
-                     metadata[decoded_key] = value
+                     pil_metadata[decoded_key] = value
 
             with exiftool.ExifTool() as et:
-                metadata2 = et.get_metadata(path + img)
-                dt_orig = metadata2.get("EXIF:DateTimeOriginal", None)
+                exiftool_metadata = et.get_metadata(path + img)
 
+            # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
-                        "        file_mod_time:\t%s\n"
-                        "        EXIF DateTimeOriginal:\t%s\n"
-                        "        EXIF DateTimeDigitized:\t%s\n"
-                        "        EXIF DateTime:\t%s\n"
-                        "        EXIF:DateTimeOriginal*:\t%s\n"
-                        % (file_mod_time, metadata.get('DateTimeOriginal'),
-                            metadata.get('DateTimeDigitized'),
-                            metadata.get('DateTime'),
-                            metadata2.get('EXIF:DateTimeOriginal'))).expandtabs(20))
+                        "        file_mod_time:\t\t%s\n"
+                        "        PIL-getexif DateTimeOriginal:\t%s\n"
+                        "        PIL-getexif DateTimeDigitized:\t%s\n"
+                        "        PIL-getexif DateTime:\t%s\n"
+                        "        Exiftool EXIF:ModifyDate:\t%s\n"
+                        "        Exiftool EXIF:DateTimeOriginal*:\t%s\n"
+                        "        Exiftool EXIF:CreateDate:\t%s\n"
+                        "        Exiftool Composite:SubSecCreateDate:\t%s\n"
+                        "        Exiftool Composite:SubSecDateTimeOriginal:\t%s\n"
+                        % (file_mod_time, pil_metadata.get('DateTimeOriginal'),
+                            pil_metadata.get('DateTimeDigitized'),
+                            pil_metadata.get('DateTime'),
+                            exiftool_metadata.get('EXIF:ModifyDate'),
+                            exiftool_metadata.get('EXIF:DateTimeOriginal'),
+                            exiftool_metadata.get('EXIF:CreateDate'),
+                            exiftool_metadata.get('Composite:SubSecCreateDate'),
+                            exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
+                            )).expandtabs(28))
 
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
@@ -80,20 +89,21 @@ def list_all_img_dates(path):
                 qt_creation_date = metadata.get("QuickTime:CreationDate")
 
 
+            # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
-                        "        file_mod_time:\t%s\n"
-                        "        EXIF QuickTime:CreateDate:\t%s\n"
-                        "        EXIF QuickTime:ModifyDate:\t%s\n"
-                        "        EXIF QuickTime:TrackCreateDate:\t%s\n"
-                        "        EXIF QuickTime:TrackModifyDate:\t%s\n"
-                        "        EXIF QuickTime:MediaCreateDate:\t%s\n"
-                        "        EXIF QuickTime:MediaModifyDate:\t%s\n"
-                        "        EXIF QuickTime:CreationDate*:\t%s\n"
+                        "        file_mod_time:\t\t%s\n"
+                        "        EXIFtool QuickTime:CreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:ModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:CreationDate*:\t%s\n"
                         % (file_mod_time,
                         qt_create_date, qt_mod_date,
                         qt_trk_create_date, qt_trk_mod_date,
                         qt_med_create_date, qt_med_mod_date,
-                        qt_creation_date)).expandtabs(20))
+                        qt_creation_date)).expandtabs(28))
 
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(path + img)
@@ -107,11 +117,12 @@ def list_all_img_dates(path):
                 metadata = et.get_metadata(path + img)
                 xmp_date_created = metadata.get("XMP:DateCreated")
 
+            # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
-                        "        file_mod_time:\t%s\n"
-                        "        PNG date_created:\t%s\n"
-                        "        XMP:DateCreated*:\t%s\n"
-                        % (file_mod_time, date_created, xmp_date_created)).expandtabs(20))
+                        "        file_mod_time:\t\t%s\n"
+                        "        PIL-info date_created:\t%s\n"
+                        "        EXIFtool XMP:DateCreated*:\t%s\n"
+                        % (file_mod_time, date_created, xmp_date_created)).expandtabs(28))
 
         elif img_ext == ".AAE":
             img_obj = open(path + img, 'r')
@@ -125,22 +136,23 @@ def list_all_img_dates(path):
                 metadata = et.get_metadata(path + img)
                 adj_time = metadata.get("PLIST:AdjustmentTimestamp")
 
+            # "*" indicates metadata most likely to represent actual creation time.
             print((img + "\n"
-                        "        file_mod_time:\t%s\n"
-                        "        AAE adjustmentTimestamp:\t%s\n"
-                        "        PLIST:AdjustmentTimestamp*:\t%s\n"
-                        % (file_mod_time, adjustmentTimestamp, adj_time)).expandtabs(20))
+                        "        file_mod_time:\t\t%s\n"
+                        "        AAEparse adjustmentTimestamp:\t%s\n"
+                        "        EXIFtool PLIST:AdjustmentTimestamp*:\t%s\n"
+                        % (file_mod_time, adjustmentTimestamp, adj_time)).expandtabs(28))
         else:
             raise ImgTypeError("Invalid image type encountered: %s" % img)
 
 
 # TEST
 # list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/gphoto2_host__5Busb_3A002_2C015_5D/DCIM/148APPLE/")
-list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/")
+# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-08-14T191448/148APPLE")
 
 
 
-def get_img_date(self, img_path):
+def get_img_date(img_path):
     """Function that prints best available timestamp for any single JPG, PNG,
     AAE, or MOV file located at img_path."""
     # modify to look for each metadata type and fall back on mtime if needed.
@@ -150,35 +162,39 @@ def get_img_date(self, img_path):
 
         # Different files have different names for the creation date in the metadata.
         if img_ext == ".JPG" or img_ext == "JPEG":
-            create_time_str = "EXIF:DateTimeOriginal"
+            create_time = metadata.get("EXIF:DateTimeOriginal")
             format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 09:11:21
         elif img_ext == ".MOV":
-            create_time_str = "QuickTime:CreationDate"
+            create_time = metadata.get("QuickTime:CreationDate")
             # non-standard format - adjust manually before passing to strftime
             # ex. 2019:08:26 19:22:27-04:00
-            create_time_str = create_time_str[0:22] + create_time_str[23:]
+            create_time = create_time[0:22] + create_time[23:]
             # Now formatted this way: 2019:08:26 19:22:27-0400
             format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".PNG":
-            create_time_str = "XMP:DateCreated"
+            create_time = metadata.get("XMP:DateCreated")
             format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 03:51:19
         elif img_ext == ".AAE":
-            create_time_str = "PLIST:AdjustmentTimestamp"
+            create_time = metadata.get("PLIST:AdjustmentTimestamp")
             format = "%Y:%m:%d %H:%M:%SZ"
             # ex. 2019:07:05 12:46:46Z
         else:
             raise ImgTypeError("Unexpected extension encountered at " + img_path)
 
-        create_time = metadata.get(create_time_str, None)
         if create_time:
             create_time_obj = strptime(create_time, format)
+            print(create_time_obj)
             return create_time_obj
         else:
-            return None
+            # Fall back on fs mod time if more precise metadata unavailable.
+            file_mod_time_obj = localtime(getmtime(img_path))
+            print(file_mod_time_obj)
+            return file_mod_time_obj
 
-
+# TEST
+# get_img_date("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7656.AAE")
 
 
 
