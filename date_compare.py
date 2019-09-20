@@ -147,8 +147,7 @@ def list_all_img_dates(path):
 
 
 # TEST
-# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/gphoto2_host__5Busb_3A002_2C015_5D/DCIM/148APPLE/")
-# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-08-14T191448/148APPLE")
+list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases")
 
 
 

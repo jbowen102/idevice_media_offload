@@ -29,7 +29,7 @@ IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_
 # most recent ones? That will be an extra safeguard against copying into the
 # wrong (older) directory.
 
-class PicOrganize(object):
+class OrganizedGroup(object):
 
     def __init__(self, ROG):
         self.bu_root_path = ROG.get_BU_root()
@@ -39,26 +39,71 @@ class PicOrganize(object):
             raise OrganizeFolderError("Organized dir not found at %s! "
                         "Pics not organized. Terminating" % self.date_root_path)
 
+    def get_root_path(self):
+        return self.date_root_path
+
+    def get_latest_yr(self):
+        yr_list = self.get_yr_list()
+        LastYr = YearDir(yr_list[-1], self)
+
+    # Instantiate latest year and provide access
     def get_yr_list(self):
         year_list = listdir(self.date_root_path)
         year_list.sort()
         return year_list
 
-    def get_yr_path(self, year):
+    def create_yr(self, year):
         if year in self.get_yr_list():
-            yr_path = self.date_root_path + year + '/'
-            return yr_path
+
+
+    def __repr__(self):
+        return "OrganizedGroup object with path:\n\t" + self.date_root_path
+
+class YearDir(object):
+    def __init__(self, year_name, OrgGroup):
+        if not year_name in OrgGroup.get_yr_list():
+            raise OrganizeFolderError("Year '%s' not found in dir:\n\t%s"
+                                % (year_name, OrgGroup.get_root_path()))
         else:
-            raise OrganizeFolderError("Year '%s' does not exist in %s"
-                            % (year, self.date_root_path))
+            self.year_name = year_name
+            self.year_path = OrgGroup.get_root_path() + year_name + '/'
+            # Instantiate latest mo and put in dict of months
+            self.mo_objs = {self.get_latest_mo(): make_month(self.get_latest_mo())}
+
+    def get_yr_path(self):
+        return self.year_path
 
     def get_mo_list(self, year):
-        yr_path = self.get_yr_path(year)
-        mo_list = listdir(yr_path)
+        mo_list = listdir(self.year_path)
         mo_list.sort()
         return mo_list
 
-    # change this to accept yr-date format and parse yr from mo?
+    def get_mo_objs(self):
+        return self.mo_objs
+
+    def get_latest_mo(self):
+        latest_mo_name = self.get_mo_list()[-1]
+        return self.mo_ojbs.get(latest_mo_name)
+
+    def make_month(self, month):
+        # chck that month doesn't already exist in list
+        if month in self.get_mo_objs():
+            raise OrganizeFolderError("Tried to make month object for %s-%s, "
+                                "but already exists in not found in dir:\n\t%s"
+                                    % (self.year_name, month, self.year_path))
+        else:
+            # does this need to be stored somehow in the YearDir object?
+            # put in dict?
+            return MoDir()
+
+    def __repr__(self):
+        return "YearDir object with path:\n\t" + self.date_root_path
+
+
+class MoDir(object):
+    def __init__(self, YrDir):
+        pass
+
     def get_mo_path(self, year, month):
         if (year + '-' + month) in self.get_mo_list(year):
             mo_path = self.get_yr_path(year) + year + '-' + month
@@ -67,14 +112,10 @@ class PicOrganize(object):
             raise OrganizeFolderError("Month '%s' does not exist in %s"
                             % (month, self.get_yr_path(year)))
 
-    def __repr__(self):
-        return "RawOffload object with path:\n\t" + self.date_root_path
-
-
 
 # TEST
 rog = RawOffloadGroup()
-por = PicOrganize(rog)
+por = OrganizedGroup(rog)
 
 
 # reference
