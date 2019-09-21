@@ -168,7 +168,8 @@ class RawOffloadGroup(object):
         return self.get_last_offload().list_APPLE_folders()[-1]
 
     def create_new_offload(self):
-        NewOffload = NewRawOffload(self)
+        new_timestamp = strftime('%Y-%m-%dT%H%M%S')
+        NewOffload = NewRawOffload(new_timestamp, self)
         return NewOffload
 
     def __str__(self):
@@ -181,21 +182,21 @@ class RawOffloadGroup(object):
 class RawOffload(object):
     """Represents a datestamped folder under the Raw_Offload root containing
     APPLE folders."""
-    def __init__(self, leaf_name, Parent):
+    def __init__(self, offload_name, Parent):
         self.Parent = Parent
-        self.full_path = self.Parent.get_RO_root() + leaf_name + '/'
+        self.full_path = self.Parent.get_RO_root() + offload_name + '/'
 
-        if len(leaf_name) != 17:
+        if len(offload_name) != 17:
             raise DirectoryNameError("Raw_Offload directory name '%s' not in "
-                                            "expected format." % self.leaf_dir)
+                                            "expected format." % offload_name)
         else:
-            self.leaf_dir = leaf_name
+            self.offload_dir = offload_name
 
     def get_parent(self):
         return self.Parent
 
-    def get_leaf_dir(self):
-        return self.leaf_dir
+    def get_offload_dir(self):
+        return self.offload_dir
 
     def get_full_path(self):
         return self.full_path
@@ -227,10 +228,10 @@ class RawOffload(object):
         return APPLE_contents
 
     def get_timestamp_str(self):
-        return self.leaf_dir
+        return self.offload_dir
 
     def get_timestamp(self):
-        return strptime(self.leaf_dir, '%Y-%m-%dT%H%M%S')
+        return strptime(self.offload_dir, '%Y-%m-%dT%H%M%S')
 
     def __str__(self):
         return self.full_path
@@ -239,7 +240,7 @@ class RawOffload(object):
         return "RawOffload object with path:\n\t" + self.full_path
 
     def __lt__(self, other):
-        return self.leaf_dir < other.leaf_dir
+        return self.offload_dir < other.offload_dir
 
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
@@ -251,19 +252,18 @@ class NewRawOffload(RawOffload):
     """Creates object representing new RawOffload instance (timestamped folder).
     Includes extra functionality to perform offload."""
 
-    def __init__(self, Parent):
+    def __init__(self, offload_name, Parent):
         self.Parent = Parent
         self.src_iPhone_dir = iPhoneDCIM()
 
-        self.create_target_folder()
+        self.create_target_folder(offload_name)
         self.run_overlap_offload()
         self.run_new_offload()
 
-    def create_target_folder(self):
+    def create_target_folder(self, offload_name):
         # Create new directory w/ today's date in Raw_Offload.
-        new_timestamp = strftime('%Y-%m-%dT%H%M%S')
-        self.leaf_dir = new_timestamp
-        self.full_path = (self.Parent.get_RO_root() + self.leaf_dir + '/')
+        self.offload_dir = offload_name
+        self.full_path = (self.Parent.get_RO_root() + self.offload_dir + '/')
         if path_exists(self.full_path):
             # Make sure folder w/ today's date doesn't already exist.
             raise RawOffloadError("Tried to create directory at\n%s\nbut that "
