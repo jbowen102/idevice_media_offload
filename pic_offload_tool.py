@@ -5,7 +5,8 @@ from os.path import exists as path_exists
 from os.path import getmtime, getsize, isfile
 from subprocess import Popen
 from tqdm import tqdm
-import shutil
+from shutil import copy2 as sh_copy2
+from shutil import copytree as sh_copytree
 import exiftool
 
 
@@ -153,18 +154,18 @@ class RawOffloadGroup(object):
 
     def get_offload_list(self):
         return self.offload_list.copy()
-    #
-    # def get_prev_offload(self):
-    #     return self.prev_offload_list[-1]
+
+    def get_last_offload(self):
+        return self.prev_offload_list[-1]
 
     def overlap_offload_list(self):
         return self.prev_offload_list.copy()
 
     def newest_APPLE_folder(self):
-        if isfile(self.prev_offload_list[-1].list_APPLE_folders()[-1]):
+        if isfile(self.get_last_offload().list_APPLE_folders()[-1]):
             raise DirectoryNameError("File found where only APPLE folders should "
-            "be in %s. Cannot determine newest APPLE folder." % self.prev_offload_list[-1])
-        return self.prev_offload_list[-1].list_APPLE_folders()[-1]
+            "be in %s. Cannot determine newest APPLE folder." % self.get_last_offload())
+        return self.get_last_offload().list_APPLE_folders()[-1]
 
     def create_new_offload(self):
         NewOffload = NewRawOffload(self)
@@ -315,7 +316,7 @@ class NewRawOffload(RawOffload):
             # Get creation time as a struct_time, compare to last BU struct_time
 
             if img_name not in prev_APPLE_pics:
-                 shutil.copy2(src_img_path, self.new_overlap_path)
+                 sh_copy2(src_img_path, self.new_overlap_path)
             else:
                 # If a picture of the same name is found in an overlap folder,
                 # ignore new one. Leave old one in place.
@@ -326,14 +327,14 @@ class NewRawOffload(RawOffload):
             # if not img_create_time:
             #     # If exiftool couldn't get any datetime metadata, put in quarantine
             #     # for manual sorting later.
-            #     shutil.copy2(src_img_path, self.quar_path)
+            #     sh_copy2(src_img_path, self.quar_path)
             # # If creation time earlier than last offload, pic should have been offloaded last time.
             # elif img_create_time > PrevOffload.get_timestamp():
             #     # Check for duplication. May no longer be necessary with more robust
             #     # creation-time check.
             #
             #     if img_name not in prev_APPLE_pics:
-            #          shutil.copy2(src_img_path, self.new_overlap_path)
+            #          sh_copy2(src_img_path, self.new_overlap_path)
             #     else:
             #         # If a picture of the same name is found in an overlap folder,
             #         # ignore new one. Leave old one in place.
@@ -344,13 +345,13 @@ class NewRawOffload(RawOffload):
                 #     if getsize(src_img_path) != prev_APPLE_pics[img_name]:
                 #         # Put in quarantine for later manual sorting if they are truly different.
                 #         # One possible reason for this is if an image was cropped or a video trimmed after offload.
-                #         shutil.copy2(src_img_path, self.quar_path)
+                #         sh_copy2(src_img_path, self.quar_path)
                 #     else:
                 #         # do nothing if the files have different mod dates but have same size.
                 #         pass
                 #
                 # else:
-                #     shutil.copy2(src_img_path, self.new_overlap_path)
+                #     sh_copy2(src_img_path, self.new_overlap_path)
             # else:
             #     continue
 
@@ -423,7 +424,7 @@ class NewRawOffload(RawOffload):
         for folder in src_APPLE_list:
             if folder > self.overlap_folder:
                 print("New APPLE folder %s found on iPhone - copying." % folder)
-                shutil.copytree(self.src_iPhone_dir.APPLE_folder_path(folder),
+                sh_copytree(self.src_iPhone_dir.APPLE_folder_path(folder),
                                                         self.full_path + folder)
                 new_APPLE_folder = True
 

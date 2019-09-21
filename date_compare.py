@@ -147,7 +147,7 @@ def list_all_img_dates(path):
 
 
 # TEST
-list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases")
+# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases")
 
 
 
@@ -184,12 +184,12 @@ def get_img_date(img_path):
 
         if create_time:
             create_time_obj = strptime(create_time, format)
-            print(create_time_obj)
+            # print(create_time_obj)
             return create_time_obj
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
             file_mod_time_obj = localtime(getmtime(img_path))
-            print(file_mod_time_obj)
+            # print(file_mod_time_obj)
             return file_mod_time_obj
 
 # TEST
