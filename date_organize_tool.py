@@ -1,11 +1,12 @@
-from os.path import exists as path_exists
+
 from os import listdir, mkdir, rmdir
+from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
+from time import strftime
 from tqdm import tqdm
 
-from pic_offload_tool import iPhoneDCIM, RawOffloadGroup, RawOffload, NewRawOffload
-
+from pic_offload_tool import RawOffloadGroup
 from date_compare import get_img_date
 
 class OrganizeFolderError(Exception):
@@ -77,13 +78,14 @@ class OrganizedGroup(object):
         elif yr_str > str(self.get_latest_yr()):
             # If the image is from a later year than the existing folders,
             # make new year object.
-            self.make_year(yr_str, self)
+            self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time)
         else:
-            raise OrganizeFolderError("Attempt to pull image into folder %s, "
+            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
                                     "but that is older than one month, so "
-                                    "timestamp is likely wrong." % yr_str)
+                                    "timestamp is likely wrong." %
+                                    (img_orig_path.split('/')[-1], yr_str))
 
     def __repr__(self):
         return "OrganizedGroup object with path:\n\t" + self.date_root_path
@@ -98,7 +100,9 @@ class YearDir(object):
             mkdir(self.year_path)
         # Instantiate latest mo and put in dict of months
         self.mo_objs = {}
-        self.make_yrmonth(self.get_mo_list()[-1])
+        # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
+        # is created. Discard output.
+        self.get_latest_mo()
 
     def get_yr_path(self):
         return self.year_path
@@ -112,8 +116,20 @@ class YearDir(object):
         return self.mo_objs
 
     def get_latest_mo(self):
-        latest_mo_name = self.get_mo_list()[-1]
-        return self.mo_objs.get(latest_mo_name)
+        if not self.get_mo_list():
+            # If there are no months yet, return None.
+            return None
+        elif not self.mo_objs:
+            # If there are months in the list but not in the dict, make latest
+            # month now and return it.
+            latest_mo_name = self.get_mo_list()[-1]
+            self.make_yrmonth(latest_mo_name)
+            return self.mo_objs.get(latest_mo_name)
+        else:
+            # If there are months in the directory, and the object dictionary
+            # is non-empty, then the latest month should be in there.
+            latest_mo_name = self.get_mo_list()[-1]
+            return self.mo_objs.get(latest_mo_name)
 
     def make_yrmonth(self, yrmonth):
         # chck that month doesn't already exist in list
@@ -132,17 +148,18 @@ class YearDir(object):
 
         if yrmon in self.get_mo_objs():
             # Pass image path to correct month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         elif (not self.get_latest_mo()) or (yrmon > str(self.get_latest_mo())):
             # If there are no months in year directory, or if the image is from
             # a later month than the existing folders, make new month object.
             self.make_yrmonth(yrmon)
             # Pass image path to new month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month, then something's wrong.
-            raise OrganizeFolderError("Attempt to pull image into folder %s, "
-                        "but that folder is older than one month." % (yrmon))
+            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
+                        "but that folder is older than one month."
+                        % (img_orig_path.split('/')[-1], yrmon))
 
     def __str__(self):
         return self.year_name
@@ -166,15 +183,17 @@ class MoDir(object):
         self.img_list = listdir(self.yrmonth_path)
         return self.img_list
 
-    def insert_img(self, img_orig_path):
+    def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
         img_name = img_orig_path.split('/')[-1]
         if img_name in self.get_img_list():
-            raise OrganizeFolderError("Attempt to pull image into folder %s, "
+            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
                                 "but an image of that name already exists here."
-                                                    % self.dir_name)
+                                                    % (img_name, self.dir_name))
         else:
-            sh_copy2(img_orig_path, self.yrmonth_path)
+            stamped_name = strftime('%Y-%m-%dT%H%M%S', img_time) + '_' + img_name
+            img_new_path = self.yrmonth_path + stamped_name
+            sh_copy2(img_orig_path, img_new_path)
 
     def __str__(self):
         return self.dir_name

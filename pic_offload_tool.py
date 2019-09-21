@@ -1,12 +1,11 @@
 # https://docs.python.org/3/library/time.html
-from time import localtime, strftime, strptime
 from os import listdir, mkdir, rmdir
-from os.path import exists as path_exists
 from os.path import getmtime, getsize, isfile
-from subprocess import Popen
-from tqdm import tqdm
+from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
+from time import localtime, strftime, strptime
+from tqdm import tqdm
 import exiftool
 
 
