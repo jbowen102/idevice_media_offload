@@ -24,10 +24,13 @@ class ImgTypeError(Exception):
 
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
-
 # Find iPhone in GVFS.
-# iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
-# path changes depending on which USB port phone is plugged into.
+# Create new RawOffload folder.
+# Copy in all images newer than the last raw offload.
+
+# Instantiate a RawOffloadGroup instance then call its create_new_offload()
+# method.
+
 
 class iPhoneDCIM(object):
     """Represents DCIM folder structure at gvfs iPhone mount point"""
@@ -239,8 +242,8 @@ class RawOffload(object):
 
 
 class NewRawOffload(RawOffload):
-    """Creates object representing new RawOffload instance (timestamped folder).
-    Includes extra functionality to perform offload."""
+    """Represents new RawOffload instance (timestamped folder).
+    Includes functionality to perform the offload from an iPhoneDCIM obj."""
 
     def __init__(self, offload_name, Parent):
         self.Parent = Parent
@@ -262,15 +265,6 @@ class NewRawOffload(RawOffload):
         else:
             mkdir(self.full_path)
 
-    # def create_quar_folder(self, APPLE_folder):
-    #     # Create empty dir for special cases
-    #     self.quar_path = self.full_path + "%s-QUARANTINE/" % APPLE_folder
-    #     if path_exists(self.quar_path):
-    #         raise RawOffloadError("Raw_Offload folder with today's timestamp "
-    #         "already contains QUARANTINE directory. Pics not offloaded. Terminating")
-    #     else:
-    #         mkdir(self.quar_path)
-
     def run_overlap_offload(self):
 
         # Find the last (newest) APPLE dir in the most recent offload.
@@ -280,8 +274,6 @@ class NewRawOffload(RawOffload):
         # Create a destination folder in the new Raw Offload directory with the same APPLE name.
         self.new_overlap_path = self.full_path + self.overlap_folder + '/'
         mkdir(self.new_overlap_path)
-
-        # self.create_quar_folder(self.overlap_folder)
 
         src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
         src_APPLE_pics = self.src_iPhone_dir.APPLE_contents(self.overlap_folder)
@@ -312,98 +304,12 @@ class NewRawOffload(RawOffload):
                 # ignore new one. Leave old one in place.
                 pass
 
-                # old code:
-            # img_create_time = self.get_create_time(src_img_path)
-            # if not img_create_time:
-            #     # If exiftool couldn't get any datetime metadata, put in quarantine
-            #     # for manual sorting later.
-            #     sh_copy2(src_img_path, self.quar_path)
-            # # If creation time earlier than last offload, pic should have been offloaded last time.
-            # elif img_create_time > PrevOffload.get_timestamp():
-            #     # Check for duplication. May no longer be necessary with more robust
-            #     # creation-time check.
-            #
-            #     if img_name not in prev_APPLE_pics:
-            #          sh_copy2(src_img_path, self.new_overlap_path)
-            #     else:
-            #         # If a picture of the same name is found in an overlap folder,
-            #         # ignore new one. Leave old one in place.
-            #         pass
-            #
-                # if img_name in prev_APPLE_pics:
-                #
-                #     if getsize(src_img_path) != prev_APPLE_pics[img_name]:
-                #         # Put in quarantine for later manual sorting if they are truly different.
-                #         # One possible reason for this is if an image was cropped or a video trimmed after offload.
-                #         sh_copy2(src_img_path, self.quar_path)
-                #     else:
-                #         # do nothing if the files have different mod dates but have same size.
-                #         pass
-                #
-                # else:
-                #     sh_copy2(src_img_path, self.new_overlap_path)
-            # else:
-            #     continue
-
         # If the target overlap APPLE folder ends up being empty, delete it.
         if not self.APPLE_contents(self.overlap_folder):
             rmdir(self.new_overlap_path)
-            # rmdir(self.quar_path)
             print("No new pictures contained in %s (overlap folder) since "
                                     "last offload." % self.overlap_folder)
-        # else:
-        #     self.process_quar()
 
-    # def get_create_time(self, img_path):
-    #     with exiftool.ExifTool() as et:
-    #         img_ext = img_path.upper()[-4:]
-    #         metadata = et.get_metadata(img_path)
-    #
-    #         # Different files have different names for the creation date in the metadata.
-    #         if img_ext == ".JPG" or img_ext == "JPEG":
-    #             create_time_str = "EXIF:DateTimeOriginal"
-    #             format = "%Y:%m:%d %H:%M:%S"
-    #             # ex. 2019:08:26 09:11:21
-    #             # '%Y-%m-%dT%H%M%S'
-    #         elif img_ext == ".MOV":
-    #             create_time_str = "QuickTime:CreationDate"
-    #             # non-standard format - adjust manually before passing to strftime
-    #             # ex. 2019:08:26 19:22:27-04:00
-    #             create_time_str = create_time_str[0:22] + create_time_str[23:]
-    #             # Now formatted this way: 2019:08:26 19:22:27-0400
-    #             format = "%Y:%m:%d %H:%M:%S%z"
-    #         elif img_ext == ".PNG":
-    #             create_time_str = "XMP:DateCreated"
-    #             format = "%Y:%m:%d %H:%M:%S"
-    #             # ex. 2019:08:26 03:51:19
-    #         elif img_ext == ".AAE":
-    #             create_time_str = "PLIST:AdjustmentTimestamp"
-    #             format = "%Y:%m:%d %H:%M:%SZ"
-    #             # ex. 2019:07:05 12:46:46Z
-    #         else:
-    #             raise ImgTypeError("Unexpected extension encountered at " + img_path)
-    #
-    #         create_time = metadata.get(create_time_str, None)
-    #         if create_time:
-    #             create_time_obj = strptime(create_time, format)
-    #             return create_time_obj
-    #         else:
-    #             return None
-
-    # def process_quar(self):
-    #     # Display output on screen of quarantined files.
-    #     # If no special cases were found, delete the quarantine directory.
-    #     # add more functionality here to show both old and new pics side by side to allow use to choose via command line which to choose.
-    #     if listdir(self.quar_path):
-    #         print("QUARANTINED FILES from %s (no timestamp available):"
-    #                                                 % self.overlap_folder)
-    #         quar_list = listdir(self.quar_path)
-    #         quar_list.sort()
-    #         for img in quar_list:
-    #             print("\t" + img)
-    #     else:
-    #         rmdir(self.quar_path)
-    #         print("No files quarantined.")
 
     def run_new_offload(self):
         # Look for new APPLE folders to offload.
@@ -428,3 +334,7 @@ class NewRawOffload(RawOffload):
 # TEST
 # rog = RawOffloadGroup()
 # nro = rog.create_new_offload()
+
+
+# iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
+# path changes depending on which USB port phone is plugged into.

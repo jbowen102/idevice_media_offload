@@ -15,13 +15,15 @@ class OrganizeFolderError(Exception):
     pass
 
 
-# Phase 2: Organize files by date into dated directory.
-# Create new folder if none exists
-# Prepend timestamps to img names.
-# Check for existing file before copying into date folders to avoid overwriting.
+# Phase 2: Organize files by date into dated directory structure.
+# Creates new dated folders where needed.
+# Prepends timestamps to img names.
+
+# Instantiate an OrganizedGroup instance then call its run_org() method.
 
 class OrganizedGroup(object):
-
+    """Represents date-organized directory structure. Contains YrDir objects
+    which in turn contain MoDir objects."""
     def __init__(self, bu_root_path):
         self.bu_root_path = bu_root_path
         self.date_root_path = self.bu_root_path + "Organized/"
@@ -102,6 +104,8 @@ class OrganizedGroup(object):
 
 class YearDir(object):
     def __init__(self, year_name, OrgGroup):
+        """Represents directory w/ year label that exists inside date-organized
+        directory structure. Contains MoDir objects."""
         self.year_name = year_name
         self.year_path = OrgGroup.get_root_path() + self.year_name + '/'
 
@@ -178,6 +182,8 @@ class YearDir(object):
 
 
 class MoDir(object):
+    """Represents directory w/ month label that exists inside a YrDir object
+    within the date-organized directory structure. Contains images."""
     def __init__(self, yrmonth_name, YrDir):
         self.dir_name = yrmonth_name
         self.yrmonth_path = YrDir.get_yr_path() + self.dir_name + '/'

@@ -5,19 +5,9 @@ from os.path import getmtime, isdir
 from time import localtime, strftime, strptime
 import exiftool
 
+
 class ImgTypeError(Exception):
     pass
-
-# https://www.blog.pythonlibrary.org/2010/03/28/getting-photo-metadata-exif-using-python/
-# https://stackoverflow.com/questions/4764932/in-python-how-do-i-read-the-exif-data-for-an-image#4765242
-# https://gist.github.com/erans/983821#comment-377080
-# https://stackoverflow.com/questions/48631908/python-extract-metadata-from-png#51249611
-# https://www.vice.com/en_us/article/aekn58/hack-this-extra-image-metadata-using-python
-
-# https://stackoverflow.com/questions/21355316/getting-metadata-for-mov-video#21395803
-# https://github.com/smarnach/pyexiftool
-# https://smarnach.github.io/pyexiftool/
-# https://sno.phy.queensu.ca/~phil/exiftool/
 
 
 def list_all_img_dates(path):
@@ -146,11 +136,6 @@ def list_all_img_dates(path):
             raise ImgTypeError("Invalid image type encountered: %s" % img)
 
 
-# TEST
-# from dir_names import SPECIAL_CASES
-# list_all_img_dates(SPECIAL_CASES)
-
-
 def get_img_date(img_path):
     """Function that prints best available timestamp for any single JPG, PNG,
     AAE, or MOV file located at img_path."""
@@ -193,6 +178,24 @@ def get_img_date(img_path):
             return file_mod_time_obj
 
 
+
+
+# References:
+# https://www.blog.pythonlibrary.org/2010/03/28/getting-photo-metadata-exif-using-python/
+# https://stackoverflow.com/questions/4764932/in-python-how-do-i-read-the-exif-data-for-an-image#4765242
+# https://gist.github.com/erans/983821#comment-377080
+# https://stackoverflow.com/questions/48631908/python-extract-metadata-from-png#51249611
+# https://www.vice.com/en_us/article/aekn58/hack-this-extra-image-metadata-using-python
+
+# https://stackoverflow.com/questions/21355316/getting-metadata-for-mov-video#21395803
+# https://github.com/smarnach/pyexiftool
+# https://smarnach.github.io/pyexiftool/
+# https://sno.phy.queensu.ca/~phil/exiftool/
+
+
+
+###########################
+###### Example output:
 
 # AAE
 # >>> with exiftool.ExifTool() as et:
