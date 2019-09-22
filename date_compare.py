@@ -147,8 +147,8 @@ def list_all_img_dates(path):
 
 
 # TEST
-# list_all_img_dates("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases")
-
+# from dir_names import special_case_img_dir
+# list_all_img_dates(special_case_img_dir)
 
 
 def get_img_date(img_path):
@@ -192,22 +192,19 @@ def get_img_date(img_path):
             # print(file_mod_time_obj)
             return file_mod_time_obj
 
-# TEST
-# get_img_date("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7656.AAE")
-
 
 
 # AAE
 # >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7611.AAE")
+# ...     metadata = et.get_metadata([filepath])
 # ...
 # >>> for key in metadata:
 # ...     print(str(key) + ": " + str(metadata[key]))
 # ...
-# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE/IMG_7611.AAE
+# SourceFile: [filepath]
 # ExifTool:ExifToolVersion: 11.65
 # File:FileName: IMG_7611.AAE
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-07-20T151312/147APPLE
+# File:Directory: [folder path]
 # File:FileSize: 829
 # File:FileModifyDate: 2019:07:05 10:32:50-04:00
 # File:FileAccessDate: 2019:09:08 21:45:01-04:00
@@ -228,15 +225,15 @@ def get_img_date(img_path):
 
 # PNG
 # >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8552.PNG")
+# ...     metadata = et.get_metadata("[filepath])
 # ...
 # >>> for key in metadata:
 # ...     print(str(key) + ": " + str(metadata[key]))
 # ...
-# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8552.PNG
+# SourceFile: [filepath]
 # ExifTool:ExifToolVersion: 11.65
 # File:FileName: IMG_8552.PNG
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:Directory: [folder path]
 # File:FileSize: 85705
 # File:FileModifyDate: 2019:09:02 00:06:12-04:00
 # File:FileAccessDate: 2019:09:15 09:16:32-04:00
@@ -264,16 +261,16 @@ def get_img_date(img_path):
 
 # MOV
 # >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8621.MOV")
+# ...     metadata = et.get_metadata("[filepath])
 # ...
 # >>> for key in metadata:
 # ...     print(str(key) + ": " + str(metadata[key]))
 # ...
-# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8621.MOV
+# SourceFile: [filepath]
 # ExifTool:ExifToolVersion: 11.65
 # ExifTool:Warning: [minor] The ExtractEmbedded option may find more tags in the movie data
 # File:FileName: IMG_8621.MOV
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:Directory: [folder path]
 # File:FileSize: 77769964
 # File:FileModifyDate: 2019:08:26 23:26:42-04:00
 # File:FileAccessDate: 2019:09:15 09:16:34-04:00
@@ -362,15 +359,15 @@ def get_img_date(img_path):
 
 # JPG
 # >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8563.JPG")
+# ...     metadata = et.get_metadata([filepath])
 #
 # >>> for key in metadata:
 # ...     print(str(key) + ": " + str(metadata[key]))
 # ...
-# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE/IMG_8563.JPG
+# SourceFile: [filepath]
 # ExifTool:ExifToolVersion: 11.65
 # File:FileName: IMG_8563.JPG
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/Raw_Offload/2019-09-15T084000/148APPLE
+# File:Directory: [folder path]
 # File:FileSize: 2340281
 # File:FileModifyDate: 2019:08:26 09:11:21-04:00
 # File:FileAccessDate: 2019:09:15 09:16:33-04:00

@@ -14,24 +14,9 @@ class OrganizeFolderError(Exception):
 
 # Phase 2: Organize files by date into dated directory.
 # Create new folder if none exists
+# Prepend timestamps to img names.
+# Check for existing file before copying into date folders to avoid overwriting.
 
-# prompt user to enter which photo is the break point between multiple months.
-# make initial guess, open that photo, allow user to browse through photos and
-# enter which one ends up being right based on manual check of iPhone metadata.
-# always check for existing file before copying into date folders to avoid overwriting.
-
-
-# DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/'
-# IPHONE_DCIM_PREFIX = '/run/user/1000/gvfs/'
-
-# Test directories (reference only):
-DEFAULT_BU_ROOT = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/'
-IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/'
-
-
-# Should each year and month have their own object? And only instantiate the
-# most recent ones? That will be an extra safeguard against copying into the
-# wrong (older) directory.
 
 class OrganizedGroup(object):
 
@@ -42,6 +27,7 @@ class OrganizedGroup(object):
         if not path_exists(self.date_root_path):
             raise OrganizeFolderError("Organized dir not found at %s! "
                         "Pics not organized. Terminating" % self.date_root_path)
+        # Initialize object dictionary. Instantiate most recent year object.
         self.yr_objs = {}
         self.make_year(self.get_yr_list()[-1])
 
@@ -49,6 +35,7 @@ class OrganizedGroup(object):
         return self.date_root_path
 
     def get_yr_list(self):
+        # Refresh date_root_path every time in case dir changes.
         year_list = listdir(self.date_root_path)
         year_list.sort()
         return year_list
@@ -61,12 +48,13 @@ class OrganizedGroup(object):
         return self.yr_objs.get(latest_yr_name)
 
     def make_year(self, year):
-        # chck that year doesn't already exist in list
+        # check that year doesn't already exist in list
         if year in self.get_yr_objs():
             raise OrganizeFolderError("Tried to make year object for %s, "
                                 "but already exists in Organized directory."
                                     % (self.year_name))
         else:
+            # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
     def insert_img(self, img_orig_path):
@@ -222,13 +210,5 @@ class PicOrganize(object):
                 self.OrgGroup.insert_img(full_img_path)
 
 # TEST
-ROG = RawOffloadGroup()
-PicOrganize(ROG)
-
-
-# reference
-# img_mod_time = strftime('%Y-%m-%d T %H:%M:%S', localtime(getmtime(src_img_path)))
-
-#Copy file or directory w/ contents:
-# shutil.copy2([src file], [dest dir])
-# shutil.copytree([src], [dest]])
+# ROG = RawOffloadGroup()
+# PicOrganize(ROG)

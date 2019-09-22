@@ -7,6 +7,7 @@ from shutil import copytree as sh_copytree
 from time import localtime, strftime, strptime
 from tqdm import tqdm
 import exiftool
+from dir_names import DEFAULT_BU_ROOT, IPHONE_DCIM_PREFIX
 
 
 class iPhoneLocError(Exception):
@@ -20,17 +21,6 @@ class RawOffloadError(Exception):
 
 class ImgTypeError(Exception):
     pass
-
-# DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/'
-# IPHONE_DCIM_PREFIX = '/run/user/1000/gvfs/'
-
-# Test directories:
-DEFAULT_BU_ROOT = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/'
-IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/'
-
-# Small test directories:
-# DEFAULT_BU_ROOT = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/small_BU_root_dir/'
-# IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/small_gvfs_dir/'
 
 
 # Find iPhone in GVFS.

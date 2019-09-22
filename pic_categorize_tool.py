@@ -7,6 +7,14 @@ from subprocess import Popen
 # Prepend date to each file name when copying to various folders.
 # Handle name collisions.
 
+# Will have to be able to create new training vid folders in that structure.
+# Have an option to ignore photo (not categorize and copy anywhere).
+
+# Have a way to specify multiple destinations.
+
+# Allow manual path entry (ex. new Photos & Events folder)
+
+
 # reference
 # Display image:
 # subsystem.Popen(['xdg-open', [filename in quotes])
@@ -14,10 +22,3 @@ from subprocess import Popen
 #Copy file or directory w/ contents:
 # shutil.copy2([src file], [dest dir])
 # shutil.copytree([src], [dest]])
-
-# DEFAULT_BU_ROOT = '/media/veracrypt4/Storage_Root/Tech/Back-up_Data/iPhone_Pictures/'
-# IPHONE_DCIM_PREFIX = '/run/user/1000/gvfs/'
-
-# Test directories:
-DEFAULT_BU_ROOT = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_BU_root_dir/'
-IPHONE_DCIM_PREFIX = '/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/full_gvfs_dir/'
