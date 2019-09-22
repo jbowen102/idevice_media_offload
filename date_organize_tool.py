@@ -8,18 +8,17 @@ from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
 from date_compare import get_img_date
-from dir_names import DEFAULT_BU_ROOT, buffer_root
+from dir_names import DEFAULT_BU_ROOT, BUFFER_ROOT
+
 
 class OrganizeFolderError(Exception):
     pass
+
 
 # Phase 2: Organize files by date into dated directory.
 # Create new folder if none exists
 # Prepend timestamps to img names.
 # Check for existing file before copying into date folders to avoid overwriting.
-
-
-
 
 class OrganizedGroup(object):
 
@@ -81,7 +80,7 @@ class OrganizedGroup(object):
     def run_org(self):
         ROG = RawOffloadGroup()
 
-        if listdir(buffer_root):
+        if listdir(BUFFER_ROOT):
             # If there are still images from last time in the buffer, stop.
             raise OrganizeFolderError("Categorizing Buffer is non-empty.")
 
@@ -206,7 +205,7 @@ class MoDir(object):
             # Copy into the dated directory and also into the buffer for
             # later categorization.
             sh_copy2(img_orig_path, img_new_path)
-            sh_copy2(img_orig_path, buffer_root + stamped_name)
+            sh_copy2(img_orig_path, BUFFER_ROOT + stamped_name)
 
     def __str__(self):
         return self.dir_name
@@ -216,5 +215,5 @@ class MoDir(object):
 
 
 # TEST
-ORG = OrganizedGroup(DEFAULT_BU_ROOT)
-ORG.run_org()
+# ORG = OrganizedGroup(DEFAULT_BU_ROOT)
+# ORG.run_org()

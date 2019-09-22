@@ -147,8 +147,8 @@ def list_all_img_dates(path):
 
 
 # TEST
-# from dir_names import special_case_img_dir
-# list_all_img_dates(special_case_img_dir)
+# from dir_names import SPECIAL_CASES
+# list_all_img_dates(SPECIAL_CASES)
 
 
 def get_img_date(img_path):

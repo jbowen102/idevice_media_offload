@@ -23,6 +23,8 @@ class ImgTypeError(Exception):
     pass
 
 
+# Phase 1: Copy any new pics from iPhone to raw_offload folder.
+
 # Find iPhone in GVFS.
 # iPhone DCIM dir location: /run/user/1000/gvfs/*/DCIM/
 # path changes depending on which USB port phone is plugged into.
@@ -110,13 +112,13 @@ class RawOffloadGroup(object):
 
     def confirm_BU_root(self):
         bu_root_path = input("Confirm BU folder is the following or input "
-                            "a new directory path:\n\t%s\n" % DEFAULT_BU_ROOT)
+                            "a new directory path:\n\t%s\n>" % DEFAULT_BU_ROOT)
         if not bu_root_path:
             bu_root_path = DEFAULT_BU_ROOT
             print("Proceeding with above default.\n")
         elif not path_exists(bu_root_path):
             while not path_exists(bu_root_path):
-                bu_root_path = input("Invalid path. Specify different path:\n")
+                bu_root_path = input("Invalid path. Specify different path:\n>")
             print("Proceeding with new folder %s\n" % bu_root_path)
         else:
             print("Proceeding with new folder %s\n" % bu_root_path)
@@ -235,11 +237,6 @@ class RawOffload(object):
     def __lt__(self, other):
         return self.offload_dir < other.offload_dir
 
-
-# Phase 1: Copy any new pics from iPhone to raw_offload folder.
-# How to determine if they're new? Look at modified time but also check for collisions.
-# If two files have same name but different mtime, check file size. If same, don't
-# copy. If different, display both files and timestamps, prompting user how to handle.
 
 class NewRawOffload(RawOffload):
     """Creates object representing new RawOffload instance (timestamped folder).
@@ -426,6 +423,7 @@ class NewRawOffload(RawOffload):
 
     def __repr__(self):
         return "NewRawOffload object with path:\n\t" + self.full_path
+
 
 # TEST
 # rog = RawOffloadGroup()
