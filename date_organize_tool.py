@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
 from date_compare import get_img_date
+from dir_names import DEFAULT_BU_ROOT, buffer_root
 
 class OrganizeFolderError(Exception):
     pass
@@ -16,6 +17,8 @@ class OrganizeFolderError(Exception):
 # Create new folder if none exists
 # Prepend timestamps to img names.
 # Check for existing file before copying into date folders to avoid overwriting.
+
+
 
 
 class OrganizedGroup(object):
@@ -74,6 +77,25 @@ class OrganizedGroup(object):
                                     "but that is older than one month, so "
                                     "timestamp is likely wrong." %
                                     (img_orig_path.split('/')[-1], yr_str))
+
+    def run_org(self):
+        ROG = RawOffloadGroup()
+
+        if listdir(buffer_root):
+            # If there are still images from last time in the buffer, stop.
+            raise OrganizeFolderError("Categorizing Buffer is non-empty.")
+
+        LastRawOffload = ROG.get_last_offload()
+        src_APPLE_folders = LastRawOffload.list_APPLE_folders()
+
+        for n, folder in enumerate(src_APPLE_folders):
+            print("Organizing %s -> %s (%s of %s)" %
+            (LastRawOffload.get_offload_dir(), folder,
+                                str(n+1), len(src_APPLE_folders)))
+
+            for img in tqdm(LastRawOffload.APPLE_contents(folder)):
+                full_img_path = LastRawOffload.APPLE_folder_path(folder) + img
+                self.insert_img(full_img_path)
 
     def __repr__(self):
         return "OrganizedGroup object with path:\n\t" + self.date_root_path
@@ -181,7 +203,10 @@ class MoDir(object):
         else:
             stamped_name = strftime('%Y-%m-%dT%H%M%S', img_time) + '_' + img_name
             img_new_path = self.yrmonth_path + stamped_name
+            # Copy into the dated directory and also into the buffer for
+            # later categorization.
             sh_copy2(img_orig_path, img_new_path)
+            sh_copy2(img_orig_path, buffer_root + stamped_name)
 
     def __str__(self):
         return self.dir_name
@@ -190,25 +215,6 @@ class MoDir(object):
         return "MoDir object with path:\n\t" + self.yrmonth_path
 
 
-class PicOrganize(object):
-    def __init__(self, ROG):
-        self.ROG = ROG
-        self.OrgGroup = OrganizedGroup(ROG.get_BU_root())
-        self.run_org()
-
-    def run_org(self):
-        LastRawOffload = self.ROG.get_last_offload()
-        src_APPLE_folders = LastRawOffload.list_APPLE_folders()
-
-        for n, folder in enumerate(src_APPLE_folders):
-            print("Organizing %s -> %s (%s of %s)" %
-            (LastRawOffload.get_offload_dir(), folder,
-                                str(n+1), len(src_APPLE_folders)))
-
-            for img in tqdm(LastRawOffload.APPLE_contents(folder)):
-                full_img_path = LastRawOffload.APPLE_folder_path(folder) + img
-                self.OrgGroup.insert_img(full_img_path)
-
 # TEST
-# ROG = RawOffloadGroup()
-# PicOrganize(ROG)
+ORG = OrganizedGroup(DEFAULT_BU_ROOT)
+ORG.run_org()

@@ -89,9 +89,13 @@ class iPhoneDCIM(object):
 
 class RawOffloadGroup(object):
     """Requires no input. Creates object representing Raw_Offload root struct."""
-    def __init__(self):
+    def __init__(self, bu_root_path=""):
 
-        self.bu_root_path = self.confirm_BU_root()
+        if not bu_root_path:
+            # Accept bu_root_path as instantiation input or manually confirm.
+            self.bu_root_path = self.confirm_BU_root()
+        else:
+            self.bu_root_path = bu_root_path
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
         # Double-check Raw_Offload folder is there.
         if not path_exists(self.RO_root_path):
