@@ -1,6 +1,6 @@
 import PIL.Image
 from PIL.ExifTags import TAGS
-from os import listdir
+from os import listdir, rename
 from os.path import getmtime, isdir
 from time import localtime, strftime, strptime
 import exiftool
@@ -10,10 +10,12 @@ class ImgTypeError(Exception):
     pass
 
 
-def list_all_img_dates(path):
+def list_all_img_dates(path, add_datestamp=False):
     """Function that takes either a directory or single image path and prints
-    all available timestamps for each JPG, PNG, AAE, or MOV file for comparison."""
-    # add functionality to show all date data from EXIFtool as well.
+    all available timestamps for each JPG, PNG, AAE, or MOV file for comparison.
+    Optional argument allows the creation timestamp to be prepended to image(s)
+    as they are processed (with confirmation prompt)."""
+    # add functionality to rename files if desired.
     if isdir(path):
         if path[-1] != '/':
             path += '/'
@@ -135,6 +137,30 @@ def list_all_img_dates(path):
         else:
             raise ImgTypeError("Invalid image type encountered: %s" % img)
 
+        # Add datestamp to image name if desired.
+        if add_datestamp:
+            # test rename operation to see if mtime changes
+            # need a variable name that stores images best guess-time. look at
+            # get_img_date end code.
+            img_path = path + img
+            # This requires redundant use of exiftool, but not a big deal
+            # if runtime isn't bad.
+            datestamp = strftime('%Y-%m-%dT%H%M%S', get_img_date(img_path))
+            if datestamp in img:
+                # Don't prepend redundant datestamp.
+                print("%s already has correct datestamp." % img)
+                continue
+            # elif img[:4] != 'IMG_':
+            #     # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
+            #     print("%s has non-standard naming. Skipping." % img)
+            #     continue
+            else:
+                rename_choice = input("Add %s datestamp to %s? [y/n]\n>" % (datestamp, img))
+                if rename_choice.lower() == 'y':
+                    rename(img_path, path + datestamp + '_' + img)
+                else:
+                    print("Skipped %s" % img)
+
 
 def get_img_date(img_path):
     """Function that prints best available timestamp for any single JPG, PNG,
@@ -167,6 +193,7 @@ def get_img_date(img_path):
         else:
             raise ImgTypeError("Unexpected extension encountered at " + img_path)
 
+
         if create_time:
             create_time_obj = strptime(create_time, format)
             # print(create_time_obj)
@@ -176,7 +203,6 @@ def get_img_date(img_path):
             file_mod_time_obj = localtime(getmtime(img_path))
             # print(file_mod_time_obj)
             return file_mod_time_obj
-
 
 
 
