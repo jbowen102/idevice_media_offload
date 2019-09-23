@@ -6,9 +6,9 @@ except ImportError:
 config = {
     'description': 'iPhone picture export/backup - not finished',
     'author': 'Jonathan Bowen',
-    'url': 'URL to get it at.'
-    'download_url': 'Where to download it.',
-    'author_email': 'jjbowen19@gmail.com',
+    'url': 'github.com/jbowen102/iphone_pic_backup',
+    'download_url': 'github.com/jbowen102/iphone_pic_backup.git',
+    'author_email': 'jbowen@posteo.net',
     'version': '0.1',
     'install_requires': ['nose'],
     'packages': ['NAME'],
