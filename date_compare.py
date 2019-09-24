@@ -2,13 +2,15 @@ import PIL.Image
 from PIL.ExifTags import TAGS
 from os import listdir, rename
 from os.path import getmtime, isdir
-from time import localtime, strftime, strptime
+from time import localtime, struct_time, strftime, strptime
 import exiftool
 
 
 class ImgTypeError(Exception):
     pass
 
+class TimeStampError(Exception):
+    pass
 
 def list_all_img_dates(path, add_datestamp=False):
     """Function that takes either a directory or single image path and prints
@@ -69,6 +71,8 @@ def list_all_img_dates(path, add_datestamp=False):
                             exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
                             )).expandtabs(28))
 
+
+
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(path + img)
@@ -96,6 +100,33 @@ def list_all_img_dates(path, add_datestamp=False):
                         qt_trk_create_date, qt_trk_mod_date,
                         qt_med_create_date, qt_med_mod_date,
                         qt_creation_date)).expandtabs(28))
+
+        elif img_ext == ".MP4":
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(path + img)
+                qt_create_date = metadata.get("QuickTime:CreateDate")
+                qt_mod_date = metadata.get("QuickTime:ModifyDate")
+                qt_trk_create_date = metadata.get("QuickTime:TrackCreateDate")
+                qt_trk_mod_date = metadata.get("QuickTime:TrackModifyDate")
+                qt_med_create_date = metadata.get("QuickTime:MediaCreateDate")
+                qt_med_mod_date = metadata.get("QuickTime:MediaModifyDate")
+
+
+            # "*" indicates metadata most likely to represent actual creation time.
+            print((img + ":\n"
+                        "        file_mod_time:\t\t%s\n"
+                        "        EXIFtool QuickTime:CreateDate*:\t%s\n"
+                        "        EXIFtool QuickTime:ModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
+                        "Dates 4 hrs ahead because no time zone adjustment."
+                        % (file_mod_time,
+                        qt_create_date, qt_mod_date,
+                        qt_trk_create_date, qt_trk_mod_date,
+                        qt_med_create_date, qt_med_mod_date)).expandtabs(28))
+
 
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(path + img)
@@ -182,6 +213,14 @@ def get_img_date(img_path):
             create_time = create_time[0:22] + create_time[23:]
             # Now formatted this way: 2019:08:26 19:22:27-0400
             format = "%Y:%m:%d %H:%M:%S%z"
+        elif img_ext == ".MP4":
+            create_time = metadata.get("QuickTime:CreateDate")
+            format = "%Y:%m:%d %H:%M:%S"
+            # MP4 metadata isn't in correct time zone.
+            time_obj = strptime(create_time, format)
+            shifted_time_obj = tz_adjust(time_obj)
+            create_time = strftime(time_obj, format)
+            # ex. 2019:08:26 03:51:19
         elif img_ext == ".PNG":
             create_time = metadata.get("XMP:DateCreated")
             format = "%Y:%m:%d %H:%M:%S"
@@ -204,7 +243,22 @@ def get_img_date(img_path):
             # print(file_mod_time_obj)
             return file_mod_time_obj
 
+def tz_adjust(timestamp):
+    """Function to adjust timezone of a datestamp."""
+    ts_list = list(timestamp)
+    if st_list <= 4:
+        "Function doesn't handle date adjustments resulting from hr change."
+        raise TimeStampError("Changing time stamp would require date change.")
+    else:
+        ts_list[3] -= 4         # EST
+        return struct_time(tuple(ts_list))
 
+def meta_dump(img_path):
+    """Display all available exiftool data."""
+    with exiftool.ExifTool() as et:
+        metadata = et.get_metadata(img_path)
+        for key in metadata:
+             print(str(key) + ": " + str(metadata[key]))
 
 # References:
 # https://www.blog.pythonlibrary.org/2010/03/28/getting-photo-metadata-exif-using-python/
@@ -477,6 +531,69 @@ def get_img_date(img_path):
 
 
 
+# MP4
+# ExifTool:ExifToolVersion: 11.65
+# File:FileName: IMG_9088.MP4
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases
+# File:FileSize: 612230
+# File:FileModifyDate: 2019:09:19 23:18:17-04:00
+# File:FileAccessDate: 2019:09:23 22:38:25-04:00
+# File:FileInodeChangeDate: 2019:09:23 22:38:24-04:00
+# File:FilePermissions: 600
+# File:FileType: MP4
+# File:FileTypeExtension: MP4
+# File:MIMEType: video/mp4
+# QuickTime:MajorBrand: mp42
+# QuickTime:MinorVersion: 0.0.1
+# QuickTime:CompatibleBrands: ['mp41', 'mp42', 'isom']
+# QuickTime:MovieDataSize: 608775
+# QuickTime:MovieDataOffset: 44
+# QuickTime:MovieHeaderVersion: 0
+# QuickTime:CreateDate: 2019:09:18 18:05:52
+# QuickTime:ModifyDate: 2019:09:18 18:05:53
+# QuickTime:TimeScale: 600
+# QuickTime:Duration: 6.60666666666667
+# QuickTime:PreferredRate: 1
+# QuickTime:PreferredVolume: 1
+# QuickTime:PreviewTime: 0
+# QuickTime:PreviewDuration: 0
+# QuickTime:PosterTime: 0
+# QuickTime:SelectionTime: 0
+# QuickTime:SelectionDuration: 0
+# QuickTime:CurrentTime: 0
+# QuickTime:NextTrackID: 2
+# QuickTime:TrackHeaderVersion: 0
+# QuickTime:TrackCreateDate: 2019:09:18 18:05:52
+# QuickTime:TrackModifyDate: 2019:09:18 18:05:53
+# QuickTime:TrackID: 1
+# QuickTime:TrackDuration: 6.60666666666667
+# QuickTime:TrackLayer: 0
+# QuickTime:TrackVolume: 1
+# QuickTime:MatrixStructure: 1 0 0 0 1 0 0 0 1
+# QuickTime:ImageWidth: 272
+# QuickTime:ImageHeight: 480
+# QuickTime:MediaHeaderVersion: 0
+# QuickTime:MediaCreateDate: 2019:09:18 18:05:52
+# QuickTime:MediaModifyDate: 2019:09:18 18:05:53
+# QuickTime:MediaTimeScale: 600
+# QuickTime:MediaDuration: 6.60666666666667
+# QuickTime:MediaLanguageCode: und
+# QuickTime:HandlerType: vide
+# QuickTime:HandlerDescription: Core Media Video
+# QuickTime:GraphicsMode: 0
+# QuickTime:OpColor: 0 0 0
+# QuickTime:CompressorID: avc1
+# QuickTime:SourceImageWidth: 272
+# QuickTime:SourceImageHeight: 480
+# QuickTime:XResolution: 72
+# QuickTime:YResolution: 72
+# QuickTime:BitDepth: 24
+# QuickTime:ColorRepresentation: nclx 6 1 6
+# QuickTime:VideoFrameRate: 29.6670030272452
+# Composite:ImageSize: 272 480
+# Composite:Megapixels: 0.13056
+# Composite:AvgBitrate: 737164
+# Composite:Rotation: 0
 
 
 

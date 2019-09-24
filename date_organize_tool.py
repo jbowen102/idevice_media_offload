@@ -1,4 +1,3 @@
-
 from os import listdir, mkdir, rmdir
 from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
@@ -19,7 +18,7 @@ class OrganizeFolderError(Exception):
 # Creates new dated folders where needed.
 # Prepends timestamps to img names.
 
-# Instantiate an OrganizedGroup instance then call its run_org() method.
+# Instantiate an OrganizedGroup instance with bu_root_path then call its run_org() method.
 
 class OrganizedGroup(object):
     """Represents date-organized directory structure. Contains YrDir objects
@@ -90,7 +89,7 @@ class OrganizedGroup(object):
         src_APPLE_folders = LastRawOffload.list_APPLE_folders()
 
         for n, folder in enumerate(src_APPLE_folders):
-            print("Organizing %s -> %s (%s of %s)" %
+            print("Organizing from raw offload folder %s/%s (%s of %s)" %
             (LastRawOffload.get_offload_dir(), folder,
                                 str(n+1), len(src_APPLE_folders)))
 

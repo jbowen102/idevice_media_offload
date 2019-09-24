@@ -114,8 +114,9 @@ class RawOffloadGroup(object):
         self.find_overlap_offloads()
 
     def confirm_BU_root(self):
-        bu_root_path = input("Confirm BU folder is the following or input "
-                            "a new directory path:\n\t%s\n>" % DEFAULT_BU_ROOT)
+        bu_root_path = input("Confirm BU folder is the following (press Enter) "
+                            "or input a new directory path:\n\t%s\n>"
+                                % DEFAULT_BU_ROOT)
         if not bu_root_path:
             bu_root_path = DEFAULT_BU_ROOT
             print("Proceeding with above default.\n")

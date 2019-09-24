@@ -1,7 +1,9 @@
-from os import listdir, mkdir, devnull
-from os.path import isdir
+from os import listdir, mkdir, devnull, remove
+from os.path import isdir, join
 from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
+from shutil import move as sh_move
+
 from subprocess import Popen, PIPE
 
 from dir_names import BUFFER_ROOT, CAT_DIRS
@@ -65,20 +67,25 @@ def photo_transfer(start_point=""):
         elif target_dir:
             if img in listdir(target_dir):
                 action = input("Collision detected: %s in dir:\n\t%s\n"
-                    "\tSkip or abort? [S/A] >" % (img, target_dir))
+                    "\tSkip, overwrite, or abort? [S/O/A] >" % (img, target_dir))
                 if action.lower() == "s":
                     continue
-                if action.lower() == "a":
+                elif action.lower() == "o":
+                    # Overwrite file in destination folder w/ same name.
+                    remove(join(target_dir, img))
+                    sh_move(img_path, target_dir)
+                    continue
+                elif action.lower() == "a":
                     print("Aborting")
                     break
                 else:
                     print("Aborting")
                     break
             else:
-                sh_copy2(img_path, target_dir)
+                sh_move(img_path, target_dir)
         else:
-            # If None was returned by get_target_dir, don't categorize image.
-            pass
+            # If None was returned by get_target_dir, delete image from buffer.
+            remove(img_path)
 
 
 def get_target_dir(img_path, target_input = ""):
