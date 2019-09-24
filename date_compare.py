@@ -217,9 +217,7 @@ def get_img_date(img_path):
             create_time = metadata.get("QuickTime:CreateDate")
             format = "%Y:%m:%d %H:%M:%S"
             # MP4 metadata isn't in correct time zone.
-            time_obj = strptime(create_time, format)
-            shifted_time_obj = tz_adjust(time_obj)
-            create_time = strftime(time_obj, format)
+            create_time = tz_adjust(create_time, format, 4)
             # ex. 2019:08:26 03:51:19
         elif img_ext == ".PNG":
             create_time = metadata.get("XMP:DateCreated")
@@ -243,15 +241,20 @@ def get_img_date(img_path):
             # print(file_mod_time_obj)
             return file_mod_time_obj
 
-def tz_adjust(timestamp):
+def tz_adjust(time_str, format, shift):
     """Function to adjust timezone of a datestamp."""
-    ts_list = list(timestamp)
-    if st_list <= 4:
+    time_obj = strptime(time_str, format)
+
+    ts_list = list(time_obj)
+    if ts_list[3] <= shift:
         "Function doesn't handle date adjustments resulting from hr change."
         raise TimeStampError("Changing time stamp would require date change.")
     else:
-        ts_list[3] -= 4         # EST
-        return struct_time(tuple(ts_list))
+        ts_list[3] -= shift         # EST
+        time_obj_adjusted = struct_time(tuple(ts_list))
+        time_str_adjusted = strftime(format, time_obj_adjusted)
+        return time_str_adjusted
+
 
 def meta_dump(img_path):
     """Display all available exiftool data."""
