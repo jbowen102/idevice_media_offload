@@ -181,16 +181,17 @@ def list_all_img_dates(path, add_datestamp=False):
                 # Don't prepend redundant datestamp.
                 print("%s already has correct datestamp." % img)
                 continue
-            # elif img[:4] != 'IMG_':
-            #     # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
-            #     print("%s has non-standard naming. Skipping." % img)
-            #     continue
-            else:
-                rename_choice = input("Add %s datestamp to %s? [y/n]\n>" % (datestamp, img))
+            elif img[:4] != 'IMG_':
+                # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
+                # print("%s has non-standard naming. Skipping." % img)
+                rename_choice = input("%s has non-standard naming. "
+                        "Add %s datestamp anyway? [y/n]\n>" % (img, datestamp))
                 if rename_choice.lower() == 'y':
                     rename(img_path, path + datestamp + '_' + img)
                 else:
                     print("Skipped %s" % img)
+            else:
+                rename(img_path, path + datestamp + '_' + img)
 
 
 def get_img_date(img_path):

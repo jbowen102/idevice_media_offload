@@ -1,12 +1,11 @@
 # https://docs.python.org/3/library/time.html
 from os import listdir, mkdir, rmdir
-from os.path import getmtime, getsize, isfile
+from os.path import getsize, isfile
 from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
-from time import localtime, strftime, strptime
+from time import strftime, strptime
 from tqdm import tqdm
-import exiftool
 from dir_names import DEFAULT_BU_ROOT, IPHONE_DCIM_PREFIX
 
 
@@ -47,7 +46,8 @@ class iPhoneDCIM(object):
                 count += 1
 
         if count == 0:
-            raise iPhoneLocError("Error: Can't find iPhone in " + IPHONE_DCIM_PREFIX)
+            enter = input("Error: Can't find iPhone in %s\nPress Enter to try again." % IPHONE_DCIM_PREFIX)
+            self.find_root()
         elif count > 1:
             raise iPhoneLocError("Error: Multiple 'gphoto' handles in " + IPHONE_DCIM_PREFIX)
         else:

@@ -6,7 +6,7 @@ from time import strftime
 from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
-from date_compare import get_img_date
+from date_compare import get_img_date, list_all_img_dates
 from dir_names import DEFAULT_BU_ROOT, BUFFER_ROOT
 
 
@@ -169,9 +169,10 @@ class YearDir(object):
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month, then something's wrong.
-            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
+            print("Attempt to pull image %s into folder %s, "
                         "but that folder is older than one month."
                         % (img_orig_path.split('/')[-1], yrmon))
+            list_all_img_dates(img_orig_path)
 
     def __str__(self):
         return self.year_name
@@ -201,7 +202,7 @@ class MoDir(object):
         # make sure image not already here
         img_name = img_orig_path.split('/')[-1]
         if img_name in self.get_img_list():
-            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
+            print("Attempt to pull image %s into folder %s, "
                                 "but an image of that name already exists here."
                                                     % (img_name, self.dir_name))
         else:

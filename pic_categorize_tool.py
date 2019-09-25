@@ -94,6 +94,12 @@ def get_target_dir(img_path, target_input = ""):
     Returns target path."""
     image_name = img_path.split('/')[-1]
 
+    if image_name[-4:] == ".AAE":
+        # Don't prompt for AAE files. Just delete.
+        # They will still exist in raw and organized folders, but it don't serve
+        # any value to copy them elsewhere.
+        return None
+
     while not target_input:
         # Continue prompting until non-empty string input.
         target_input = input("Enter target location for %s (or 'n' for no "
