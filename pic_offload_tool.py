@@ -321,8 +321,10 @@ class NewRawOffload(RawOffload):
         for folder in src_APPLE_list:
             if folder > self.overlap_folder:
                 print("New APPLE folder %s found on iPhone - copying." % folder)
-                sh_copytree(self.src_iPhone_dir.APPLE_folder_path(folder),
-                                                        self.full_path + folder)
+                imgs = listdir(self.src_iPhone_dir.APPLE_folder_path(folder))
+                imgs.sort()
+                for img in tqdm(imgs):
+                    sh_copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img, self.full_path + folder)
                 new_APPLE_folder = True
 
         if not new_APPLE_folder:

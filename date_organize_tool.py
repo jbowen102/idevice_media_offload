@@ -206,7 +206,7 @@ class MoDir(object):
                                 "but an image of that name already exists here."
                                                     % (img_name, self.dir_name))
         else:
-            stamped_name = strftime('%Y-%m-%dT%H%M%S', img_time) + '_' + img_name
+            stamped_name = strftime('%Y-%m-%d', img_time) + '_' + img_name
             img_new_path = self.yrmonth_path + stamped_name
             # Copy into the dated directory and also into the buffer for
             # later categorization.

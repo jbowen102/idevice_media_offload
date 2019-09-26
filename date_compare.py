@@ -176,8 +176,14 @@ def list_all_img_dates(path, add_datestamp=False):
             img_path = path + img
             # This requires redundant use of exiftool, but not a big deal
             # if runtime isn't bad.
-            datestamp = strftime('%Y-%m-%dT%H%M%S', get_img_date(img_path))
-            if datestamp in img:
+            datestamp = strftime('%Y-%m-%d', get_img_date(img_path))
+            datestamp_long = strftime('%Y-%m-%dT%H%M%S', get_img_date(img_path))
+
+            if datestamp_long in img:
+                # rename previously-generated longer-stamped names
+                img_shortened = img.replace(datestamp_long, datestamp)
+                rename(img_path, path + img_shortened)
+            elif datestamp in img:
                 # Don't prepend redundant datestamp.
                 print("%s already has correct datestamp." % img)
                 continue

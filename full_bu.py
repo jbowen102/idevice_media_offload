@@ -59,8 +59,11 @@ while True:
         break
 
     elif prog.lower() == 'h':
-        print('No help available yet.')
-        pass
+        print("\tBasic workflow:\n"
+            "\t\tRun OFFLOAD and ORGANIZE."
+            "\t\tLook at buffer, move all st vids or other big blocks of pics."
+            "\t\tRun CAT tool on rest of pics."
+            "\t\tProcess leftover uncategorized pics.")
 
     else:
         print("Invalid response. Try again.")
