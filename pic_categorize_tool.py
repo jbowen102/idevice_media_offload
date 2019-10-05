@@ -130,7 +130,7 @@ def st_target_dir(img_path):
     """Function to find correct directory (or make new) within dated heirarchy
     based on image mod date. Return resulting path."""
     img_name = img_path.split('/')[-1]
-    img_date = img_name.split('T')[0]
+    img_date = img_name.split('_')[0]
 
     st_root = CAT_DIRS['st']
 

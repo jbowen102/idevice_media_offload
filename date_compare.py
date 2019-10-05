@@ -12,12 +12,12 @@ class ImgTypeError(Exception):
 class TimeStampError(Exception):
     pass
 
-def list_all_img_dates(path, add_datestamp=False):
+def list_all_img_dates(path, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
     all available timestamps for each JPG, GIF, PNG, AAE, or MOV file for comparison.
     Optional argument allows the creation timestamp to be prepended to image(s)
-    as they are processed (with confirmation prompt)."""
-    # add functionality to rename files if desired.
+    as they are processed."""
+
     if isdir(path):
         if path[-1] != '/':
             path += '/'
@@ -132,7 +132,7 @@ def list_all_img_dates(path, add_datestamp=False):
                         "        EXIFtool QuickTime:TrackModifyDate:\t%s\n"
                         "        EXIFtool QuickTime:MediaCreateDate:\t%s\n"
                         "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
-                        "Dates 4 hrs ahead because no time zone adjustment."
+                        "\tDates 4 hrs ahead because no time zone adjustment.\n"
                         % (file_mod_time,
                         qt_create_date, qt_mod_date,
                         qt_trk_create_date, qt_trk_mod_date,
@@ -177,45 +177,72 @@ def list_all_img_dates(path, add_datestamp=False):
                         % (file_mod_time, adjustmentTimestamp, adj_time)).expandtabs(28))
 
         else:
-            raise ImgTypeError("Invalid image type encountered: %s" % img)
+            print("%s\n"
+            "        Cannot get EXIF data for this file type. Skipping\n" % img)
+            # raise ImgTypeError("Invalid image type encountered: %s" % img)
 
         # Add datestamp to image name if desired.
-        if add_datestamp:
-            # test rename operation to see if mtime changes
-            # need a variable name that stores images best guess-time. look at
-            # get_img_date end code.
-            img_path = path + img
+        if rename_with_datestamp:
             # This requires redundant use of exiftool, but not a big deal
             # if runtime isn't bad.
-            datestamp = strftime('%Y-%m-%d', get_img_date(img_path))
-            datestamp_long = strftime('%Y-%m-%dT%H%M%S', get_img_date(img_path))
+            add_datestamp(path + img)
 
-            if datestamp_long in img:
-                # rename previously-generated longer-stamped names
-                img_shortened = img.replace(datestamp_long, datestamp)
-                rename(img_path, path + img_shortened)
-            elif datestamp in img:
-                # Don't prepend redundant datestamp.
-                print("%s already has correct datestamp." % img)
-                continue
-            elif img[:4] != 'IMG_':
-                # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
-                # print("%s has non-standard naming. Skipping." % img)
-                rename_choice = input("%s has non-standard naming. "
-                        "Add %s datestamp anyway? [y/n]\n>" % (img, datestamp))
-                if rename_choice.lower() == 'y':
-                    rename(img_path, path + datestamp + '_' + img)
-                else:
-                    print("Skipped %s" % img)
-            else:
-                rename(img_path, path + datestamp + '_' + img)
+def datestamp_all(dir_path):
+    """Function to prepend datestamp to all images in a directory without
+    terminal output."""
+    if dir_path[-1] != '/':
+        dir_path += '/'
+    image_list = listdir(dir_path)
+    image_list.sort()
 
+    for img in image_list:
+        add_datestamp(dir_path + img)
+
+def add_datestamp(img_path):
+    """Retrieve and prepend creation timestamp to image filename."""
+    # test rename operation to see if mtime changes
+    # need a variable name that stores images best guess-time. look at
+    # get_img_date end code.
+
+    # Separate out image name from directory path (includes trailing slash)
+    img_name = img_path.split('/')[-1]
+    dir_path = img_path.split(img_name)[0]
+
+    datestamp_obj = get_img_date(img_path)
+
+    # if get_img_date returned None (because file wasn't a recognized img format,
+    # don't proceed further.)
+    if datestamp_obj:
+        datestamp = strftime('%Y-%m-%d', datestamp_obj)
+        datestamp_long = strftime('%Y-%m-%dT%H%M%S', datestamp_obj)
+    else:
+        return
+
+    if datestamp_long in img_name:
+        # rename previously-generated longer-stamped names
+        img_shortened = img_name.replace(datestamp_long, datestamp)
+        rename(img_path, dir_path + img_shortened)
+    elif datestamp in img_name:
+        # Don't prepend redundant datestamp.
+        print("%s already has correct datestamp.\n" % img_name)
+    elif img_name[:4] != 'IMG_':
+        # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
+        # print("%s has non-standard naming. Skipping." % img_name)
+        rename_choice = input("%s has non-standard naming. "
+                "Add %s datestamp anyway? [y/n]\n>" % (img_name, datestamp))
+        if rename_choice.lower() == 'y':
+            rename(img_path, dir_path + datestamp + '_' + img_name)
+        else:
+            print("Skipped %s\n" % img_name)
+    else:
+        rename(img_path, dir_path + datestamp + '_' + img_name)
 
 def get_img_date(img_path):
     """Function that prints best available timestamp for any single JPG, GIF, PNG,
     AAE, or MOV file located at img_path."""
     # modify to look for each metadata type and fall back on mtime if needed.
     with exiftool.ExifTool() as et:
+        img_name = img_path.split('/')[-1]
         img_ext = img_path.upper()[-4:]
         metadata = et.get_metadata(img_path)
 
@@ -252,9 +279,15 @@ def get_img_date(img_path):
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             format = "%Y:%m:%d %H:%M:%SZ"
             # ex. 2019:07:05 12:46:46Z
+        elif isdir(img_name):
+            print("%s is a directory. Skipping"
+                                        % img_name)
+            return None
         else:
-            raise ImgTypeError("Unexpected extension encountered at " + img_path)
-
+            print("%s - Cannot get EXIF data for this file type. Skipping"
+                                        % img_name)
+            return None
+            # raise ImgTypeError("Unexpected extension encountered at " + img_path)
 
         if create_time:
             create_time_obj = strptime(create_time, format)
