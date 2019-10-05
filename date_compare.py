@@ -14,7 +14,7 @@ class TimeStampError(Exception):
 
 def list_all_img_dates(path, add_datestamp=False):
     """Function that takes either a directory or single image path and prints
-    all available timestamps for each JPG, PNG, AAE, or MOV file for comparison.
+    all available timestamps for each JPG, GIF, PNG, AAE, or MOV file for comparison.
     Optional argument allows the creation timestamp to be prepended to image(s)
     as they are processed (with confirmation prompt)."""
     # add functionality to rename files if desired.
@@ -72,6 +72,17 @@ def list_all_img_dates(path, add_datestamp=False):
                             )).expandtabs(28))
 
 
+        elif img_ext == ".GIF":
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(path + img)
+                fmod_date = metadata.get("File:FileModifyDate")
+
+
+            # "*" indicates metadata most likely to represent actual creation time.
+            print((img + ":\n"
+                        "        file_mod_time:\t\t%s\n"
+                        "        EXIFtool File:FileModifyDate*:\t%s\n"
+                        % (file_mod_time, fmod_date)).expandtabs(28))
 
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
@@ -127,7 +138,6 @@ def list_all_img_dates(path, add_datestamp=False):
                         qt_trk_create_date, qt_trk_mod_date,
                         qt_med_create_date, qt_med_mod_date)).expandtabs(28))
 
-
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(path + img)
 
@@ -165,6 +175,7 @@ def list_all_img_dates(path, add_datestamp=False):
                         "        AAEparse adjustmentTimestamp:\t%s\n"
                         "        EXIFtool PLIST:AdjustmentTimestamp*:\t%s\n"
                         % (file_mod_time, adjustmentTimestamp, adj_time)).expandtabs(28))
+
         else:
             raise ImgTypeError("Invalid image type encountered: %s" % img)
 
@@ -201,7 +212,7 @@ def list_all_img_dates(path, add_datestamp=False):
 
 
 def get_img_date(img_path):
-    """Function that prints best available timestamp for any single JPG, PNG,
+    """Function that prints best available timestamp for any single JPG, GIF, PNG,
     AAE, or MOV file located at img_path."""
     # modify to look for each metadata type and fall back on mtime if needed.
     with exiftool.ExifTool() as et:
@@ -213,6 +224,17 @@ def get_img_date(img_path):
             create_time = metadata.get("EXIF:DateTimeOriginal")
             format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 09:11:21
+        elif img_ext == ".PNG":
+            create_time = metadata.get("XMP:DateCreated")
+            format = "%Y:%m:%d %H:%M:%S"
+            # ex. 2019:08:26 03:51:19
+        elif img_ext == ".GIF":
+            create_time = metadata.get("File:FileModifyDate")
+            # non-standard format - adjust manually before passing to strftime
+            # ex. 2019:10:05 10:13:04-04:00
+            create_time = create_time[0:22] + create_time[23:]
+            # Now formatted this way: 2019:08:26 19:22:27-0400
+            format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".MOV":
             create_time = metadata.get("QuickTime:CreationDate")
             # non-standard format - adjust manually before passing to strftime
@@ -225,10 +247,6 @@ def get_img_date(img_path):
             format = "%Y:%m:%d %H:%M:%S"
             # MP4 metadata isn't in correct time zone.
             create_time = tz_adjust(create_time, format, 4)
-            # ex. 2019:08:26 03:51:19
-        elif img_ext == ".PNG":
-            create_time = metadata.get("XMP:DateCreated")
-            format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 03:51:19
         elif img_ext == ".AAE":
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
@@ -605,6 +623,39 @@ def meta_dump(img_path):
 # Composite:AvgBitrate: 737164
 # Composite:Rotation: 0
 
+
+# GIF
+# >>> meta_dump("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test/IMG_9402.GIF")
+# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test/IMG_9402.GIF
+# ExifTool:ExifToolVersion: 11.65
+# File:FileName: IMG_9402.GIF
+# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test
+# File:FileSize: 276345
+# File:FileModifyDate: 2019:10:05 10:13:04-04:00
+# File:FileAccessDate: 2019:10:05 10:13:31-04:00
+# File:FileInodeChangeDate: 2019:10:05 10:13:27-04:00
+# File:FilePermissions: 644
+# File:FileType: GIF
+# File:FileTypeExtension: GIF
+# File:MIMEType: image/gif
+# GIF:GIFVersion: 89a
+# GIF:ImageWidth: 200
+# GIF:ImageHeight: 115
+# GIF:HasColorMap: 1
+# GIF:ColorResolutionDepth: 8
+# GIF:BitsPerPixel: 8
+# GIF:BackgroundColor: 0
+# GIF:AnimationIterations: 0
+# GIF:FrameCount: 20
+# GIF:Duration: 1.4
+# XMP:XMPToolkit: Adobe XMP Core 5.0-c061 64.140949, 2010/12/07-10:57:01
+# XMP:CreatorTool: Adobe Photoshop CS5.1 Windows
+# XMP:InstanceID: xmp.iid:8E3C9BB665E711E5AF58E864FAAB9660
+# XMP:DocumentID: xmp.did:8E3C9BB765E711E5AF58E864FAAB9660
+# XMP:DerivedFromInstanceID: xmp.iid:8E3C9BB465E711E5AF58E864FAAB9660
+# XMP:DerivedFromDocumentID: xmp.did:8E3C9BB565E711E5AF58E864FAAB9660
+# Composite:ImageSize: 200 115
+# Composite:Megapixels: 0.023
 
 
 
