@@ -87,6 +87,9 @@ def photo_transfer(start_point=""):
             # If None was returned by get_target_dir, delete image from buffer.
             remove(img_path)
 
+    print("\nCheck buffer folder for any uncategorized pictures and "
+                "categorize them manually.")
+
 
 def get_target_dir(img_path, target_input = ""):
     """Function to find and return the directory an image should be copied into

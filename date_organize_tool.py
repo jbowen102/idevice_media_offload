@@ -97,6 +97,9 @@ class OrganizedGroup(object):
                 full_img_path = LastRawOffload.APPLE_folder_path(folder) + img
                 self.insert_img(full_img_path)
 
+        input("\nCategorization buffer populated. Do any mass copies now before "
+            "proceeding. Press Enter when ready to finish Org program.")
+
     def __repr__(self):
         return "OrganizedGroup object with path:\n\t" + self.date_root_path
 
