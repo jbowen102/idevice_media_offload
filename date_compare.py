@@ -16,7 +16,8 @@ def list_all_img_dates(path, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
     all available timestamps for each JPG, GIF, PNG, AAE, or MOV file for comparison.
     Optional argument allows the creation timestamp to be prepended to image(s)
-    as they are processed."""
+    as they are processed.
+    datestamp_all() function below now preferred."""
 
     if isdir(path):
         if path[-1] != '/':
@@ -187,19 +188,26 @@ def list_all_img_dates(path, rename_with_datestamp=False):
             # if runtime isn't bad.
             add_datestamp(path + img)
 
-def datestamp_all(dir_path):
+
+def datestamp_all(dir_path, longstamp=False):
     """Function to prepend datestamp to all images in a directory without
-    terminal output."""
+    terminal output.
+    Uses add_datestamp() function below for each file processed.
+    Second parameter determines if date only or both date/time will be added."""
+
     if dir_path[-1] != '/':
         dir_path += '/'
     image_list = listdir(dir_path)
     image_list.sort()
 
     for img in image_list:
-        add_datestamp(dir_path + img)
+        add_datestamp(dir_path + img, longstamp)
 
-def add_datestamp(img_path):
-    """Retrieve and prepend creation timestamp to image filename."""
+
+def add_datestamp(img_path, long_stamp=False):
+    """Retrieve and prepend creation timestamp to image filename.
+    Uses get_img_date() function below to retrieve date/time from EXIF data.
+    Second parameter determines if date only or both date/time will be added."""
     # test rename operation to see if mtime changes
     # need a variable name that stores images best guess-time. look at
     # get_img_date end code.
@@ -213,18 +221,28 @@ def add_datestamp(img_path):
     # if get_img_date returned None (because file wasn't a recognized img format,
     # don't proceed further.)
     if datestamp_obj:
-        datestamp = strftime('%Y-%m-%d', datestamp_obj)
+        datestamp_short = strftime('%Y-%m-%d', datestamp_obj)
         datestamp_long = strftime('%Y-%m-%dT%H%M%S', datestamp_obj)
     else:
         return
 
-    if datestamp_long in img_name:
-        # rename previously-generated longer-stamped names
-        img_shortened = img_name.replace(datestamp_long, datestamp)
-        rename(img_path, dir_path + img_shortened)
-    elif datestamp in img_name:
+    if long_stamp:
+        datestamp = datestamp_long
+    else:
+        datestamp = datestamp_short
+
+    if datestamp in img_name:
         # Don't prepend redundant datestamp.
         print("%s already has correct datestamp.\n" % img_name)
+    elif not long_stamp and datestamp_long in img_name:
+        # rename longer-stamped names when short stamp desired.
+        img_shortened = img_name.replace(datestamp_long, datestamp_short)
+        rename(img_path, dir_path + img_shortened)
+    elif long_stamp and datestamp_short in img_name:
+        # rename shorter-stamped names when long stamp desired.
+        # note that datestamp_short appears in imgs w/ datestamp_long.
+        img_lenghtened = img_name.replace(datestamp_short, datestamp_long)
+        rename(img_path, dir_path + img_lenghtened)
     elif img_name[:4] != 'IMG_':
         # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
         # print("%s has non-standard naming. Skipping." % img_name)
@@ -237,10 +255,12 @@ def add_datestamp(img_path):
     else:
         rename(img_path, dir_path + datestamp + '_' + img_name)
 
+
 def get_img_date(img_path):
-    """Function that prints best available timestamp for any single JPG, GIF, PNG,
-    AAE, or MOV file located at img_path."""
+    """Function that returns best available timestamp for any single JPG, GIF, PNG,
+    AAE, or MOV file located at img_path. Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
+
     with exiftool.ExifTool() as et:
         img_name = img_path.split('/')[-1]
         img_ext = img_path.upper()[-4:]
@@ -298,6 +318,7 @@ def get_img_date(img_path):
             file_mod_time_obj = localtime(getmtime(img_path))
             # print(file_mod_time_obj)
             return file_mod_time_obj
+
 
 def tz_adjust(time_str, format, shift):
     """Function to adjust timezone of a datestamp."""
