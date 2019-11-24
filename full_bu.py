@@ -10,6 +10,8 @@ def run_offload():
     # method.
     rog = offload_tool.RawOffloadGroup()
     rog.create_new_offload()
+    input("\nDuplicate new Raw_Offload data to NAS. "
+                "Press Enter when done.")
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
 
 def run_org():
@@ -17,12 +19,19 @@ def run_org():
     # Instantiate an OrganizedGroup instance then call its run_org() method.
     orgg = org_tool.OrganizedGroup(DEFAULT_BU_ROOT)
     orgg.run_org()
+    input("\nDuplicate new Organized data to NAS. "
+                "Press Enter when done.")
     print('\t', '*' * 10, 'ORGANIZE program complete', '*' * 10, '\n')
 
 def run_cat():
     print('\n\t', '*' * 10, 'CATEGORIZE program', '*' * 10)
+    # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.
+    # Then automatically categorize all.
+    cat_tool.auto_cat()
     # Run photo_transfer()
     cat_tool.photo_transfer()
+    input("\nDuplicate new st data to NAS. "
+                "Press Enter when done.")
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
 def run_all():
@@ -63,7 +72,8 @@ while True:
             "\t\tRun OFFLOAD and ORGANIZE."
             "\t\tLook at buffer, move all st vids or other big blocks of pics."
             "\t\tRun CAT tool on rest of pics."
-            "\t\tProcess leftover uncategorized pics.")
+            "\t\tProcess leftover uncategorized pics."
+            "\t\tCopy data to NAS.")
 
     else:
         print("Invalid response. Try again.")

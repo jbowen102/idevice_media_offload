@@ -261,9 +261,15 @@ def get_img_date(img_path):
     AAE, or MOV file located at img_path. Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
 
+    img_name = img_path.split('/')[-1]
+    img_ext = img_path.upper()[-4:]
+
+    if isdir(img_path):
+        print("%s is a directory. Skipping"
+                                    % img_name)
+        return None
+
     with exiftool.ExifTool() as et:
-        img_name = img_path.split('/')[-1]
-        img_ext = img_path.upper()[-4:]
         metadata = et.get_metadata(img_path)
 
         # Different files have different names for the creation date in the metadata.
@@ -299,10 +305,6 @@ def get_img_date(img_path):
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             format = "%Y:%m:%d %H:%M:%SZ"
             # ex. 2019:07:05 12:46:46Z
-        elif isdir(img_name):
-            print("%s is a directory. Skipping"
-                                        % img_name)
-            return None
         else:
             print("%s - Cannot get EXIF data for this file type. Skipping"
                                         % img_name)

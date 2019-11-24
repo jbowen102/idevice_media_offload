@@ -124,7 +124,9 @@ class RawOffloadGroup(object):
             while not path_exists(bu_root_path):
                 bu_root_path = input("Invalid path. Specify different path:\n>")
             print("Proceeding with new folder %s\n" % bu_root_path)
-        else:
+        elif bu_root_path:
+            if bu_root_path[-1] != '/':
+                bu_root_path += '/'
             print("Proceeding with new folder %s\n" % bu_root_path)
 
         return bu_root_path

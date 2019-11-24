@@ -1,12 +1,13 @@
-from os import listdir, mkdir, devnull, remove
+from os import listdir, mkdir, rmdir, devnull, remove
 from os.path import isdir, join
 from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
 from shutil import move as sh_move
+from tqdm import tqdm
 
 from subprocess import Popen, PIPE
 
-from dir_names import BUFFER_ROOT, CAT_DIRS
+from dir_names import BUFFER_ROOT, CAT_DIRS, ST_BUFFER
 
 
 class CategorizeError(Exception):
@@ -18,21 +19,57 @@ class CategorizeError(Exception):
 # Have an option to ignore photo (not categorize and copy anywhere).
 # Allow manual path entry
 
-# Run photo_transfer()
+
+def auto_cat():
+    """Function to automatically categorize st media that user puts in
+    st_buffer.
+    Later may have other auto categorizing groups, but for now just st."""
+
+    # Initialize st buffer directory to automatically categorize from.
+    if not path_exists(ST_BUFFER):
+        mkdir(ST_BUFFER)
+
+    # Prompt to move stuff in bulk before looping through img display.
+    input("\nCategorization buffer populated. Do any mass copies now (incl. "
+            "into st_buffer) before proceeding."
+            "\nPress Enter when ready to continue Cat program.")
+
+    st_buffer_imgs = listdir(ST_BUFFER)
+    if st_buffer_imgs:
+        st_buffer_imgs.sort()
+
+        # Loop through st_buffer categorize.
+        print("Categorizing st_buffer media now. Progress:")
+        for img in tqdm(st_buffer_imgs):
+            img_path = ST_BUFFER + img
+            if isdir(img_path):
+                # Ignore. Shouldn't happen, but handling just in case.
+                continue
+
+            target_dir = get_target_dir(img_path, "st")
+            if target_dir:
+                move_to_target(img_path, target_dir)
+            else:
+                # If None was returned by get_target_dir, delete image from buffer.
+                # This happens for .AAE files.
+                remove(img_path)
+
+        print("Successfully categorized media from st_buffer.")
+    else:
+        print("Nothing in st_buffer.")
+
 
 def photo_transfer(start_point=""):
     """Master function to displays images in buffer and prompt user
     where it should be copied. Execute copy.
     Start_point can be specified (as img name) to skip processing earlier imgs."""
-    # Print dict of directory mappings
+
     print("Categorizing images from buffer:\n\t%s" % BUFFER_ROOT)
+    # Print dict of directory mappings
     print("Target directories available (Append '&' to first choice if multiple "
                                                     "destinations needed):")
     for key in CAT_DIRS:
         print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
-
-    # Create /dev/null object to dump stdout into.
-    FNULL = open(devnull, 'w')
 
     # Initialize manual-sort directory
     if not path_exists(CAT_DIRS['u']):
@@ -44,6 +81,9 @@ def photo_transfer(start_point=""):
         # If a start point is specified, truncate earlier images.
         start_index = buffered_imgs.index(start_point)
         buffered_imgs = buffered_imgs[start_index:]
+
+    # Create /dev/null object to dump stdout into.
+    FNULL = open(devnull, 'w')
 
     for img in buffered_imgs:
         img_path = BUFFER_ROOT + img
@@ -64,34 +104,25 @@ def photo_transfer(start_point=""):
             sh_copy2(img_path, target_dir[1:])
             photo_transfer(img)
             break
+
         elif target_dir:
-            if img in listdir(target_dir):
-                action = input("Collision detected: %s in dir:\n\t%s\n"
-                    "\tSkip, overwrite, or abort? [S/O/A] >" % (img, target_dir))
-                if action.lower() == "s":
-                    continue
-                elif action.lower() == "o":
-                    # Overwrite file in destination folder w/ same name.
-                    remove(join(target_dir, img))
-                    sh_move(img_path, target_dir)
-                    continue
-                elif action.lower() == "a":
-                    print("Aborting")
-                    break
-                else:
-                    print("Aborting")
-                    break
-            else:
-                sh_move(img_path, target_dir)
+            # Execute the move from buffer to appropriate dir. End loop if user
+            # returns an abort command due to collision prompt.
+            move_to_target(img_path, target_dir)
+
         else:
             # If None was returned by get_target_dir, delete image from buffer.
+            # This happens with .AAE files.
             remove(img_path)
 
-    print("\nCheck buffer folder for any uncategorized pictures and "
-                "categorize them manually.")
+    while listdir(CAT_DIRS['u']):
+        input("\nCheck buffer folder for any uncategorized pictures and "
+                    "categorize them manually. Press Enter when finished.")
+    # Once manual sort folder is empty, remove it. os.rmdir() will error if non-empty.
+    rmdir(CAT_DIRS['u'])
 
 
-def get_target_dir(img_path, target_input = ""):
+def get_target_dir(img_path, target_input=""):
     """Function to find and return the directory an image should be copied into
     based on translated user input
     Returns target path."""
@@ -99,8 +130,10 @@ def get_target_dir(img_path, target_input = ""):
 
     if image_name[-4:] == ".AAE":
         # Don't prompt for AAE files. Just delete.
-        # They will still exist in raw and organized folders, but it don't serve
+        # They will still exist in raw and organized folders, but it doesn't serve
         # any value to copy them elsewhere.
+        # They can also have dates that don't match the corresponding img/vid.
+        # This can cause confusion.
         return None
 
     while not target_input:
@@ -143,9 +176,44 @@ def st_target_dir(img_path):
     return st_root + img_date
 
 
+def move_to_target(img_path, target_dir):
+    """Function to move img to target directory with collision detection."""
+
+    img = img_path.split('/')[-1]
+
+    # Prompt user for decision if collision detected.
+    target_dir_imgs = listdir(target_dir)
+    if img in target_dir_imgs:
+        action = None
+
+        while action != "s" and action != "o" and action != "a":
+
+            action = input("Collision detected: %s in dir:\n\t%s\n"
+                "\tSkip, overwrite, or keep both? [S/O/K] >" % (img, target_dir))
+
+            if action.lower() == "s":
+                return
+            elif action.lower() == "o":
+                # Overwrite file in destination folder w/ same name.
+                remove(join(target_dir, img))
+                sh_move(img_path, target_dir)
+                return
+            elif action.lower() == "k":
+                # repeatedly check for existence of duplicates until a free name appears.
+                # assume there will never be more than 9. Prefer shorter file name
+                # to spare leading zeros.
+                n = 1
+                while img + '_' + str(n) in target_dir_imgs:
+                    n += 1
+                sh_move(img_path, target_dir + img + '_' + str(n))
+
+    else:
+        sh_move(img_path, target_dir)
+
+
+
 
 # TEST
-# photo_transfer()
 
 
 # reference
