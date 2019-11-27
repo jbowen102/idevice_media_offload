@@ -1,5 +1,5 @@
-import PIL.Image
-from PIL.ExifTags import TAGS
+# import PIL.Image
+# from PIL.ExifTags import TAGS
 from os import listdir, rename
 from os.path import getmtime, isdir
 from time import localtime, struct_time, strftime, strptime
@@ -343,6 +343,28 @@ def meta_dump(img_path):
         metadata = et.get_metadata(img_path)
         for key in metadata:
              print(str(key) + ": " + str(metadata[key]))
+
+
+# https://stackoverflow.com/questions/6275695/python-replace-backslashes-to-slashes#6275710
+
+def wpfix(path_in, modify_prefix=True):
+    """Function that accepts a Windows path name with backslashes
+    and replaces them with forward slashes. Also replaces prefix like C:/ with
+    /mnt/c/ for use w/ Windows Subsystem for Linux. Second parameter switches
+    this behavior.
+    MUST PASS PATH ARGUMENT WITH AN R PREPENDED SO IT'S INTERPRETED AS RAW.
+    Example usage:
+    datestamp_all(wpfix(r"C:\\my\dir\path"))
+    """
+
+    path_out = path_in.replace("\\", "/")
+
+    if modify_prefix:
+        drive_letter = path_out[0]
+        path_out = path_out.replace("%s:" % drive_letter, "/mnt/%s" % drive_letter.lower())
+
+    return path_out
+
 
 # References:
 # https://www.blog.pythonlibrary.org/2010/03/28/getting-photo-metadata-exif-using-python/
