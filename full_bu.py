@@ -2,44 +2,59 @@ import pic_offload_tool as offload_tool
 import date_organize_tool as org_tool
 import pic_categorize_tool as cat_tool
 
-from dir_names import DEFAULT_BU_ROOT
+from dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT
 
-def run_offload():
+
+def run_offload(bu_root_dir):
     print('\n\t', '*' * 10, 'OFFLOAD program', '*' * 10)
     # Instantiate a RawOffloadGroup instance then call its create_new_offload()
     # method.
-    rog = offload_tool.RawOffloadGroup()
+    rog = offload_tool.RawOffloadGroup(bu_root_dir)
     rog.create_new_offload()
     input("\nDuplicate new Raw_Offload data to NAS. "
                 "Press Enter when done.")
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
 
-def run_org():
+def run_org(bu_root_dir, buffer_root_dir):
     print('\n\t', '*' * 10, 'ORGANIZE program', '*' * 10)
     # Instantiate an OrganizedGroup instance then call its run_org() method.
-    orgg = org_tool.OrganizedGroup(DEFAULT_BU_ROOT)
+    orgg = org_tool.OrganizedGroup(bu_root_dir, buffer_root_dir)
     orgg.run_org()
     input("\nDuplicate new Organized data to NAS. "
                 "Press Enter when done.")
     print('\t', '*' * 10, 'ORGANIZE program complete', '*' * 10, '\n')
 
-def run_cat():
+def run_cat(buffer_root):
     print('\n\t', '*' * 10, 'CATEGORIZE program', '*' * 10)
     # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.
     # Then automatically categorize all.
-    cat_tool.auto_cat()
+    cat_tool.auto_cat(buffer_root)
     # Run photo_transfer()
-    cat_tool.photo_transfer()
+    cat_tool.photo_transfer(buffer_root)
     input("\nDuplicate new st data to NAS. "
                 "Press Enter when done.")
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
-def run_all():
+def run_all(bu_root_dir, buffer_root_dir):
     # print('\n\t', '*' * 10, 'Full offload/organize/categorize program', '*' * 10)
-    run_offload()
-    run_org()
-    run_cat()
+    run_offload(bu_root_dir)
+    run_org(bu_dir_root, buffer_root_dir)
+    run_cat(buffer_root_dir)
 
+
+
+device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n>")
+while device_type not in ['o', 'O', 'a', 'A', 'q', 'Q']:
+    device_type = input("Input not recognized. Choose device ['o' for iPhone, "
+                                                "'a' for iPad, 'q' to quit]\n>")
+if device_type.lower() == 'o':
+    bu_root = IPHONE_BU_ROOT
+elif device_type.lower() == 'a':
+    bu_root = IPAD_BU_ROOT
+elif device_type.lower() == 'q':
+    quit()
+
+buffer_root = bu_root + "Cat_Buffer/"
 
 # Main loop
 while True:
@@ -52,19 +67,19 @@ while True:
                  "\tType 'h' for help.\n>")
 
     if prog.lower() == 'f':
-        run_offload()
+        run_offload(bu_root)
 
     elif prog.lower() == 'g':
-        run_org()
+        run_org(bu_root, buffer_root)
 
     elif prog.lower() == 'c':
-        run_cat()
+        run_cat(buffer_root)
 
     elif prog.lower() == 'q':
         break
 
     elif not prog.lower() or (prog.lower() == 'a'):
-        run_all()
+        run_all(bu_root, buffer_root)
         break
 
     elif prog.lower() == 'h':

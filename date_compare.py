@@ -1,5 +1,5 @@
-# import PIL.Image
-# from PIL.ExifTags import TAGS
+import PIL.Image
+from PIL.ExifTags import TAGS
 from os import listdir, rename
 from os.path import getmtime, isdir
 from time import localtime, struct_time, strftime, strptime
@@ -9,8 +9,6 @@ import exiftool
 class ImgTypeError(Exception):
     pass
 
-class TimeStampError(Exception):
-    pass
 
 def list_all_img_dates(path, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
@@ -233,7 +231,7 @@ def add_datestamp(img_path, long_stamp=False):
 
     if datestamp in img_name:
         # Don't prepend redundant datestamp.
-        print("%s already has correct datestamp.\n" % img_name)
+        print("%s already has correct datestamp." % img_name)
     elif not long_stamp and datestamp_long in img_name:
         # rename longer-stamped names when short stamp desired.
         img_shortened = img_name.replace(datestamp_long, datestamp_short)
@@ -285,22 +283,28 @@ def get_img_date(img_path):
             create_time = metadata.get("File:FileModifyDate")
             # non-standard format - adjust manually before passing to strftime
             # ex. 2019:10:05 10:13:04-04:00
-            create_time = create_time[0:22] + create_time[23:]
+            if create_time:
+                create_time = create_time[0:22] + create_time[23:]
             # Now formatted this way: 2019:08:26 19:22:27-0400
             format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".MOV":
             create_time = metadata.get("QuickTime:CreationDate")
             # non-standard format - adjust manually before passing to strftime
             # ex. 2019:08:26 19:22:27-04:00
-            create_time = create_time[0:22] + create_time[23:]
+            if create_time:
+                create_time = create_time[0:22] + create_time[23:]
             # Now formatted this way: 2019:08:26 19:22:27-0400
             format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".MP4":
             create_time = metadata.get("QuickTime:CreateDate")
             format = "%Y:%m:%d %H:%M:%S"
             # MP4 metadata isn't in correct time zone.
-            create_time = tz_adjust(create_time, format, 4)
-            # ex. 2019:08:26 03:51:19
+            if create_time:
+                create_time = tz_adjust(create_time, format, 4)
+                if not tz_adjust:
+                    print("Changing time stamp would require date change: %s"
+                                                                % img_name)
+                # ex. 2019:08:26 03:51:19
         elif img_ext == ".AAE":
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             format = "%Y:%m:%d %H:%M:%SZ"
@@ -328,8 +332,8 @@ def tz_adjust(time_str, format, shift):
 
     ts_list = list(time_obj)
     if ts_list[3] <= shift:
-        "Function doesn't handle date adjustments resulting from hr change."
-        raise TimeStampError("Changing time stamp would require date change.")
+        # Function doesn't handle date adjustments resulting from hr change.
+        return None
     else:
         ts_list[3] -= shift         # EST
         time_obj_adjusted = struct_time(tuple(ts_list))
@@ -345,8 +349,6 @@ def meta_dump(img_path):
              print(str(key) + ": " + str(metadata[key]))
 
 
-# https://stackoverflow.com/questions/6275695/python-replace-backslashes-to-slashes#6275710
-
 def wpfix(path_in, modify_prefix=True):
     """Function that accepts a Windows path name with backslashes
     and replaces them with forward slashes. Also replaces prefix like C:/ with
@@ -356,6 +358,7 @@ def wpfix(path_in, modify_prefix=True):
     Example usage:
     datestamp_all(wpfix(r"C:\\my\dir\path"))
     """
+    # https://stackoverflow.com/questions/6275695/python-replace-backslashes-to-slashes#6275710
 
     path_out = path_in.replace("\\", "/")
 
@@ -364,6 +367,8 @@ def wpfix(path_in, modify_prefix=True):
         path_out = path_out.replace("%s:" % drive_letter, "/mnt/%s" % drive_letter.lower())
 
     return path_out
+
+
 
 
 # References:

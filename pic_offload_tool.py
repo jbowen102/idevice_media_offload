@@ -6,7 +6,7 @@ from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
 from time import strftime, strptime
 from tqdm import tqdm
-from dir_names import DEFAULT_BU_ROOT, IPHONE_DCIM_PREFIX
+from dir_names import IPHONE_DCIM_PREFIX
 
 
 class iPhoneLocError(Exception):
@@ -18,8 +18,6 @@ class DirectoryNameError(Exception):
 class RawOffloadError(Exception):
     pass
 
-class ImgTypeError(Exception):
-    pass
 
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
@@ -50,6 +48,8 @@ class iPhoneDCIM(object):
             self.find_root()
         elif count > 1:
             raise iPhoneLocError("Error: Multiple 'gphoto' handles in " + IPHONE_DCIM_PREFIX)
+            # Have not seen this happen. In fact, with two iOS devices plugged
+            # in, only the first one shows up as a gphoto mapped directory.
         else:
             self.DCIM_path = IPHONE_DCIM_PREFIX + iphone_handle + "/DCIM/"
             self.APPLE_folders = listdir(self.DCIM_path)
@@ -94,13 +94,15 @@ class iPhoneDCIM(object):
 
 class RawOffloadGroup(object):
     """Requires no input. Creates object representing Raw_Offload root struct."""
-    def __init__(self, bu_root_path=""):
+    def __init__(self, bu_root_path):
 
-        if not bu_root_path:
-            # Accept bu_root_path as instantiation input or manually confirm.
-            self.bu_root_path = self.confirm_BU_root()
-        else:
-            self.bu_root_path = bu_root_path
+        # if not bu_root_path:
+        #     # Accept bu_root_path as instantiation input or manually confirm.
+        #     self.bu_root_path = self.confirm_BU_root()
+        # else:
+        #     self.bu_root_path = bu_root_path
+
+        self.bu_root_path = bu_root_path
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
         # Double-check Raw_Offload folder is there.
         if not path_exists(self.RO_root_path):
@@ -113,23 +115,23 @@ class RawOffloadGroup(object):
 
         self.find_overlap_offloads()
 
-    def confirm_BU_root(self):
-        bu_root_path = input("Confirm BU folder is the following (press Enter) "
-                            "or input a new directory path:\n\t%s\n>"
-                                % DEFAULT_BU_ROOT)
-        if not bu_root_path:
-            bu_root_path = DEFAULT_BU_ROOT
-            print("Proceeding with above default.\n")
-        elif not path_exists(bu_root_path):
-            while not path_exists(bu_root_path):
-                bu_root_path = input("Invalid path. Specify different path:\n>")
-            print("Proceeding with new folder %s\n" % bu_root_path)
-        elif bu_root_path:
-            if bu_root_path[-1] != '/':
-                bu_root_path += '/'
-            print("Proceeding with new folder %s\n" % bu_root_path)
-
-        return bu_root_path
+    # got rid of this in favor of prompt in full_bu for device choice.
+    # def confirm_BU_root(self):
+    #     bu_root_path = input("Confirm BU folder is the following (press Enter) "
+    #                         "or input a new directory path:\n\t%s\n>"
+    #                             % bu_root_path)
+    #     if not bu_root_path:
+    #         bu_root_path = bu_root_path
+    #         print("Proceeding with above default.\n")
+    #     elif not path_exists(bu_root_path):
+    #         while not path_exists(bu_root_path):
+    #             bu_root_path = input("Invalid path. Specify different path:\n>")
+    #         print("Proceeding with new folder %s\n" % bu_root_path)
+    #     elif bu_root_path:
+    #         if bu_root_path[-1] != '/':
+    #             bu_root_path += '/'
+    #         print("Proceeding with new folder %s\n" % bu_root_path)
+    #     return bu_root_path
 
     def get_BU_root(self):
         return self.bu_root_path
@@ -144,6 +146,7 @@ class RawOffloadGroup(object):
             "be in %s. Cannot determine last offload." % self.offload_list)
         else:
             LastOffload = RawOffload(self.offload_list[-1], self)
+
         self.prev_offload_list = [LastOffload]
         overlap_folder = LastOffload.newest_APPLE_folder()
         # Find every other offload that shares the overlap folder.

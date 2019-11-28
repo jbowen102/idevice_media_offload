@@ -3,15 +3,12 @@ from os.path import isdir, join
 from os.path import exists as path_exists
 from shutil import copy2 as sh_copy2
 from shutil import move as sh_move
+from time import strftime
 from tqdm import tqdm
-
 from subprocess import Popen, PIPE
 
-from dir_names import BUFFER_ROOT, CAT_DIRS, ST_BUFFER
+from dir_names import CAT_DIRS
 
-
-class CategorizeError(Exception):
-    pass
 
 
 # Phase 3: Display pics one by one and prompt for where to copy each.
@@ -20,28 +17,31 @@ class CategorizeError(Exception):
 # Allow manual path entry
 
 
-def auto_cat():
+def auto_cat(buffer_root):
     """Function to automatically categorize st media that user puts in
     st_buffer.
     Later may have other auto categorizing groups, but for now just st."""
 
     # Initialize st buffer directory to automatically categorize from.
-    if not path_exists(ST_BUFFER):
-        mkdir(ST_BUFFER)
+    # local strength_training buffer to manually move imgs and vids into. Program
+    # will automatically categorize by date and move to strength_training vid root.
+    st_buffer_path = buffer_root + "st_buffer/"
+    if not path_exists(st_buffer_path):
+        mkdir(st_buffer_path)
 
     # Prompt to move stuff in bulk before looping through img display.
     input("\nCategorization buffer populated. Do any mass copies now (incl. "
             "into st_buffer) before proceeding."
             "\nPress Enter when ready to continue Cat program.")
 
-    st_buffer_imgs = listdir(ST_BUFFER)
+    st_buffer_imgs = listdir(st_buffer_path)
     if st_buffer_imgs:
         st_buffer_imgs.sort()
 
         # Loop through st_buffer categorize.
         print("Categorizing st_buffer media now. Progress:")
         for img in tqdm(st_buffer_imgs):
-            img_path = ST_BUFFER + img
+            img_path = st_buffer_path + img
             if isdir(img_path):
                 # Ignore. Shouldn't happen, but handling just in case.
                 continue
@@ -59,15 +59,19 @@ def auto_cat():
         print("Nothing in st_buffer.")
 
 
-def photo_transfer(start_point=""):
+def photo_transfer(buffer_root, start_point=""):
     """Master function to displays images in buffer and prompt user
     where it should be copied. Execute copy.
     Start_point can be specified (as img name) to skip processing earlier imgs."""
 
-    print("Categorizing images from buffer:\n\t%s" % BUFFER_ROOT)
+    print("Categorizing images from buffer:\n\t%s" % buffer_root)
     # Print dict of directory mappings
     print("Target directories available (Append '&' to first choice if multiple "
                                                     "destinations needed):")
+
+    # local buffer to be categorized manually
+    CAT_DIRS['u'] = buffer_root + "manual_" + strftime('%Y-%m-%d') + '/'
+
     for key in CAT_DIRS:
         print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
 
@@ -75,7 +79,7 @@ def photo_transfer(start_point=""):
     if not path_exists(CAT_DIRS['u']):
         mkdir(CAT_DIRS['u'])
 
-    buffered_imgs = listdir(BUFFER_ROOT)
+    buffered_imgs = listdir(buffer_root)
     buffered_imgs.sort()
     if start_point:
         # If a start point is specified, truncate earlier images.
@@ -86,7 +90,7 @@ def photo_transfer(start_point=""):
     FNULL = open(devnull, 'w')
 
     for img in buffered_imgs:
-        img_path = BUFFER_ROOT + img
+        img_path = buffer_root + img
 
         if isdir(img_path):
             # Ignore any manual sort folder left over from previous offload.
@@ -102,7 +106,7 @@ def photo_transfer(start_point=""):
             # then after copying image into one place, the user should be
             # prompted again w/ same photo to put somewhere else.
             sh_copy2(img_path, target_dir[1:])
-            photo_transfer(img)
+            photo_transfer(buffer_root, img)
             break
 
         elif target_dir:

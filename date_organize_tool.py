@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
 from date_compare import get_img_date, list_all_img_dates
-from dir_names import DEFAULT_BU_ROOT, BUFFER_ROOT
 
 
 class OrganizeFolderError(Exception):
@@ -23,9 +22,10 @@ class OrganizeFolderError(Exception):
 class OrganizedGroup(object):
     """Represents date-organized directory structure. Contains YrDir objects
     which in turn contain MoDir objects."""
-    def __init__(self, bu_root_path):
+    def __init__(self, bu_root_path, buffer_root):
         self.bu_root_path = bu_root_path
         self.date_root_path = self.bu_root_path + "Organized/"
+        self.buffer_root_path = buffer_root
         # Double-check Organized folder is there.
         if not path_exists(self.date_root_path):
             raise OrganizeFolderError("Organized dir not found at %s! "
@@ -36,6 +36,9 @@ class OrganizedGroup(object):
 
     def get_root_path(self):
         return self.date_root_path
+
+    def get_buffer_root_path(self):
+        return self.buffer_root_path
 
     def get_yr_list(self):
         # Refresh date_root_path every time in case dir changes.
@@ -79,10 +82,10 @@ class OrganizedGroup(object):
                                     (img_orig_path.split('/')[-1], yr_str))
 
     def run_org(self):
-        ROG = RawOffloadGroup()
+        ROG = RawOffloadGroup(self.bu_root_path)
 
         # If there are still images from last time in the buffer, stop.
-        while listdir(BUFFER_ROOT):
+        while listdir(self.buffer_root_path):
             input("Categorizing Buffer is non-empty. Categorize media, empty "
                     "buffer, and press Enter when ready to continue.")
 
@@ -110,6 +113,7 @@ class YearDir(object):
         directory structure. Contains MoDir objects."""
         self.year_name = year_name
         self.year_path = OrgGroup.get_root_path() + self.year_name + '/'
+        self.OrgGroup = OrgGroup
 
         if not self.year_name in OrgGroup.get_yr_list():
             mkdir(self.year_path)
@@ -190,6 +194,7 @@ class MoDir(object):
     def __init__(self, yrmonth_name, YrDir):
         self.dir_name = yrmonth_name
         self.yrmonth_path = YrDir.get_yr_path() + self.dir_name + '/'
+        self.YrDir = YrDir
 
         if not self.dir_name in YrDir.get_mo_list():
             mkdir(self.yrmonth_path)
@@ -214,7 +219,7 @@ class MoDir(object):
             # Copy into the dated directory and also into the buffer for
             # later categorization.
             sh_copy2(img_orig_path, img_new_path)
-            sh_copy2(img_orig_path, BUFFER_ROOT + stamped_name)
+            sh_copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
 
     def __str__(self):
         return self.dir_name
