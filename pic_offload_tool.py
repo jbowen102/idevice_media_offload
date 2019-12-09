@@ -277,13 +277,34 @@ class NewRawOffload(RawOffload):
         self.overlap_folder = self.Parent.newest_APPLE_folder()
         print("Overlap folder: " + self.overlap_folder)
 
+        # See if the newest APPLE folder in the offload dir is found on the phone
+        # as well. Example when it won't be: new phone.
+        try:
+            src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
+        except DirectoryNameError:
+            while True:
+                confirm_no_ovp = input("\nWARNING: No folder found on source "
+                "device corresponding to overlap offload folder %s.\n"
+                "Check source device for folder %s.\nPress Enter to continue, "
+                "skipping overlap offload.\nOr press 'q' to quit.\n>>> "
+                         % (self.overlap_folder, self.overlap_folder))
+
+                if confirm_no_ovp == '':
+                    self.overlap_folder = None
+                    return
+                elif confirm_no_ovp.lower() == 'q':
+                    raise DirectoryNameError("Tried to access %s on source device "
+                    "for overlap offload, but it could not be found."
+                     % self.overlap_folder)
+
+        # Runs only if there is a match found between overlap folder in offload
+        # directory and the source device.
+        src_APPLE_pics = self.src_iPhone_dir.APPLE_contents(self.overlap_folder)
+        src_APPLE_pics.sort()
+
         # Create a destination folder in the new Raw Offload directory with the same APPLE name.
         self.new_overlap_path = self.full_path + self.overlap_folder + '/'
         mkdir(self.new_overlap_path)
-
-        src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
-        src_APPLE_pics = self.src_iPhone_dir.APPLE_contents(self.overlap_folder)
-        src_APPLE_pics.sort()
 
         # iterate through each folder that contains the overlap folder.
         # store the img names and sizes as key-val pair.
@@ -317,14 +338,18 @@ class NewRawOffload(RawOffload):
                                     "last offload." % self.overlap_folder)
 
 
-    def run_new_offload(self):
+    def run_new_offload(self, overlap):
         # Look for new APPLE folders to offload.
         src_APPLE_list = self.src_iPhone_dir.list_APPLE_folders()
 
-        # If the iPhone contains any APPLE folders numbered higher than the overlap case, copy them wholesale.
+        # If the iPhone contains any APPLE folders numbered higher than the
+        # overlap case, copy them wholly.
         new_APPLE_folder = False
         for folder in src_APPLE_list:
-            if folder > self.overlap_folder:
+            # If there is no overlap folder, like in the case of a brand new device,
+            # comparison (if stmt) not needed in loop. self.overlap_folder is
+            # set to None above in that case.
+            if not self.overlap_folder or folder > self.overlap_folder:
                 print("New APPLE folder %s found on iPhone - copying." % folder)
                 # Create the new destination folder
                 new_dst_APPLE_path = self.full_path + folder + '/'
