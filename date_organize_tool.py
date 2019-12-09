@@ -84,10 +84,10 @@ class OrganizedGroup(object):
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
 
-        # If there are still images from last time in the buffer, stop.
-        while listdir(self.buffer_root_path):
-            input("Categorizing Buffer is non-empty. Categorize media, empty "
-                    "buffer, and press Enter when ready to continue.")
+        # # If there are still images from last time in the buffer, stop.
+        # while listdir(self.buffer_root_path):
+        #     input("Categorizing Buffer is non-empty. Categorize media, empty "
+        #             "buffer, and press Enter when ready to continue.")
 
         LastRawOffload = ROG.get_last_offload()
         src_APPLE_folders = LastRawOffload.list_APPLE_folders()

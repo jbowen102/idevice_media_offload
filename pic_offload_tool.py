@@ -109,9 +109,22 @@ class RawOffloadGroup(object):
             raise RawOffloadError("Raw_Offload dir not found at %s! "
                         "Pics not offloaded. Terminating" % self.RO_root_path)
 
-        self.offload_list = listdir(self.RO_root_path)
-        self.offload_list.sort()
-        # should these be put into a method to update the list whenever called?
+        RO_root_contents = listdir(self.RO_root_path)
+        RO_root_contents.sort()
+
+        if len(RO_root_contents[-1]) == 4:
+            # This handles cases where previous offload was in a different year,
+            # and all previous offloads have been gathered into year directories
+            # already. In this case, the program must look one level deeper
+            # for the last offload.
+            # Assumes standard offload naming is longer datestamp, and year
+            # directories are only four chars long.
+            self.offload_list = listdir(self.RO_root_path + RO_root_contents[-1])
+            self.offload_list.sort()
+        else:
+            self.offload_list = RO_root_contents
+            # should this and the sort be put into a method to update the list
+            # whenever called?
 
         self.find_overlap_offloads()
 
@@ -338,7 +351,7 @@ class NewRawOffload(RawOffload):
                                     "last offload." % self.overlap_folder)
 
 
-    def run_new_offload(self, overlap):
+    def run_new_offload(self):
         # Look for new APPLE folders to offload.
         src_APPLE_list = self.src_iPhone_dir.list_APPLE_folders()
 
