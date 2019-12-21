@@ -19,18 +19,13 @@ class RawOffloadError(Exception):
     pass
 
 
-
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
 # Find iPhone in GVFS.
 # Create new RawOffload folder.
 # Copy in all images newer than the last raw offload.
 
-# Instantiate a RawOffloadGroup instance then call its create_new_offload()
-# method.
-
-
 class iPhoneDCIM(object):
-    """Represents DCIM folder structure at gvfs iPhone mount point"""
+    """Represents DCIM folder structure at gvfs iPhone (or iPad) mount point"""
     def __init__(self):
         self.find_root()
 
@@ -43,8 +38,8 @@ class iPhoneDCIM(object):
                 iphone_handle = handle
                 count += 1
 
-        if count == 0:
-            enter = input("Error: Can't find iPhone in %s\nPress Enter to try again." % IPHONE_DCIM_PREFIX)
+        if count == 0 or not listdir(IPHONE_DCIM_PREFIX + iphone_handle):
+            input("Error: Can't find iOS device in %s\nPress Enter to try again." % IPHONE_DCIM_PREFIX)
             self.find_root()
         elif count > 1:
             raise iPhoneLocError("Error: Multiple 'gphoto' handles in " + IPHONE_DCIM_PREFIX)
@@ -65,7 +60,7 @@ class iPhoneDCIM(object):
         if APPLE_folder_name in self.APPLE_folders:
             return self.DCIM_path + APPLE_folder_name + '/'
         else:
-            raise DirectoryNameError("Tried to access iPhone DCIM folder %s, "
+            raise DirectoryNameError("Tried to access iOS DCIM folder %s, "
                                      "but it does not exist in\n%s\n"
                                      % (APPLE_folder_name, self.DCIM_path))
 
@@ -88,22 +83,16 @@ class iPhoneDCIM(object):
 
 ##########################################
 
-# Prompt to confirm location of pic BU directory or allow different directory to be input.
 # Program creates new folder with today’s date in raw offload directory.
-# Copies from all with timestamps newer than previous-date folder.
+# Copies all photos that did not exist last time device was offloaded.
 
 class RawOffloadGroup(object):
     """Requires no input. Creates object representing Raw_Offload root struct."""
     def __init__(self, bu_root_path):
 
-        # if not bu_root_path:
-        #     # Accept bu_root_path as instantiation input or manually confirm.
-        #     self.bu_root_path = self.confirm_BU_root()
-        # else:
-        #     self.bu_root_path = bu_root_path
-
         self.bu_root_path = bu_root_path
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
+
         # Double-check Raw_Offload folder is there.
         if not path_exists(self.RO_root_path):
             raise RawOffloadError("Raw_Offload dir not found at %s! "
@@ -128,23 +117,6 @@ class RawOffloadGroup(object):
 
         self.find_overlap_offloads()
 
-    # got rid of this in favor of prompt in full_bu for device choice.
-    # def confirm_BU_root(self):
-    #     bu_root_path = input("Confirm BU folder is the following (press Enter) "
-    #                         "or input a new directory path:\n\t%s\n>"
-    #                             % bu_root_path)
-    #     if not bu_root_path:
-    #         bu_root_path = bu_root_path
-    #         print("Proceeding with above default.\n")
-    #     elif not path_exists(bu_root_path):
-    #         while not path_exists(bu_root_path):
-    #             bu_root_path = input("Invalid path. Specify different path:\n>")
-    #         print("Proceeding with new folder %s\n" % bu_root_path)
-    #     elif bu_root_path:
-    #         if bu_root_path[-1] != '/':
-    #             bu_root_path += '/'
-    #         print("Proceeding with new folder %s\n" % bu_root_path)
-    #     return bu_root_path
 
     def get_BU_root(self):
         return self.bu_root_path
@@ -319,23 +291,19 @@ class NewRawOffload(RawOffload):
         self.new_overlap_path = self.full_path + self.overlap_folder + '/'
         mkdir(self.new_overlap_path)
 
-        # iterate through each folder that contains the overlap folder.
-        # store the img names and sizes as key-val pair.
-        prev_APPLE_pics = {}
+        # Iterate through each folder that contains the overlap folder.
+        # store the img names in a set for fast membership testing (order not important).
+        prev_APPLE_pics = set()
         for PrevOffload in self.Parent.overlap_offload_list():
-            prev_overlap_path = PrevOffload.APPLE_folder_path(self.overlap_folder)
+            # prev_overlap_path = PrevOffload.APPLE_folder_path(self.overlap_folder)
             for pic in PrevOffload.APPLE_contents(self.overlap_folder):
-                prev_APPLE_pics[pic] = getsize(prev_overlap_path + pic)
-                # prev_APPLE_pics[pic] = self.get_create_time(prev_overlap_path + pic)
-        # May not need file sizes for comparison anymore.
+                prev_APPLE_pics.add(pic)
 
-        # algorithm to determine which photos are new.
+        # Algorithm to determine which photos are new:
         print("Overlap-transfer progress:")
         # tqdm provides the terminal status bar
         for img_name in tqdm(src_APPLE_pics):
-            # print("\t%s" % img_name)
             src_img_path = src_APPLE_path + img_name
-            # Get creation time as a struct_time, compare to last BU struct_time
 
             if img_name not in prev_APPLE_pics:
                  sh_copy2(src_img_path, self.new_overlap_path)

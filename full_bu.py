@@ -36,7 +36,6 @@ def run_cat(buffer_root):
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
 def run_all(bu_root_dir, buffer_root_dir):
-    # print('\n\t', '*' * 10, 'Full offload/organize/categorize program', '*' * 10)
     run_offload(bu_root_dir)
     run_org(bu_dir_root, buffer_root_dir)
     run_cat(buffer_root_dir)
@@ -84,11 +83,11 @@ while True:
 
     elif prog.lower() == 'h':
         print("\tBasic workflow:\n"
-            "\t\tRun OFFLOAD and ORGANIZE."
-            "\t\tLook at buffer, move all st vids or other big blocks of pics."
-            "\t\tRun CAT tool on rest of pics."
-            "\t\tProcess leftover uncategorized pics."
-            "\t\tCopy data to NAS.")
+            "\t\tRun OFFLOAD and ORGANIZE.\n"
+            "\t\tLook at buffer, move all st vids or other big blocks of pics.\n"
+            "\t\tRun CAT tool on rest of pics in buffer.\n"
+            "\t\tProcess leftover uncategorized pics.\n"
+            "\t\tCopy data to NAS.\n")
 
     else:
         print("Invalid response. Try again.")

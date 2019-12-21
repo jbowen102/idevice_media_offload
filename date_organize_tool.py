@@ -1,5 +1,6 @@
 from os import listdir, mkdir, rmdir
 from os.path import exists as path_exists
+from os.path import basename as path_basename   # returns file or dir at end of path
 from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
 from time import strftime
@@ -65,7 +66,7 @@ class OrganizedGroup(object):
 
     def insert_img(self, img_orig_path):
         img_time = get_img_date(img_orig_path)
-        # Have to zero-pad single-digit months pulled from struct_time
+
         yr_str = str(img_time.tm_year)
         if yr_str in self.yr_objs:
             self.yr_objs[yr_str].insert_img(img_orig_path, img_time)
@@ -79,15 +80,10 @@ class OrganizedGroup(object):
             raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
                                     "but that is older than one month, so "
                                     "timestamp is likely wrong." %
-                                    (img_orig_path.split('/')[-1], yr_str))
+                                    (path_basename(img_orig_path), yr_str))
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
-
-        # # If there are still images from last time in the buffer, stop.
-        # while listdir(self.buffer_root_path):
-        #     input("Categorizing Buffer is non-empty. Categorize media, empty "
-        #             "buffer, and press Enter when ready to continue.")
 
         LastRawOffload = ROG.get_last_offload()
         src_APPLE_folders = LastRawOffload.list_APPLE_folders()
@@ -178,7 +174,7 @@ class YearDir(object):
             # If the image is from an earlier month, then something's wrong.
             print("Attempt to pull image %s into folder %s, "
                         "but that folder is older than one month."
-                        % (img_orig_path.split('/')[-1], yrmon))
+                        % (path_basename(img_orig_path), yrmon))
             list_all_img_dates(img_orig_path)
 
     def __str__(self):
@@ -208,7 +204,7 @@ class MoDir(object):
 
     def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
-        img_name = img_orig_path.split('/')[-1]
+        img_name = path_basename(img_orig_path)   # no trailing slash
         if img_name in self.get_img_list():
             print("Attempt to pull image %s into folder %s, "
                                 "but an image of that name already exists here."

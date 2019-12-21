@@ -1,6 +1,8 @@
 from os import listdir, mkdir, rmdir, devnull, remove
 from os.path import isdir, join
 from os.path import exists as path_exists
+from os.path import splitext as path_splitext
+from os.path import basename as path_basename
 from shutil import copy2 as sh_copy2
 from shutil import move as sh_move
 from time import strftime
@@ -12,8 +14,8 @@ from dir_names import CAT_DIRS
 
 
 # Phase 3: Display pics one by one and prompt for where to copy each.
-# Check for name collisions in target directory.
 # Have an option to ignore photo (not categorize and copy anywhere).
+# Check for name collisions in target directory.
 # Allow manual path entry
 
 
@@ -23,8 +25,7 @@ def auto_cat(buffer_root):
     Later may have other auto categorizing groups, but for now just st."""
 
     # Initialize st buffer directory to automatically categorize from.
-    # local strength_training buffer to manually move imgs and vids into. Program
-    # will automatically categorize by date and move to strength_training vid root.
+    # Program will automatically categorize by date and move to st root.
     st_buffer_path = buffer_root + "st_buffer/"
     if not path_exists(st_buffer_path):
         mkdir(st_buffer_path)
@@ -130,7 +131,8 @@ def get_target_dir(img_path, target_input=""):
     """Function to find and return the directory an image should be copied into
     based on translated user input
     Returns target path."""
-    image_name = img_path.split('/')[-1]
+    image_name = path_basename(img_path)
+    # image_name = img_path.split('/')[-1]
 
     if image_name[-4:] == ".AAE":
         # Don't prompt for AAE files. Just delete.
@@ -169,7 +171,8 @@ def get_target_dir(img_path, target_input=""):
 def st_target_dir(img_path):
     """Function to find correct directory (or make new) within dated heirarchy
     based on image mod date. Return resulting path."""
-    img_name = img_path.split('/')[-1]
+    img_name = path_basename(img_path)
+    # img_name = img_path.split('/')[-1]
     img_date = img_name.split('_')[0]
 
     st_root = CAT_DIRS['st']
@@ -183,7 +186,8 @@ def st_target_dir(img_path):
 def move_to_target(img_path, target_dir):
     """Function to move img to target directory with collision detection."""
 
-    img = img_path.split('/')[-1]
+    img = path_basename(img_path)
+    # img = img_path.split('/')[-1]
 
     # Prompt user for decision if collision detected.
     target_dir_imgs = listdir(target_dir)
@@ -206,10 +210,17 @@ def move_to_target(img_path, target_dir):
                 # repeatedly check for existence of duplicates until a free name appears.
                 # assume there will never be more than 9. Prefer shorter file name
                 # to spare leading zeros.
+                img_noext = path_splitext(img)[0]
+                img_ext = path_splitext(img)[-1]
+
                 n = 1
-                while img + '_' + str(n) in target_dir_imgs:
+                img_noext = img_noext + "_%d" % n
+
+                while img_noext + img_ext in target_dir_imgs:
                     n += 1
-                sh_move(img_path, target_dir + img + '_' + str(n))
+                    img_noext = img_noext[:-1] + "%d" % n
+
+                sh_move(img_path, target_dir + img_noext + img_ext)
 
     else:
         sh_move(img_path, target_dir)

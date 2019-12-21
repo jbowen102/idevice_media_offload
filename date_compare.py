@@ -2,12 +2,15 @@ import PIL.Image
 from PIL.ExifTags import TAGS
 from os import listdir, rename
 from os.path import getmtime, isdir
+from os.path import splitext as path_splitext
+from os.path import basename as path_basename
+from os.path import dirname as path_dirname
 from time import localtime, struct_time, strftime, strptime
 import exiftool
 
 
-class ImgTypeError(Exception):
-    pass
+# class ImgTypeError(Exception):
+#     pass
 
 
 def list_all_img_dates(path, rename_with_datestamp=False):
@@ -27,13 +30,12 @@ def list_all_img_dates(path, rename_with_datestamp=False):
         # the image name from the path to conform to path + img convention in
         # rest of code. Create a length-one list with that image name to
         # loop through.
-        single_image = path.split('/')[-1]
-        path = path.split(single_image)[0]
+        single_image = path_basename(path) # single-img path has no trailing slash
+        path = path_dirname(path) + "/"
         image_list = [single_image]
 
     for img in image_list:
-        # print(img)
-        img_ext = img.upper()[-4:]
+        img_ext = path_splitext(img)[-1].upper()
         file_mod_time = strftime('%Y-%m-%dT%H%M%S', localtime(getmtime(path + img)))
 
         if img_ext == ".JPG" or img_ext == "JPEG":
@@ -76,7 +78,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
                 metadata = et.get_metadata(path + img)
                 fmod_date = metadata.get("File:FileModifyDate")
 
-
             # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
                         "        file_mod_time:\t\t%s\n"
@@ -93,7 +94,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
                 qt_med_create_date = metadata.get("QuickTime:MediaCreateDate")
                 qt_med_mod_date = metadata.get("QuickTime:MediaModifyDate")
                 qt_creation_date = metadata.get("QuickTime:CreationDate")
-
 
             # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
@@ -121,7 +121,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
                 qt_med_create_date = metadata.get("QuickTime:MediaCreateDate")
                 qt_med_mod_date = metadata.get("QuickTime:MediaModifyDate")
 
-
             # "*" indicates metadata most likely to represent actual creation time.
             print((img + ":\n"
                         "        file_mod_time:\t\t%s\n"
@@ -140,7 +139,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(path + img)
 
-            # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             date_created = img_obj.info.get('XML:com.adobe.xmp')
             if date_created:
                 date_created = date_created.split("<photoshop:DateCreated>")[1].split("</photoshop:DateCreated>")[0]
@@ -159,7 +157,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
         elif img_ext == ".AAE":
             img_obj = open(path + img, 'r')
 
-            # encoded_exif = getattr(img_obj, '_getexif', lambda: None)()
             for line in img_obj:
                 if '<date>' in line:
                     adjustmentTimestamp = line.split("<date>")[1].split("Z</date>")[0]
@@ -178,7 +175,6 @@ def list_all_img_dates(path, rename_with_datestamp=False):
         else:
             print("%s\n"
             "        Cannot get EXIF data for this file type. Skipping\n" % img)
-            # raise ImgTypeError("Invalid image type encountered: %s" % img)
 
         # Add datestamp to image name if desired.
         if rename_with_datestamp:
@@ -210,18 +206,18 @@ def add_datestamp(img_path, long_stamp=False):
     # need a variable name that stores images best guess-time. look at
     # get_img_date end code.
 
-    # Separate out image name from directory path (includes trailing slash)
-    img_name = img_path.split('/')[-1]
-    dir_path = img_path.split(img_name)[0]
+    # Separate out image name from directory path
+    img_name = path_basename(img_path)  # no trailing slash present
+    dir_path = path_dirname(img_path) + "/"
 
     datestamp_obj = get_img_date(img_path)
 
-    # if get_img_date returned None (because file wasn't a recognized img format,
-    # don't proceed further.)
     if datestamp_obj:
         datestamp_short = strftime('%Y-%m-%d', datestamp_obj)
         datestamp_long = strftime('%Y-%m-%dT%H%M%S', datestamp_obj)
     else:
+        # if get_img_date returned None (because file wasn't a recognized img format),
+        # don't proceed further.
         return
 
     if long_stamp:
@@ -235,32 +231,58 @@ def add_datestamp(img_path, long_stamp=False):
     elif not long_stamp and datestamp_long in img_name:
         # rename longer-stamped names when short stamp desired.
         img_shortened = img_name.replace(datestamp_long, datestamp_short)
-        rename(img_path, dir_path + img_shortened)
+        safe_rename(img_path, img_shortened)
     elif long_stamp and datestamp_short in img_name:
         # rename shorter-stamped names when long stamp desired.
         # note that datestamp_short appears in imgs w/ datestamp_long.
-        img_lenghtened = img_name.replace(datestamp_short, datestamp_long)
-        rename(img_path, dir_path + img_lenghtened)
+        img_lengthened = img_name.replace(datestamp_short, datestamp_long)
+        safe_rename(img_path, img_lenghthened)
     elif img_name[:4] != 'IMG_':
         # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
-        # print("%s has non-standard naming. Skipping." % img_name)
         rename_choice = input("%s has non-standard naming. "
                 "Add %s datestamp anyway? [y/n]\n>" % (img_name, datestamp))
         if rename_choice.lower() == 'y':
-            rename(img_path, dir_path + datestamp + '_' + img_name)
+            safe_rename(img_path, datestamp + '_' + img_name)
         else:
             print("Skipped %s\n" % img_name)
     else:
-        rename(img_path, dir_path + datestamp + '_' + img_name)
+        safe_rename(img_path, datestamp + '_' + img_name)
+
+
+def safe_rename(img_path, new_img_name):
+    """Ensures that rename action does not overwrite existing img in target dir."""
+
+    target_dir = path_dirname(img_path)
+    target_dir_imgs = listdir(target_dir)
+
+    new_img_name_noext = path_splitext(new_img_name)[0]
+    img_ext = path_splitext(new_img_name)[-1]
+
+    if new_img_name in target_dir_imgs:
+        n = 1
+        # need to split off extension before appending increment
+        new_img_name_noext = new_img_name_noext + "_%d" % n
+
+        while new_img_name_noext + img_ext in target_dir_imgs:
+            n += 1
+            new_img_name_noext = new_img_name_noext[:-1] + "%d" % n
+            # This will not increment correctly after more than nine iterations,
+            # but that would require nine instances of the same img name taken
+            # on the same date, which is very unlikely.
+
+        new_img_name = new_img_name_noext + img_ext
+
+    rename(img_path, target_dir + "/" + new_img_name)
 
 
 def get_img_date(img_path):
     """Function that returns best available timestamp for any single JPG, GIF, PNG,
-    AAE, or MOV file located at img_path. Returns a struct_time object."""
+    AAE, MP4, or MOV file located at img_path.
+    Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
 
-    img_name = img_path.split('/')[-1]
-    img_ext = img_path.upper()[-4:]
+    img_name = path_basename(img_path)  # no trailing slash in path
+    img_ext = path_splitext(img_name)[-1]
 
     if isdir(img_path):
         print("%s is a directory. Skipping"
@@ -313,16 +335,13 @@ def get_img_date(img_path):
             print("%s - Cannot get EXIF data for this file type. Skipping"
                                         % img_name)
             return None
-            # raise ImgTypeError("Unexpected extension encountered at " + img_path)
 
         if create_time:
             create_time_obj = strptime(create_time, format)
-            # print(create_time_obj)
             return create_time_obj
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
             file_mod_time_obj = localtime(getmtime(img_path))
-            # print(file_mod_time_obj)
             return file_mod_time_obj
 
 
@@ -335,7 +354,7 @@ def tz_adjust(time_str, format, shift):
         # Function doesn't handle date adjustments resulting from hr change.
         return None
     else:
-        ts_list[3] -= shift         # EST
+        ts_list[3] -= shift         # EST. DST not accounted for.
         time_obj_adjusted = struct_time(tuple(ts_list))
         time_str_adjusted = strftime(format, time_obj_adjusted)
         return time_str_adjusted
