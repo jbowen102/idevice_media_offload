@@ -8,6 +8,7 @@ from shutil import move as sh_move
 from time import strftime
 from tqdm import tqdm
 from subprocess import Popen, PIPE
+from hashlib import sha1
 
 from dir_names import CAT_DIRS
 
@@ -192,41 +193,59 @@ def move_to_target(img_path, target_dir):
     # Prompt user for decision if collision detected.
     target_dir_imgs = listdir(target_dir)
     if img in target_dir_imgs:
-        action = None
 
-        while action != "s" and action != "o" and action != "a":
+        if same_hash(img_path, target_dir + img):
+            # First check if they are the same file. If so, leave original in place.
+            return
 
-            action = input("Collision detected: %s in dir:\n\t%s\n"
-                "\tSkip, overwrite, or keep both? [S/O/K] >" % (img, target_dir))
+        else:
+            # Otherwise, need user input to decide what to do about collision.
+            action = None
+            while action != "s" and action != "o" and action != "a":
 
-            if action.lower() == "s":
-                return
-            elif action.lower() == "o":
-                # Overwrite file in destination folder w/ same name.
-                remove(join(target_dir, img))
-                sh_move(img_path, target_dir)
-                return
-            elif action.lower() == "k":
-                # repeatedly check for existence of duplicates until a free name appears.
-                # assume there will never be more than 9. Prefer shorter file name
-                # to spare leading zeros.
-                img_noext = path_splitext(img)[0]
-                img_ext = path_splitext(img)[-1]
+                action = input("Collision detected: %s in dir:\n\t%s\n"
+                    "\tSkip, overwrite, or keep both? [S/O/K] >" % (img, target_dir))
 
-                n = 1
-                img_noext = img_noext + "_%d" % n
+                if action.lower() == "s":
+                    return
+                elif action.lower() == "o":
+                    # Overwrite file in destination folder w/ same name.
+                    remove(join(target_dir, img))
+                    sh_move(img_path, target_dir)
+                    return
+                elif action.lower() == "k":
+                    # repeatedly check for existence of duplicates until a free name appears.
+                    # assume there will never be more than 9. Prefer shorter file name
+                    # to spare leading zeros.
+                    img_noext = path_splitext(img)[0]
+                    img_ext = path_splitext(img)[-1]
 
-                while img_noext + img_ext in target_dir_imgs:
-                    n += 1
-                    img_noext = img_noext[:-1] + "%d" % n
+                    n = 1
+                    img_noext = img_noext + "_%d" % n
 
-                sh_move(img_path, target_dir + img_noext + img_ext)
+                    while img_noext + img_ext in target_dir_imgs:
+                        n += 1
+                        img_noext = img_noext[:-1] + "%d" % n
+
+                    sh_move(img_path, target_dir + img_noext + img_ext)
 
     else:
         sh_move(img_path, target_dir)
 
 
+def same_hash(img1_path, img2_path):
+    with open(img1_path, 'rb') as file_obj:
+        img1_hash = sha1(file_obj.read())
+        # print(img1_hash.hexdigest())
 
+    with open(img2_path, 'rb') as file_obj:
+        img2_hash = sha1(file_obj.read())
+        # print(img2_hash.hexdigest())
+
+    if img1_hash.hexdigest() == img2_hash.hexdigest():
+        return True
+    else:
+        return False
 
 # TEST
 
