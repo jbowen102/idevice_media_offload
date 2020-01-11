@@ -14,6 +14,10 @@ def run_offload(bu_root_dir):
     input("\nDuplicate new Raw_Offload data to NAS. "
                 "Press Enter when done.")
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
+    input("\nYou should proceed to run the ORGANIZE program, even if not "
+            "intending to run the CAT program right now.\nThe only reason "
+            "not to run ORG after OFFLOAD is if you never intend to CAT this "
+            "offload.\n")
 
 def run_org(bu_root_dir, buffer_root_dir):
     print('\n\t', '*' * 10, 'ORGANIZE program', '*' * 10)

@@ -101,19 +101,7 @@ class RawOffloadGroup(object):
         RO_root_contents = listdir(self.RO_root_path)
         RO_root_contents.sort()
 
-        if len(RO_root_contents[-1]) == 4:
-            # This handles cases where previous offload was in a different year,
-            # and all previous offloads have been gathered into year directories
-            # already. In this case, the program must look one level deeper
-            # for the last offload.
-            # Assumes standard offload naming is longer datestamp, and year
-            # directories are only four chars long.
-            self.offload_list = listdir(self.RO_root_path + RO_root_contents[-1])
-            self.offload_list.sort()
-        else:
-            self.offload_list = RO_root_contents
-            # should this and the sort be put into a method to update the list
-            # whenever called?
+        self.offload_list = RO_root_contents
 
         self.find_overlap_offloads()
 
@@ -136,7 +124,7 @@ class RawOffloadGroup(object):
         overlap_folder = LastOffload.newest_APPLE_folder()
         # Find every other offload that shares the overlap folder.
         for offload in self.offload_list[:-1]:
-            if overlap_folder in listdir(self.RO_root_path + offload):
+            if overlap_folder in listdir(self.get_RO_root() + offload):
                 PrevOL = RawOffload(offload, self)
                 self.prev_offload_list += [PrevOL]
         self.prev_offload_list.sort()

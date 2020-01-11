@@ -33,7 +33,11 @@ class OrganizedGroup(object):
                         "Pics not organized. Terminating" % self.date_root_path)
         # Initialize object dictionary. Instantiate most recent year object.
         self.yr_objs = {}
-        self.make_year(self.get_yr_list()[-1])
+
+        # self.make_year(self.get_yr_list()[-1])
+        yr_list = self.get_yr_list()
+        for yr in yr_list:
+            self.make_year(yr)
 
     def get_root_path(self):
         return self.date_root_path
@@ -43,7 +47,7 @@ class OrganizedGroup(object):
 
     def get_yr_list(self):
         # Refresh date_root_path every time in case dir changes.
-        year_list = listdir(self.date_root_path)
+        year_list = listdir(self.get_root_path())
         year_list.sort()
         return year_list
 
@@ -68,6 +72,10 @@ class OrganizedGroup(object):
         img_time = get_img_date(img_orig_path)
 
         yr_str = str(img_time.tm_year)
+        mo_str = str(img_time.tm_mon)
+        # print(self.yr_objs)
+        # print(str(self.get_latest_yr()))
+
         if yr_str in self.yr_objs:
             self.yr_objs[yr_str].insert_img(img_orig_path, img_time)
         elif yr_str > str(self.get_latest_yr()):
@@ -77,10 +85,10 @@ class OrganizedGroup(object):
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time)
         else:
-            raise OrganizeFolderError("Attempt to pull image %s into folder %s, "
+            raise OrganizeFolderError("Attempt to pull image %s into folder %s-%s, "
                                     "but that is older than one month, so "
                                     "timestamp is likely wrong." %
-                                    (path_basename(img_orig_path), yr_str))
+                                    (path_basename(img_orig_path), yr_str, mo_str))
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
@@ -100,7 +108,7 @@ class OrganizedGroup(object):
         print("\nCategorization buffer populated.")
 
     def __repr__(self):
-        return "OrganizedGroup object with path:\n\t" + self.date_root_path
+        return "OrganizedGroup object with path:\n\t" + self.get_root_path()
 
 
 class YearDir(object):
@@ -181,7 +189,7 @@ class YearDir(object):
         return self.year_name
 
     def __repr__(self):
-        return "YearDir object with path:\n\t" + self.date_root_path
+        return "YearDir object with path:\n\t" + self.get_yr_path()
 
 
 class MoDir(object):
@@ -221,7 +229,7 @@ class MoDir(object):
         return self.dir_name
 
     def __repr__(self):
-        return "MoDir object with path:\n\t" + self.yrmonth_path
+        return "MoDir object with path:\n\t" + self.get_mo_path()
 
 
 # TEST

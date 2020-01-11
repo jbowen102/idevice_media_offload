@@ -125,7 +125,8 @@ def photo_transfer(buffer_root, start_point=""):
         input("\nCheck buffer folder for any uncategorized pictures and "
                     "categorize them manually. Press Enter when finished.")
     # Once manual sort folder is empty, remove it. os.rmdir() will error if non-empty.
-    rmdir(CAT_DIRS['u'])
+    if path_exists(CAT_DIRS['u']):
+        rmdir(CAT_DIRS['u'])
 
 
 def get_target_dir(img_path, target_input=""):
