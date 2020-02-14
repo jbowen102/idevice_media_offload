@@ -3,7 +3,7 @@ from os.path import exists as path_exists
 from os.path import basename as path_basename   # returns file or dir at end of path
 from shutil import copy2 as sh_copy2
 from shutil import copytree as sh_copytree
-from time import strftime
+from time import strftime, strptime
 from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
@@ -68,8 +68,12 @@ class OrganizedGroup(object):
             # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
-    def insert_img(self, img_orig_path):
-        img_time = get_img_date(img_orig_path)
+    def insert_img(self, img_orig_path, man_img_time=False):
+        # Allow a manually-specified img_time to be passed and substituted.
+        if man_img_time:
+            img_time = man_img_time
+        else:
+            img_time = get_img_date(img_orig_path)
 
         yr_str = str(img_time.tm_year)
         mo_str = str(img_time.tm_mon)
@@ -85,10 +89,23 @@ class OrganizedGroup(object):
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time)
         else:
-            raise OrganizeFolderError("Attempt to pull image %s into folder %s-%s, "
+            print("Attempt to pull image %s into folder %s-%s, "
                                     "but that is older than one month, so "
                                     "timestamp is likely wrong." %
                                     (path_basename(img_orig_path), yr_str, mo_str))
+            man_img_time = input("Manually specify timestamp in "
+                                "YYYY-MM-DD format.\n>>>")
+            if man_img_time:
+                try:
+                    man_img_time_struct = strptime(man_img_time, "%Y-%m-%d")
+                    self.insert_img(img_orig_path, man_img_time_struct)
+                except:
+                    print("Bad date format. Try again.\n")
+                    self.insert_img(img_orig_path)
+            else:
+                # If nothing valid specified, repeat same call to repeat prompt.
+                self.insert_img(img_orig_path)
+
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
