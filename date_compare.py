@@ -241,7 +241,7 @@ def add_datestamp(img_path, long_stamp=False):
         # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
         rename_choice = input("%s has non-standard naming. "
                 "Add %s datestamp anyway? [y/n]\n>" % (img_name, datestamp))
-        if rename_choice.lower() == 'y':
+        if rename_choice and rename_choice.lower() == 'y':
             safe_rename(img_path, datestamp + '_' + img_name)
         else:
             print("Skipped %s\n" % img_name)
@@ -282,7 +282,7 @@ def get_img_date(img_path):
     # modify to look for each metadata type and fall back on mtime if needed.
 
     img_name = path_basename(img_path)  # no trailing slash in path
-    img_ext = path_splitext(img_name)[-1]
+    img_ext = path_splitext(img_name)[-1].upper()
 
     if isdir(img_path):
         print("%s is a directory. Skipping"
