@@ -295,42 +295,48 @@ def get_img_date(img_path):
         # Different files have different names for the creation date in the metadata.
         if img_ext == ".JPG" or img_ext == "JPEG":
             create_time = metadata.get("EXIF:DateTimeOriginal")
-            format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 09:11:21
+            format = "%Y:%m:%d %H:%M:%S"
         elif img_ext == ".PNG":
             create_time = metadata.get("XMP:DateCreated")
-            format = "%Y:%m:%d %H:%M:%S"
             # ex. 2019:08:26 03:51:19
+            format = "%Y:%m:%d %H:%M:%S"
         elif img_ext == ".GIF":
             create_time = metadata.get("File:FileModifyDate")
-            # non-standard format - adjust manually before passing to strftime
             # ex. 2019:10:05 10:13:04-04:00
+            # non-standard format - adjust manually before passing to strftime
             if create_time:
                 create_time = create_time[0:22] + create_time[23:]
-            # Now formatted this way: 2019:08:26 19:22:27-0400
-            format = "%Y:%m:%d %H:%M:%S%z"
+                # Now formatted this way: 2019:08:26 19:22:27-0400
+                format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".MOV":
             create_time = metadata.get("QuickTime:CreationDate")
-            # non-standard format - adjust manually before passing to strftime
             # ex. 2019:08:26 19:22:27-04:00
+            # non-standard format - adjust manually before passing to strftime
             if create_time:
                 create_time = create_time[0:22] + create_time[23:]
-            # Now formatted this way: 2019:08:26 19:22:27-0400
-            format = "%Y:%m:%d %H:%M:%S%z"
+                # Now formatted this way: 2019:08:26 19:22:27-0400
+                format = "%Y:%m:%d %H:%M:%S%z"
         elif img_ext == ".MP4":
             create_time = metadata.get("QuickTime:CreateDate")
+            # ex. 2019:08:26 03:51:19
             format = "%Y:%m:%d %H:%M:%S"
-            # MP4 metadata isn't in correct time zone.
-            if create_time:
+
+            if create_time == "0000:00:00 00:00:00":
+                # Fall back on fs mod time (below).
+                create_time = None
+
+            elif create_time:
+                # MP4 metadata isn't in correct time zone.
                 create_time = tz_adjust(create_time, format, 4)
-                if not tz_adjust:
+                if not create_time:
                     print("Changing time stamp would require date change: %s"
                                                                 % img_name)
-                # ex. 2019:08:26 03:51:19
+
         elif img_ext == ".AAE":
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
-            format = "%Y:%m:%d %H:%M:%SZ"
             # ex. 2019:07:05 12:46:46Z
+            format = "%Y:%m:%d %H:%M:%SZ"
         else:
             print("%s - Cannot get EXIF data for this file type. Skipping"
                                         % img_name)
