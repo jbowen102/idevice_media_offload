@@ -32,7 +32,7 @@ def auto_cat(buffer_root):
         mkdir(st_buffer_path)
 
     # Prompt to move stuff in bulk before looping through img display.
-    input("\nCategorization buffer populated. Do any mass copies now (incl. "
+    input("\nDo any mass copies from categorization buffer now (e.g. "
             "into st_buffer) before proceeding."
             "\nPress Enter when ready to continue Cat program.")
 
@@ -135,7 +135,7 @@ def photo_transfer(buffer_root, start_point=""):
             remove(img_path)
 
     while listdir(CAT_DIRS['u']):
-        input("\nCheck buffer folder for any uncategorized pictures and "
+        input("\nCheck buffer folder(s) for any uncategorized pictures and "
                     "categorize them manually. Press Enter when finished.")
     # Once manual sort folder is empty, remove it. os.rmdir() will error if non-empty.
     if path_exists(CAT_DIRS['u']):
@@ -149,14 +149,13 @@ def get_target_dir(img_path, target_input=""):
     image_name = path_basename(img_path)
     # image_name = img_path.split('/')[-1]
 
-    if image_name[-4:] == ".AAE":
-        # Don't prompt for AAE files. Just delete.
-        # They will still exist in raw and organized folders, but it doesn't serve
-        # any value to copy them elsewhere.
-        # They can also have dates that don't match the corresponding img/vid.
-        # This can cause confusion.
-        return None
-
+    # if image_name[-4:] == ".AAE":
+    #     # Don't prompt for AAE files. Just delete.
+    #     # They will still exist in raw and organized folders, but it doesn't serve
+    #     # any value to copy them elsewhere.
+    #     # They can also have dates that don't match the corresponding img/vid.
+    #     # This can cause confusion.
+    #     return None
 
     while not target_input:
         # Display pic or video and prompt for dest.

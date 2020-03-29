@@ -237,10 +237,18 @@ class MoDir(object):
         else:
             stamped_name = strftime('%Y-%m-%d', img_time) + '_' + img_name
             img_new_path = self.yrmonth_path + stamped_name
-            # Copy into the dated directory and also into the buffer for
-            # later categorization.
+
+            # Copy into the dated directory
             sh_copy2(img_orig_path, img_new_path)
-            sh_copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
+
+            # Also copy the img into the cat buffer for next step in prog.
+            if ".AAE" not in path_basename(img_orig_path):
+                # Don't copy AAE files into cat buffer.
+                # They will still exist in raw and organized folders, but it doesn't serve
+                # any value to copy them elsewhere.
+                # They can also have dates that don't match the corresponding img/vid.
+                # This can cause confusion.
+                sh_copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
 
     def __str__(self):
         return self.dir_name
