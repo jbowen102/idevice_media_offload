@@ -91,9 +91,6 @@ def photo_transfer(buffer_root, start_point=""):
         start_index = buffered_imgs.index(start_point)
         buffered_imgs = buffered_imgs[start_index:]
 
-    # Create /dev/null object to dump stdout into.
-    FNULL = open(devnull, 'w')
-
     for img in buffered_imgs:
         img_path = buffer_root + img
 
@@ -102,8 +99,6 @@ def photo_transfer(buffer_root, start_point=""):
             continue
 
         # Show image and prompt for location.
-        Popen(['xdg-open', img_path], stdout=FNULL, stderr=PIPE)
-
         target_dir = get_target_dir(img_path)
 
         if target_dir and (target_dir[0] == '*'):
@@ -162,8 +157,11 @@ def get_target_dir(img_path, target_input=""):
         # This can cause confusion.
         return None
 
+
     while not target_input:
+        # Display pic or video and prompt for dest.
         # Continue prompting until non-empty string input.
+        display_photo(img_path)
         target_input = input("Enter target location for %s (or 'n' for no "
                                             "transfer)\n>" % image_name)
 
@@ -258,6 +256,12 @@ def move_to_target(img_path, target_dir):
 
     else:
         sh_move(img_path, target_dir)
+
+
+def display_photo(img_path):
+    # Create /dev/null object to dump stdout into.
+    with open(devnull, 'w') as FNULL:
+        Popen(['xdg-open', img_path], stdout=FNULL, stderr=PIPE)
 
 
 def same_hash(img1_path, img2_path):
