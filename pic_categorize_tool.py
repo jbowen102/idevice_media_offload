@@ -66,16 +66,19 @@ def photo_transfer(buffer_root, start_point=""):
     where it should be copied. Execute copy.
     Start_point can be specified (as img name) to skip processing earlier imgs."""
 
-    print("Categorizing images from buffer:\n\t%s" % buffer_root)
+    print("Categorizing images from buffer:\n\t%s\n" % buffer_root)
     # Print dict of directory mappings
-    print("Target directories available (Append '&' to first choice if multiple "
-                                                    "destinations needed):")
+    print("Target directories available:")
 
     # local buffer to be categorized manually
     CAT_DIRS['u'] = buffer_root + "manual_" + strftime('%Y-%m-%d') + '/'
 
     for key in CAT_DIRS:
         print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
+
+    print("\n(Append '&' to first choice if multiple destinations needed)\n"
+            "(Append '+' followed by a two-digit number to use same dest folder for "
+                    "subsequent [number] of pics)\n")
 
     # Initialize manual-sort directory
     if not path_exists(CAT_DIRS['u']):
@@ -109,6 +112,21 @@ def photo_transfer(buffer_root, start_point=""):
             # prompted again w/ same photo to put somewhere else.
             sh_copy2(img_path, target_dir[1:])
             photo_transfer(buffer_root, img)
+            break
+
+        if target_dir and (target_dir[0] == '!'):
+            move_to_target(img_path, target_dir[3:])
+
+            # If get_target_dir detected the trailing special character '+' and
+            # a two-digit number, then copy multiple successive images into same place.
+            additional_copies = int(target_dir[1:3])
+            re_buffered_imgs = listdir(buffer_root)
+            re_buffered_imgs.sort()
+            for extra_img in re_buffered_imgs[:additional_copies]:
+                extra_img_path = buffer_root + extra_img
+                move_to_target(extra_img_path, target_dir[3:])
+
+            photo_transfer(buffer_root)
             break
 
         elif target_dir:
@@ -155,14 +173,21 @@ def get_target_dir(img_path, target_input=""):
     elif target_input == 'n':
         return None
     elif ( (target_input[-1] == '&') and
-          (CAT_DIRS.get(target_input[:-1]) or is_dir(target_input[:-1])) ):
+          (CAT_DIRS.get(target_input[:-1]) or isdir(target_input[:-1])) ):
         # If the '&' special character invoked, it means the image needs to be
         # copied into multiple places, and the program should prompt another time.
         # pre-pend '*' to returned path to indicate special case to caller.
         return '*' + get_target_dir(img_path, target_input[:-1])
+    elif ( (len(target_input) >= 3) and
+           (target_input[-3] == '+') and
+           (CAT_DIRS.get(target_input[:-3]) or isdir(target_input[:-3])) ):
+        # If the '&' special character invoked, it means the image needs to be
+        # copied into multiple places, and the program should prompt another time.
+        # pre-pend '*' to returned path to indicate special case to caller.
+        return '!' + target_input[-2:] + get_target_dir(img_path, target_input[:-3])
     elif CAT_DIRS.get(target_input):
         return CAT_DIRS[target_input]
-    elif is_dir(target_input):
+    elif isdir(target_input):
         # Allow manual entry of target path.
         return target_input
     else:
