@@ -154,14 +154,15 @@ def get_target_dir(img_path, target_input=""):
         return st_target_dir(img_path)
     elif target_input == 'n':
         return None
-    elif (target_input[-1] == '&') and (CAT_DIRS.get(target_input[:-1])):
+    elif ( (target_input[-1] == '&') and
+          (CAT_DIRS.get(target_input[:-1]) or is_dir(target_input[:-1])) ):
         # If the '&' special character invoked, it means the image needs to be
         # copied into multiple places, and the program should prompt another time.
         # pre-pend '*' to returned path to indicate special case to caller.
         return '*' + get_target_dir(img_path, target_input[:-1])
     elif CAT_DIRS.get(target_input):
         return CAT_DIRS[target_input]
-    elif path_exists(target_input):
+    elif is_dir(target_input):
         # Allow manual entry of target path.
         return target_input
     else:
