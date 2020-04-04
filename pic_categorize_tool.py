@@ -225,7 +225,7 @@ def move_to_target(img_path, target_dir):
         else:
             # Otherwise, need user input to decide what to do about collision.
             action = None
-            while action != "s" and action != "o" and action != "a":
+            while action != "s" and action != "o" and action != "k":
 
                 action = input("Collision detected: %s in dir:\n\t%s\n"
                     "\tSkip, overwrite, or keep both? [S/O/K] >" % (img, target_dir))
