@@ -2,6 +2,7 @@ import PIL.Image
 from PIL.ExifTags import TAGS
 from os import listdir, rename
 from os.path import getmtime, isdir
+from os.path import exists as path_exists
 from os.path import splitext as path_splitext
 from os.path import basename as path_basename
 from os.path import dirname as path_dirname
@@ -12,6 +13,8 @@ import exiftool
 # class ImgTypeError(Exception):
 #     pass
 
+class DirectoryNameError(Exception):
+    pass
 
 DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
 
@@ -23,7 +26,10 @@ def list_all_img_dates(path, rename_with_datestamp=False):
     as they are processed.
     datestamp_all() function below now preferred."""
 
-    if isdir(path):
+    if not path_exists(path):
+        print("Not a valid path.")
+        return None
+    elif isdir(path):
         if path[-1] != '/':
             path += '/'
         image_list = listdir(path)
@@ -192,6 +198,10 @@ def datestamp_all(dir_path, longstamp=False):
     Uses add_datestamp() function below for each file processed.
     Second parameter determines if date only or both date/time will be added."""
 
+    if not path_exists(dir_path) or not isdir(dir_path):
+        print("Not a valid directory path.")
+        return None
+
     if dir_path[-1] != '/':
         dir_path += '/'
     image_list = listdir(dir_path)
@@ -208,6 +218,9 @@ def add_datestamp(img_path, long_stamp=False):
     # test rename operation to see if mtime changes
     # need a variable name that stores images best guess-time. look at
     # get_img_date end code.
+
+    if not path_exists(img_path):
+        raise DirectoryNameError("Invalid path passed to add_datestamp() function.")
 
     # Separate out image name from directory path
     img_name = path_basename(img_path)  # no trailing slash present
@@ -255,6 +268,9 @@ def add_datestamp(img_path, long_stamp=False):
 def safe_rename(img_path, new_img_name):
     """Ensures that rename action does not overwrite existing img in target dir."""
 
+    if not path_exists(img_path):
+        raise DirectoryNameError("Invalid path passed to safe_rename() function.")
+
     target_dir = path_dirname(img_path)
     target_dir_imgs = listdir(target_dir)
 
@@ -283,6 +299,9 @@ def get_img_date(img_path):
     AAE, MP4, or MOV file located at img_path.
     Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
+
+    if not path_exists(img_path):
+        raise DirectoryNameError("Invalid path passed to get_img_date() function.")
 
     img_name = path_basename(img_path)  # no trailing slash in path
     img_ext = path_splitext(img_name)[-1].upper()
@@ -371,6 +390,14 @@ def tz_adjust(time_str, format, shift):
 
 def meta_dump(img_path):
     """Display all available exiftool data."""
+
+    if not path_exists(img_path):
+        print("Not a valid path.")
+        return None
+    elif isdir(img_path):
+        print("%s is a directory. Need path to image." % path_basename(img_path))
+        return None
+
     with exiftool.ExifTool() as et:
         metadata = et.get_metadata(img_path)
         for key in metadata:
