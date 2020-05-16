@@ -13,6 +13,9 @@ import exiftool
 #     pass
 
 
+DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
+
+
 def list_all_img_dates(path, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
     all available timestamps for each JPG, GIF, PNG, AAE, or MOV file for comparison.
@@ -36,7 +39,7 @@ def list_all_img_dates(path, rename_with_datestamp=False):
 
     for img in image_list:
         img_ext = path_splitext(img)[-1].upper()
-        file_mod_time = strftime('%Y-%m-%dT%H%M%S', localtime(getmtime(path + img)))
+        file_mod_time = strftime(DATETIME_FORMAT, localtime(getmtime(path + img)))
 
         if img_ext == ".JPG" or img_ext == "JPEG":
             img_obj = PIL.Image.open(path + img)
@@ -214,7 +217,7 @@ def add_datestamp(img_path, long_stamp=False):
 
     if datestamp_obj:
         datestamp_short = strftime('%Y-%m-%d', datestamp_obj)
-        datestamp_long = strftime('%Y-%m-%dT%H%M%S', datestamp_obj)
+        datestamp_long = strftime(DATETIME_FORMAT, datestamp_obj)
     else:
         # if get_img_date returned None (because file wasn't a recognized img format),
         # don't proceed further.

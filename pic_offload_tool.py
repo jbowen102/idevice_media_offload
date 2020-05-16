@@ -12,11 +12,17 @@ from dir_names import IPHONE_DCIM_PREFIX
 class iPhoneLocError(Exception):
     pass
 
+class iPhoneIOError(Exception):
+    pass
+
 class DirectoryNameError(Exception):
     pass
 
 class RawOffloadError(Exception):
     pass
+
+
+DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
 
 
 # Phase 1: Copy any new pics from iPhone to raw_offload folder.
@@ -30,9 +36,10 @@ class iPhoneDCIM(object):
         self.find_root()
 
     def find_root(self):
+        # Look at all gvfs handles to find one having name starting w/ "gphoto".
+        # There should only be one.
         gvfs_handles = listdir(IPHONE_DCIM_PREFIX)
         count = 0
-
         for i, handle in enumerate(gvfs_handles):
             if handle[0:6] == 'gphoto':
                 iphone_handle = handle
@@ -44,8 +51,9 @@ class iPhoneDCIM(object):
         elif count > 1:
             raise iPhoneLocError("Error: Multiple 'gphoto' handles in " + IPHONE_DCIM_PREFIX)
             # Have not seen this happen. In fact, with two iOS devices plugged
-            # in, only the first one shows up as a gphoto mapped directory.
+            # in, only the first one shows up as a gvfs directory.
         else:
+            # Found exactly one "gphoto" folder
             self.DCIM_path = IPHONE_DCIM_PREFIX + iphone_handle + "/DCIM/"
             self.APPLE_folders = listdir(self.DCIM_path)
             self.APPLE_folders.sort()
@@ -58,11 +66,11 @@ class iPhoneDCIM(object):
 
     def APPLE_folder_path(self, APPLE_folder_name):
         if APPLE_folder_name in self.APPLE_folders:
-            return self.DCIM_path + APPLE_folder_name + '/'
+            return self.get_root() + APPLE_folder_name + '/'
         else:
             raise DirectoryNameError("Tried to access iOS DCIM folder %s, "
                                      "but it does not exist in\n%s\n"
-                                     % (APPLE_folder_name, self.DCIM_path))
+                                     % (APPLE_folder_name, get_root()))
 
     def APPLE_contents(self, APPLE_folder_name):
         # Exception handling done by APPLE_folder_path() method
@@ -70,15 +78,15 @@ class iPhoneDCIM(object):
         APPLE_contents.sort()
         return APPLE_contents
 
-    def update_path(self):
+    def update_root_path(self):
         self.find_root()
-        return self.DCIM_path
+        return self.get_root()
 
     def __str__(self):
-        return self.DCIM_path
+        return self.get_root()
 
     def __repr__(self):
-        return ("iPhone DCIM directory object with path:\n\t" + self.DCIM_path)
+        return ("iPhone DCIM directory object with path:\n\t" + self.get_root())
 
 
 ##########################################
@@ -89,6 +97,9 @@ class iPhoneDCIM(object):
 class RawOffloadGroup(object):
     """Requires no input. Creates object representing Raw_Offload root struct."""
     def __init__(self, bu_root_path):
+        # Upon creation, RawOffloadGroup creates a RawOffload object for the
+        # most recent offload and any other offloads that contain latest APPLE
+        # folder (the overlap folder)
 
         self.bu_root_path = bu_root_path
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
@@ -98,11 +109,13 @@ class RawOffloadGroup(object):
             raise RawOffloadError("Raw_Offload dir not found at %s! "
                         "Pics not offloaded. Terminating" % self.RO_root_path)
 
+        # Create attribute that contains all raw-offload folder names.
         RO_root_contents = listdir(self.RO_root_path)
         RO_root_contents.sort()
-
         self.offload_list = RO_root_contents
 
+        # Find all folders that contain the newest APPLE folder (the "overlap" folder)
+        # and create RawOffload objects for them. Put into a list.
         self.find_overlap_offloads()
 
 
@@ -113,18 +126,21 @@ class RawOffloadGroup(object):
         return self.RO_root_path
 
     def find_overlap_offloads(self):
-        # Create a RawOffload instance representing most recent offload.
+        """Create a RawOffload instance representing most recent offload."""
+
         if isfile(self.offload_list[-1]):
             raise DirectoryNameError("File found where only offload folders should "
             "be in %s. Cannot determine last offload." % self.offload_list)
         else:
             LastOffload = RawOffload(self.offload_list[-1], self)
 
+        # Find every offload that shares the overlap folder (latest APPLE).
         self.prev_offload_list = [LastOffload]
         overlap_folder = LastOffload.newest_APPLE_folder()
-        # Find every other offload that shares the overlap folder.
         for offload in self.offload_list[:-1]:
             if overlap_folder in listdir(self.get_RO_root() + offload):
+                # Make RawOffload object for each offload containing overlap
+                # folder, and add them to the list.
                 PrevOL = RawOffload(offload, self)
                 self.prev_offload_list += [PrevOL]
         self.prev_offload_list.sort()
@@ -139,13 +155,14 @@ class RawOffloadGroup(object):
         return self.prev_offload_list.copy()
 
     def newest_APPLE_folder(self):
-        if isfile(self.get_last_offload().list_APPLE_folders()[-1]):
+        if isfile(self.get_last_offload().newest_APPLE_folder()):
             raise DirectoryNameError("File found where only APPLE folders should "
             "be in %s. Cannot determine newest APPLE folder." % self.get_last_offload())
-        return self.get_last_offload().list_APPLE_folders()[-1]
+        return self.get_last_offload().newest_APPLE_folder()
 
     def create_new_offload(self):
-        new_timestamp = strftime('%Y-%m-%dT%H%M%S')
+        # Pass in current timestamp as the new offload's name
+        new_timestamp = strftime(DATETIME_FORMAT)
         NewOffload = NewRawOffload(new_timestamp, self)
         return NewOffload
 
@@ -208,7 +225,7 @@ class RawOffload(object):
         return self.offload_dir
 
     def get_timestamp(self):
-        return strptime(self.offload_dir, '%Y-%m-%dT%H%M%S')
+        return strptime(self.offload_dir, DATETIME_FORMAT)
 
     def __str__(self):
         return self.full_path
@@ -233,11 +250,11 @@ class NewRawOffload(RawOffload):
         self.run_new_offload()
 
     def create_target_folder(self, offload_name):
-        # Create new directory w/ today's date in Raw_Offload.
+        # Create new directory w/ today's date/time stamp in Raw_Offload.
         self.offload_dir = offload_name
         self.full_path = (self.Parent.get_RO_root() + self.offload_dir + '/')
         if path_exists(self.full_path):
-            # Make sure folder w/ today's date doesn't already exist.
+            # Make sure folder w/ this name (current date/time stamp) doesn't already exist.
             raise RawOffloadError("Tried to create directory at\n%s\nbut that "
                                   "directory already exists. No changes made."
                                                     % self.full_path)
@@ -245,10 +262,9 @@ class NewRawOffload(RawOffload):
             mkdir(self.full_path)
 
     def run_overlap_offload(self):
-
         # Find the last (newest) APPLE dir in the most recent offload.
         self.overlap_folder = self.Parent.newest_APPLE_folder()
-        print("Overlap folder: " + self.overlap_folder)
+        print("Overlap folder: %s" % self.overlap_folder)
 
         # See if the newest APPLE folder in the offload dir is found on the phone
         # as well. Example when it won't be: new phone.
@@ -283,24 +299,49 @@ class NewRawOffload(RawOffload):
         # store the img names in a set for fast membership testing (order not important).
         prev_APPLE_pics = set()
         for PrevOffload in self.Parent.overlap_offload_list():
-            # prev_overlap_path = PrevOffload.APPLE_folder_path(self.overlap_folder)
+
             for pic in PrevOffload.APPLE_contents(self.overlap_folder):
                 prev_APPLE_pics.add(pic)
 
-        # Algorithm to determine which photos are new:
+        # Run througha all photos, only copying ones which are new (not contained
+        # in overlap folders):
         print("Overlap-transfer progress:")
         # tqdm provides the terminal status bar
         for img_name in tqdm(src_APPLE_pics):
-            src_img_path = src_APPLE_path + img_name
 
             if img_name not in prev_APPLE_pics:
-                 sh_copy2(src_img_path, self.new_overlap_path)
+                src_img_path = src_APPLE_path + img_name
+
+                # iOS has bug that can terminate PC connection during copies.
+                # Requires iOS restart to fix.
+                try:
+                    sh_copy2(src_img_path, self.new_overlap_path)
+                except IOError:
+                    ioerror_response = input("\nEncountered IOError during overlap "
+                    "offload. iPhone/iPad must be restarted to fix.\n"
+                    "Restart iOS device then press Enter to continue offload, "
+                    "or press 'q' to quit.\n>>> ")
+                    if ioerror_response == '':
+                        # tell iPhoneDCIM object to re-find its gvfs root
+                        # ("gphoto" handle likely changed)
+                        self.src_iPhone_dir.find_root()
+                        # Try copy operation again. If it fails this time, something
+                        # else is going on. Have not seen IOError persist on same day after restart
+                        sh_copy2(src_img_path, self.new_overlap_path)
+                        # update local variable that has gvfs root path embedded
+                        src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
+                        continue
+                    elif ioerror_response.lower() == 'q':
+                        raise iPhoneIOError("Cannot access files on source device. "
+                        "for overlap offload. Restart device to fix then try again.")
             else:
                 # If a picture of the same name is found in an overlap folder,
                 # ignore new one. Leave old one in place.
                 pass
 
         # If the target overlap APPLE folder ends up being empty, delete it.
+        # This would happen in the rare case of the previous offload happening
+        # just before the next photo saved starts a new APPLE photo on the device.
         if not self.APPLE_contents(self.overlap_folder):
             rmdir(self.new_overlap_path)
             print("No new pictures contained in %s (overlap folder) since "
@@ -312,12 +353,12 @@ class NewRawOffload(RawOffload):
         src_APPLE_list = self.src_iPhone_dir.list_APPLE_folders()
 
         # If the iPhone contains any APPLE folders numbered higher than the
-        # overlap case, copy them wholly.
+        # overlap case, copy them in full.
         new_APPLE_folder = False
         for folder in src_APPLE_list:
             # If there is no overlap folder, like in the case of a brand new device,
-            # comparison (if stmt) not needed in loop. self.overlap_folder is
-            # set to None above in that case.
+            # folder-name comparison (second half of if stmt) not used. self.overlap_folder
+            # is set to None (by run_overlap_offload() method) in that case.
             if not self.overlap_folder or folder > self.overlap_folder:
                 print("New APPLE folder %s found on iPhone - copying." % folder)
                 # Create the new destination folder
@@ -326,11 +367,30 @@ class NewRawOffload(RawOffload):
 
                 # Loop through source APPLE folder and copy to new dst folder.
                 imgs = listdir(self.src_iPhone_dir.APPLE_folder_path(folder))
-                imgs.sort()
+                imgs.sort() # Need to sort so if a pic offload fails, you can determine which
                 for img in tqdm(imgs):
-                    sh_copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img,
-                            new_dst_APPLE_path)
-                new_APPLE_folder = True
+                    try:
+                        sh_copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img,
+                                new_dst_APPLE_path)
+                    except IOError:
+                        ioerror_response = input("\nEncountered IOError during new "
+                        "offload. iPhone/iPad must be restarted to fix.\n"
+                        "Restart iOS device then press Enter to continue offload, "
+                        "or press 'q' to quit.\n>>> ")
+                        if ioerror_response == '':
+                            # tell iPhoneDCIM object to re-find its gvfs root
+                            # ("gphoto" handle likely changed)
+                            self.src_iPhone_dir.find_root()
+                            # Try copy operation again. If it fails this time, something
+                            # else is going on. Have not seen IOError persist on same day after restart
+                            sh_copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img,
+                                    new_dst_APPLE_path)
+                            continue
+                        elif ioerror_response.lower() == 'q':
+                            raise iPhoneIOError("Cannot access files on source device. "
+                            "for overlap offload. Restart device to fix then try again.")
+
+                new_APPLE_folder = True # Set if any new folder found in loop
 
         if not new_APPLE_folder:
             print("No new APPLE folders found on iPhone.")
