@@ -21,7 +21,7 @@ DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
 
 def list_all_img_dates(path, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
-    all available timestamps for each JPG, GIF, PNG, AAE, or MOV file for comparison.
+    all available timestamps for each JPG, HEIC, GIF, PNG, AAE, or MOV file for comparison.
     Optional argument allows the creation timestamp to be prepended to image(s)
     as they are processed.
     datestamp_all() function below now preferred."""
@@ -47,14 +47,14 @@ def list_all_img_dates(path, rename_with_datestamp=False):
         img_ext = path_splitext(img)[-1].upper()
         file_mod_time = strftime(DATETIME_FORMAT, localtime(getmtime(path + img)))
 
-        if img_ext == ".JPG" or img_ext == "JPEG":
+        if img_ext in [".JPG", ".JPEG"]:
             img_obj = PIL.Image.open(path + img)
 
             encoded_exif = img_obj._getexif()
             pil_metadata = {}
             for tag, value in encoded_exif.items():
                  decoded_key = TAGS.get(tag, tag)
-                 if "DateTime" in decoded_key:
+                 if "DateTime" in str(decoded_key):
                      pil_metadata[decoded_key] = value
 
             with exiftool.ExifTool() as et:
@@ -81,6 +81,25 @@ def list_all_img_dates(path, rename_with_datestamp=False):
                             exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
                             )).expandtabs(28))
 
+        elif img_ext == ".HEIC":
+            with exiftool.ExifTool() as et:
+                exiftool_metadata = et.get_metadata(path + img)
+
+            # "*" indicates metadata most likely to represent actual creation time.
+            print((img + ":\n"
+                        "        file_mod_time:\t\t%s\n"
+                        "        Exiftool EXIF:ModifyDate:\t%s\n"
+                        "        Exiftool EXIF:DateTimeOriginal*:\t%s\n"
+                        "        Exiftool EXIF:CreateDate:\t%s\n"
+                        "        Exiftool Composite:SubSecCreateDate:\t%s\n"
+                        "        Exiftool Composite:SubSecDateTimeOriginal:\t%s\n"
+                        % (file_mod_time,
+                            exiftool_metadata.get('EXIF:ModifyDate'),
+                            exiftool_metadata.get('EXIF:DateTimeOriginal'),
+                            exiftool_metadata.get('EXIF:CreateDate'),
+                            exiftool_metadata.get('Composite:SubSecCreateDate'),
+                            exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
+                            )).expandtabs(28))
 
         elif img_ext == ".GIF":
             with exiftool.ExifTool() as et:
@@ -194,8 +213,7 @@ def list_all_img_dates(path, rename_with_datestamp=False):
 
 def datestamp_all(dir_path, longstamp=False):
     """Function to prepend datestamp to all images in a directory without
-    terminal output.
-    Uses add_datestamp() function below for each file processed.
+    terminal output. Uses add_datestamp() function below for each file processed.
     Second parameter determines if date only or both date/time will be added."""
 
     if not path_exists(dir_path) or not isdir(dir_path):
@@ -204,6 +222,7 @@ def datestamp_all(dir_path, longstamp=False):
 
     if dir_path[-1] != '/':
         dir_path += '/'
+
     image_list = listdir(dir_path)
     image_list.sort()
 
@@ -295,8 +314,8 @@ def safe_rename(img_path, new_img_name):
 
 
 def get_img_date(img_path):
-    """Function that returns best available timestamp for any single JPG, GIF, PNG,
-    AAE, MP4, or MOV file located at img_path.
+    """Function that returns best available timestamp for any single JPG, HEIC,
+    GIF, PNG, AAE, MP4, or MOV file located at img_path.
     Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
 
@@ -315,7 +334,7 @@ def get_img_date(img_path):
         metadata = et.get_metadata(img_path)
 
         # Different files have different names for the creation date in the metadata.
-        if img_ext == ".JPG" or img_ext == "JPEG":
+        if img_ext in [".JPG", ".JPEG", ".HEIC"]:
             create_time = metadata.get("EXIF:DateTimeOriginal")
             # ex. 2019:08:26 09:11:21
             format = "%Y:%m:%d %H:%M:%S"
@@ -347,14 +366,12 @@ def get_img_date(img_path):
             if create_time == "0000:00:00 00:00:00":
                 # Fall back on fs mod time (below).
                 create_time = None
-
             elif create_time:
                 # MP4 metadata isn't in correct time zone.
                 create_time = tz_adjust(create_time, format, 4)
                 if not create_time:
                     print("Changing time stamp would require date change: %s"
                                                                 % img_name)
-
         elif img_ext == ".AAE":
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             # ex. 2019:07:05 12:46:46Z
@@ -369,6 +386,7 @@ def get_img_date(img_path):
             return create_time_obj
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
+            print("Falling back on fs mod time for %s" % path_basename(img_path))
             file_mod_time_obj = localtime(getmtime(img_path))
             return file_mod_time_obj
 
@@ -389,7 +407,7 @@ def tz_adjust(time_str, format, shift):
 
 
 def meta_dump(img_path):
-    """Display all available exiftool data."""
+    """Display all available exiftool data (for any file w/ EXIF data)."""
 
     if not path_exists(img_path):
         print("Not a valid path.")
