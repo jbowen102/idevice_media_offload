@@ -107,7 +107,7 @@ def photo_transfer(buffer_root, start_point=""):
             # prompted again w/ same photo to put somewhere else.
             sh_copy2(img_path, target_dir[1:])
             photo_transfer(buffer_root, img)
-            break
+            return
 
         if target_dir and (target_dir[0] == '!'):
             move_to_target(img_path, target_dir[3:])
@@ -122,7 +122,7 @@ def photo_transfer(buffer_root, start_point=""):
                 move_to_target(extra_img_path, target_dir[3:])
 
             photo_transfer(buffer_root)
-            break
+            return
 
         elif target_dir:
             # Execute the move from buffer to appropriate dir. End loop if user
@@ -178,9 +178,9 @@ def get_target_dir(img_path, target_input=""):
     elif ( (len(target_input) >= 3) and
            (target_input[-3] == '+') and
            (CAT_DIRS.get(target_input[:-3]) or isdir(target_input[:-3])) ):
-        # If the '&' special character invoked, it means the image needs to be
-        # copied into multiple places, and the program should prompt another time.
-        # pre-pend '*' to returned path to indicate special case to caller.
+        # If the '+' special character invoked, it means subsequent image(s) need to be
+        # copied into same dest.
+        # pre-pend '!' to returned path to indicate special case to caller.
         return '!' + target_input[-2:] + get_target_dir(img_path, target_input[:-3])
     elif CAT_DIRS.get(target_input):
         return CAT_DIRS[target_input]
@@ -218,7 +218,7 @@ def move_to_target(img_path, target_dir):
     target_dir_imgs = listdir(target_dir)
     if img in target_dir_imgs:
 
-        if same_hash(img_path, target_dir + img):
+        if same_hash(img_path, join(target_dir, img)):
             # First check if they are the same file. If so, leave original in place.
             return
 
@@ -228,7 +228,7 @@ def move_to_target(img_path, target_dir):
             while action != "s" and action != "o" and action != "k":
 
                 action = input("Collision detected: %s in dir:\n\t%s\n"
-                    "\tSkip, overwrite, or keep both? [S/O/K] >" % (img, target_dir))
+                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> " % (img, target_dir))
 
                 if action.lower() == "s":
                     return
@@ -249,9 +249,12 @@ def move_to_target(img_path, target_dir):
 
                     while img_noext + img_ext in target_dir_imgs:
                         n += 1
+                        if n > 9:
+                            raise Exception("Image incrementer exceeded 9.\n"
+                                        "Check dest folder %s" % target_dir)
                         img_noext = img_noext[:-1] + "%d" % n
 
-                    sh_move(img_path, target_dir + img_noext + img_ext)
+                    sh_move(img_path, join(target_dir, img_noext + img_ext))
 
     else:
         sh_move(img_path, target_dir)
