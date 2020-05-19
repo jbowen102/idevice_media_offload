@@ -130,11 +130,28 @@ def photo_transfer(buffer_root, start_point=""):
             os.remove(img_path)
 
     while os.listdir(CAT_DIRS['u']):
-        input("\nCheck buffer folder(s) for any uncategorized pictures and "
-                    "categorize them manually. Press Enter when finished.")
-    # Once manual sort folder is empty, remove it. os.rmdir() will error if non-empty.
-    if os.path.exists(CAT_DIRS['u']):
+        sort_folder_response = input("\nToday's manual-sort folder populated.\n"
+                    "Check folder(s) for any uncategorized pictures and "
+                    "categorize them manually.\nPress Enter to continue or 'q' to quit.\n>>> ")
+        if sort_folder_response.lower() == 'q':
+            quit()
+        else:
+            continue
+    # Once manual sort folder is empty, remove it as long as it's empty.
+    if os.path.exists(CAT_DIRS['u']) and not os.listdir(CAT_DIRS['u']):
         os.rmdir(CAT_DIRS['u'])
+    # Also remove any other manual sort folders from other days if they're empty.
+    for other_folder in os.listdir(buffer_root):
+        if "manual_" in other_folder:
+            while os.listdir(buffer_root + other_folder):
+                other_folder_response = input("\nAt least one manual-sort folder in the buffer is populated.\n"
+                    "Categorize content then press Enter to continue or 'q' to quit.\n>>> ")
+                if other_folder_response.lower() == 'q':
+                    quit()
+                else:
+                    continue
+            if not os.listdir(buffer_root + other_folder):
+                os.rmdir(buffer_root + other_folder)
 
 
 def get_target_dir(img_path, target_input=""):
