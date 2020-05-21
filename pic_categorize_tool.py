@@ -3,7 +3,7 @@ import shutil
 import time
 from tqdm import tqdm
 import subprocess
-from hashlib import sha1
+import hashlib
 
 from dir_names import CAT_DIRS
 
@@ -280,11 +280,11 @@ def display_photo(img_path):
 
 def same_hash(img1_path, img2_path):
     with open(img1_path, 'rb') as file_obj:
-        img1_hash = sha1(file_obj.read())
+        img1_hash = hashlib.sha1(file_obj.read())
         # print(img1_hash.hexdigest())
 
     with open(img2_path, 'rb') as file_obj:
-        img2_hash = sha1(file_obj.read())
+        img2_hash = hashlib.sha1(file_obj.read())
         # print(img2_hash.hexdigest())
 
     if img1_hash.hexdigest() == img2_hash.hexdigest():

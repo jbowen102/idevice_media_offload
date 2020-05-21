@@ -1,12 +1,9 @@
 # https://docs.python.org/3/library/time.html
-from os import listdir, mkdir, rmdir
-from os.path import getsize, isfile
-from os.path import exists as path_exists
-from shutil import copy2 as sh_copy2
-from shutil import move as sh_move
-from shutil import copytree as sh_copytree
-from time import strftime, strptime
+import os
+import shutil
+import time
 from tqdm import tqdm
+
 from dir_names import IPHONE_DCIM_PREFIX
 
 
@@ -39,14 +36,14 @@ class iPhoneDCIM(object):
     def find_root(self):
         # Look at all gvfs handles to find one having name starting w/ "gphoto".
         # There should only be one.
-        gvfs_handles = listdir(IPHONE_DCIM_PREFIX)
+        gvfs_handles = os.listdir(IPHONE_DCIM_PREFIX)
         count = 0
         for i, handle in enumerate(gvfs_handles):
             if handle[0:6] == 'gphoto':
                 iphone_handle = handle
                 count += 1
 
-        if count == 0 or not listdir(IPHONE_DCIM_PREFIX + iphone_handle):
+        if count == 0 or not os.listdir(IPHONE_DCIM_PREFIX + iphone_handle):
             input("Error: Can't find iOS device in %s\nPress Enter to try again." % IPHONE_DCIM_PREFIX)
             self.find_root()
         elif count > 1:
@@ -56,7 +53,7 @@ class iPhoneDCIM(object):
         else:
             # Found exactly one "gphoto" folder
             self.DCIM_path = IPHONE_DCIM_PREFIX + iphone_handle + "/DCIM/"
-            self.APPLE_folders = listdir(self.DCIM_path)
+            self.APPLE_folders = os.listdir(self.DCIM_path)
             if not self.APPLE_folders:
                 # Empty DCIM folder indicates temporary issue like locked device.
                 os_error_response = input("\nCan't access device pictures.\n"
@@ -87,7 +84,7 @@ class iPhoneDCIM(object):
 
     def APPLE_contents(self, APPLE_folder_name):
         # Exception handling done by APPLE_folder_path() method
-        APPLE_contents = listdir(self.APPLE_folder_path(APPLE_folder_name))
+        APPLE_contents = os.listdir(self.APPLE_folder_path(APPLE_folder_name))
         APPLE_contents.sort()
         return APPLE_contents
 
@@ -118,7 +115,7 @@ class RawOffloadGroup(object):
         self.RO_root_path = self.bu_root_path + "Raw_Offload/"
 
         # Double-check Raw_Offload folder is there.
-        if not path_exists(self.RO_root_path):
+        if not os.path.exists(self.RO_root_path):
             raise RawOffloadError("Raw_Offload dir not found at %s! "
                         "Pics not offloaded. Terminating" % self.RO_root_path)
 
@@ -141,7 +138,7 @@ class RawOffloadGroup(object):
 
     def generate_offload_list(self):
         # Create list that contains all raw-offload folder names.
-        RO_root_contents = listdir(self.RO_root_path)
+        RO_root_contents = os.listdir(self.RO_root_path)
         RO_root_contents.sort()
         self.offload_list = RO_root_contents
 
@@ -168,12 +165,12 @@ class RawOffloadGroup(object):
         return self.get_latest_offload_obj().list_APPLE_folders()[-1]
 
     def remove_bad_dir_items(self):
-        if isfile(self.get_RO_root() + self.get_last_offload_name()):
+        if os.path.isfile(self.get_RO_root() + self.get_last_offload_name()):
             input("File found where only offload folders should be in RO root.\n"
             "Press Enter to try again.\n>>> ")
             # try again
             self.remove_bad_dir_items()
-        elif not listdir(self.get_RO_root() + self.get_last_offload_name()):
+        elif not os.listdir(self.get_RO_root() + self.get_last_offload_name()):
             delete_empty_ro = input("Folder %s in raw_offload directory is empty, "
             "probably from previous aborted offload.\n"
             "Press 'd' to delete folder and retry operation.\n"
@@ -181,7 +178,7 @@ class RawOffloadGroup(object):
 
             if delete_empty_ro == 'd':
                 # Delete that folder name from list attribute
-                rmdir(self.get_RO_root() + self.get_last_offload_name())
+                os.rmdir(self.get_RO_root() + self.get_last_offload_name())
 
                 # re-generate offload list after deleting an element
                 self.generate_offload_list()
@@ -204,7 +201,7 @@ class RawOffloadGroup(object):
 
         # Check all other offload folders for the overlap folder
         for offload in self.offload_list[:-1]:
-            if overlap_folder in listdir(self.get_RO_root() + offload):
+            if overlap_folder in os.listdir(self.get_RO_root() + offload):
                 # Make RawOffload object for each offload containing overlap
                 # folder, and add them to the list.
                 PrevOL = RawOffload(offload, self)
@@ -213,13 +210,13 @@ class RawOffloadGroup(object):
 
     def create_new_offload(self):
         # Pass in current timestamp as the new offload's name
-        new_timestamp = strftime(DATETIME_FORMAT)
+        new_timestamp = time.strftime(DATETIME_FORMAT)
         NewOffload = NewRawOffload(new_timestamp, self)
         self.merge_todays_offloads()
         return NewOffload
 
     def merge_todays_offloads(self):
-        today = strftime("%Y-%m-%d")
+        today = time.strftime("%Y-%m-%d")
         todays_offloads = []
 
         # Have to refresh offload list. Doesn't yet contain new offload folder
@@ -259,15 +256,15 @@ class RawOffloadGroup(object):
             for APPLE_folder in SrcFolder.list_APPLE_folders():
                 # If the folder doesn't exist in the destination folder yet, create it.
                 if not APPLE_folder in DestFolder.list_APPLE_folders():
-                    mkdir(DestFolder.get_full_path() + APPLE_folder)
+                    os.mkdir(DestFolder.get_full_path() + APPLE_folder)
 
                 for image in SrcFolder.APPLE_contents(APPLE_folder):
-                    sh_move(SrcFolder.APPLE_folder_path(APPLE_folder) + image,
+                    shutil.move(SrcFolder.APPLE_folder_path(APPLE_folder) + image,
                             DestFolder.APPLE_folder_path(APPLE_folder))
                 # Delete each APPLE directory after copying everything out of it
-                rmdir(SrcFolder.APPLE_folder_path(APPLE_folder))
+                os.rmdir(SrcFolder.APPLE_folder_path(APPLE_folder))
             # Delete each RO directory after copying everything out of it
-            rmdir(SrcFolder.get_full_path())
+            os.rmdir(SrcFolder.get_full_path())
 
     def __str__(self):
         return self.get_RO_root()
@@ -297,12 +294,12 @@ class RawOffload(object):
 
     def list_APPLE_folders(self):
         # Sorted; not full paths
-        APPLE_folders = listdir(self.get_full_path())
+        APPLE_folders = os.listdir(self.get_full_path())
         APPLE_folders.sort()
         return APPLE_folders
 
     def newest_APPLE_folder(self):
-        if isfile(self.list_APPLE_folders()[-1]):
+        if os.path.isfile(self.list_APPLE_folders()[-1]):
             raise DirectoryNameError("File found where only APPLE folders should "
             "be in %s. Cannot determine newest APPLE folder." % self.full_path)
         else:
@@ -317,7 +314,7 @@ class RawOffload(object):
 
     def APPLE_contents(self, APPLE_folder_name):
         # Exception handling done by APPLE_folder_path() method
-        APPLE_contents = listdir(self.APPLE_folder_path(APPLE_folder_name))
+        APPLE_contents = os.listdir(self.APPLE_folder_path(APPLE_folder_name))
         APPLE_contents.sort()
         return APPLE_contents
 
@@ -325,7 +322,7 @@ class RawOffload(object):
         return self.offload_dir_name
 
     def get_timestamp_struct(self):
-        return strptime(self.offload_dir_name, DATETIME_FORMAT)
+        return time.strptime(self.offload_dir_name, DATETIME_FORMAT)
 
     def __str__(self):
         return self.full_path
@@ -353,13 +350,13 @@ class NewRawOffload(RawOffload):
         # Create new directory w/ today's date/time stamp in Raw_Offload.
         self.offload_dir_name = offload_name
         self.full_path = (self.Parent.get_RO_root() + self.offload_dir_name + '/')
-        if path_exists(self.full_path):
+        if os.path.exists(self.full_path):
             # Make sure folder w/ this name (current date/time stamp) doesn't already exist.
             raise RawOffloadError("Tried to create directory at\n%s\nbut that "
                                   "directory already exists. No changes made."
                                                     % self.full_path)
         else:
-            mkdir(self.full_path)
+            os.mkdir(self.full_path)
 
     def run_overlap_offload(self):
         # Find the last (newest) APPLE dir in the most recent offload.
@@ -400,7 +397,7 @@ class NewRawOffload(RawOffload):
 
         # Create a destination folder in the new Raw Offload directory with the same APPLE name.
         self.new_overlap_path = self.full_path + self.overlap_folder + '/'
-        mkdir(self.new_overlap_path)
+        os.mkdir(self.new_overlap_path)
 
         # Iterate through each folder that contains the overlap folder.
         # store the img names in a set for fast membership testing (order not important).
@@ -423,7 +420,7 @@ class NewRawOffload(RawOffload):
                 # Requires iOS restart to fix.
                 while True:
                     try:
-                        sh_copy2(src_img_path, self.new_overlap_path)
+                        shutil.copy2(src_img_path, self.new_overlap_path)
                         break
                     except OSError:
                         os_error_response = input("\nEncountered device I/O error during overlap "
@@ -450,7 +447,7 @@ class NewRawOffload(RawOffload):
         # This would happen in the rare case of the previous offload happening
         # just before the next photo saved starts a new APPLE photo on the device.
         if not self.APPLE_contents(self.overlap_folder):
-            rmdir(self.new_overlap_path)
+            os.rmdir(self.new_overlap_path)
             print("No new pictures contained in %s (overlap folder) since "
                                     "last offload." % self.overlap_folder)
 
@@ -470,15 +467,15 @@ class NewRawOffload(RawOffload):
                 print("New APPLE folder %s found on iPhone - copying." % folder)
                 # Create the new destination folder
                 new_dst_APPLE_path = self.full_path + folder + '/'
-                mkdir(new_dst_APPLE_path)
+                os.mkdir(new_dst_APPLE_path)
 
                 # Loop through source APPLE folder and copy to new dst folder.
-                imgs = listdir(self.src_iPhone_dir.APPLE_folder_path(folder))
+                imgs = os.listdir(self.src_iPhone_dir.APPLE_folder_path(folder))
                 imgs.sort() # Need to sort so if a pic offload fails, you can determine which
                 for img in tqdm(imgs):
                     while True:
                         try:
-                            sh_copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img,
+                            shutil.copy2(self.src_iPhone_dir.APPLE_folder_path(folder) + img,
                                     new_dst_APPLE_path)
                             break
                         except OSError:

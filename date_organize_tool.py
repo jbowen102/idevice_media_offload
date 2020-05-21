@@ -1,9 +1,6 @@
-from os import listdir, mkdir, rmdir
-from os.path import exists as path_exists
-from os.path import basename as path_basename   # returns file or dir at end of path
-from shutil import copy2 as sh_copy2
-from shutil import copytree as sh_copytree
-from time import strftime, strptime
+import os
+import shutil
+import time
 from tqdm import tqdm
 
 from pic_offload_tool import RawOffloadGroup
@@ -28,7 +25,7 @@ class OrganizedGroup(object):
         self.date_root_path = self.bu_root_path + "Organized/"
         self.buffer_root_path = buffer_root
         # Double-check Organized folder is there.
-        if not path_exists(self.date_root_path):
+        if not os.path.exists(self.date_root_path):
             raise OrganizeFolderError("Organized dir not found at %s! "
                         "Pics not organized. Terminating" % self.date_root_path)
         # Initialize object dictionary. Instantiate most recent year object.
@@ -47,7 +44,7 @@ class OrganizedGroup(object):
 
     def get_yr_list(self):
         # Refresh date_root_path every time in case dir changes.
-        year_list = listdir(self.get_root_path())
+        year_list = os.listdir(self.get_root_path())
         year_list.sort()
         return year_list
 
@@ -92,12 +89,12 @@ class OrganizedGroup(object):
             print("Attempt to pull image %s into folder %s-%s, "
                                     "but that is older than one month, so "
                                     "timestamp is likely wrong." %
-                                    (path_basename(img_orig_path), yr_str, mo_str))
+                                    (os.path.basename(img_orig_path), yr_str, mo_str))
             man_img_time = input("Manually specify timestamp in "
                                 "YYYY-MM-DD format.\n>>>")
             if man_img_time:
                 try:
-                    man_img_time_struct = strptime(man_img_time, "%Y-%m-%d")
+                    man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
                     self.insert_img(img_orig_path, man_img_time_struct)
                 except:
                     print("Bad date format. Try again.\n")
@@ -137,7 +134,7 @@ class YearDir(object):
         self.OrgGroup = OrgGroup
 
         if not self.year_name in OrgGroup.get_yr_list():
-            mkdir(self.year_path)
+            os.mkdir(self.year_path)
         # Instantiate latest mo and put in dict of months
         self.mo_objs = {}
         # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
@@ -148,7 +145,7 @@ class YearDir(object):
         return self.year_path
 
     def get_mo_list(self):
-        mo_list = listdir(self.year_path)
+        mo_list = os.listdir(self.year_path)
         mo_list.sort()
         return mo_list
 
@@ -199,7 +196,7 @@ class YearDir(object):
             # If the image is from an earlier month, then something's wrong.
             print("Attempt to pull image %s into folder %s, "
                         "but that folder is older than one month."
-                        % (path_basename(img_orig_path), yrmon))
+                        % (os.path.basename(img_orig_path), yrmon))
             list_all_img_dates(img_orig_path)
 
     def __str__(self):
@@ -218,37 +215,37 @@ class MoDir(object):
         self.YrDir = YrDir
 
         if not self.dir_name in YrDir.get_mo_list():
-            mkdir(self.yrmonth_path)
+            os.mkdir(self.yrmonth_path)
 
     def get_mo_path(self):
         return self.yrmonth_path
 
     def get_img_list(self):
-        self.img_list = listdir(self.yrmonth_path)
+        self.img_list = os.listdir(self.yrmonth_path)
         return self.img_list
 
     def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
-        img_name = path_basename(img_orig_path)   # no trailing slash
+        img_name = os.path.basename(img_orig_path)   # no trailing slash
         if img_name in self.get_img_list():
             print("Attempt to pull image %s into folder %s, "
                                 "but an image of that name already exists here."
                                                     % (img_name, self.dir_name))
         else:
-            stamped_name = strftime('%Y-%m-%d', img_time) + '_' + img_name
+            stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
             img_new_path = self.yrmonth_path + stamped_name
 
             # Copy into the dated directory
-            sh_copy2(img_orig_path, img_new_path)
+            shutil.copy2(img_orig_path, img_new_path)
 
             # Also copy the img into the cat buffer for next step in prog.
-            if ".AAE" not in path_basename(img_orig_path):
+            if ".AAE" not in os.path.basename(img_orig_path):
                 # Don't copy AAE files into cat buffer.
                 # They will still exist in raw and organized folders, but it doesn't serve
                 # any value to copy them elsewhere.
                 # They can also have dates that don't match the corresponding img/vid.
                 # This can cause confusion.
-                sh_copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
+                shutil.copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
 
     def __str__(self):
         return self.dir_name

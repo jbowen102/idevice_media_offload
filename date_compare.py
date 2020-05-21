@@ -1,12 +1,6 @@
-import PIL.Image
-from PIL.ExifTags import TAGS
-from os import listdir, rename
-from os.path import getmtime, isdir
-from os.path import exists as path_exists
-from os.path import splitext as path_splitext
-from os.path import basename as path_basename
-from os.path import dirname as path_dirname
-from time import localtime, struct_time, strftime, strptime
+import PIL
+import os
+import time
 import exiftool
 
 
@@ -26,26 +20,26 @@ def list_all_img_dates(path, rename_with_datestamp=False):
     as they are processed.
     datestamp_all() function below now preferred."""
 
-    if not path_exists(path):
+    if not os.path.exists(path):
         print("Not a valid path.")
         return None
-    elif isdir(path):
+    elif os.path.isdir(path):
         if path[-1] != '/':
             path += '/'
-        image_list = listdir(path)
+        image_list = os.listdir(path)
         image_list.sort()
     else:
         # If path is only a single image instead of a directory, separate out
         # the image name from the path to conform to path + img convention in
         # rest of code. Create a length-one list with that image name to
         # loop through.
-        single_image = path_basename(path) # single-img path has no trailing slash
-        path = path_dirname(path) + "/"
+        single_image = os.path.basename(path) # single-img path has no trailing slash
+        path = os.path.dirname(path) + "/"
         image_list = [single_image]
 
     for img in image_list:
-        img_ext = path_splitext(img)[-1].upper()
-        file_mod_time = strftime(DATETIME_FORMAT, localtime(getmtime(path + img)))
+        img_ext = os.path.splitext(img)[-1].upper()
+        file_mod_time = time.strftime(DATETIME_FORMAT, time.localtime(os.path.getmtime(path + img)))
 
         if img_ext in [".JPG", ".JPEG"]:
             img_obj = PIL.Image.open(path + img)
@@ -53,7 +47,7 @@ def list_all_img_dates(path, rename_with_datestamp=False):
             encoded_exif = img_obj._getexif()
             pil_metadata = {}
             for tag, value in encoded_exif.items():
-                 decoded_key = TAGS.get(tag, tag)
+                 decoded_key = PIL.ExifTags.TAGS.get(tag, tag)
                  if "DateTime" in str(decoded_key):
                      pil_metadata[decoded_key] = value
 
@@ -216,14 +210,14 @@ def datestamp_all(dir_path, longstamp=False):
     terminal output. Uses add_datestamp() function below for each file processed.
     Second parameter determines if date only or both date/time will be added."""
 
-    if not path_exists(dir_path) or not isdir(dir_path):
+    if not os.path.exists(dir_path) or not os.path.isdir(dir_path):
         print("Not a valid directory path.")
         return None
 
     if dir_path[-1] != '/':
         dir_path += '/'
 
-    image_list = listdir(dir_path)
+    image_list = os.listdir(dir_path)
     image_list.sort()
 
     for img in image_list:
@@ -238,18 +232,18 @@ def add_datestamp(img_path, long_stamp=False):
     # need a variable name that stores images best guess-time. look at
     # get_img_date end code.
 
-    if not path_exists(img_path):
+    if not os.path.exists(img_path):
         raise DirectoryNameError("Invalid path passed to add_datestamp() function.")
 
     # Separate out image name from directory path
-    img_name = path_basename(img_path)  # no trailing slash present
-    dir_path = path_dirname(img_path) + "/"
+    img_name = os.path.basename(img_path)  # no trailing slash present
+    dir_path = os.path.dirname(img_path) + "/"
 
     datestamp_obj = get_img_date(img_path)
 
     if datestamp_obj:
-        datestamp_short = strftime('%Y-%m-%d', datestamp_obj)
-        datestamp_long = strftime(DATETIME_FORMAT, datestamp_obj)
+        datestamp_short = time.strftime('%Y-%m-%d', datestamp_obj)
+        datestamp_long = time.strftime(DATETIME_FORMAT, datestamp_obj)
     else:
         # if get_img_date returned None (because file wasn't a recognized img format),
         # don't proceed further.
@@ -287,14 +281,14 @@ def add_datestamp(img_path, long_stamp=False):
 def safe_rename(img_path, new_img_name):
     """Ensures that rename action does not overwrite existing img in target dir."""
 
-    if not path_exists(img_path):
+    if not os.path.exists(img_path):
         raise DirectoryNameError("Invalid path passed to safe_rename() function.")
 
-    target_dir = path_dirname(img_path)
-    target_dir_imgs = listdir(target_dir)
+    target_dir = os.path.dirname(img_path)
+    target_dir_imgs = os.listdir(target_dir)
 
-    new_img_name_noext = path_splitext(new_img_name)[0]
-    img_ext = path_splitext(new_img_name)[-1]
+    new_img_name_noext = os.path.splitext(new_img_name)[0]
+    img_ext = os.path.splitext(new_img_name)[-1]
 
     if new_img_name in target_dir_imgs:
         n = 1
@@ -310,7 +304,7 @@ def safe_rename(img_path, new_img_name):
 
         new_img_name = new_img_name_noext + img_ext
 
-    rename(img_path, target_dir + "/" + new_img_name)
+    os.rename(img_path, target_dir + "/" + new_img_name)
 
 
 def get_img_date(img_path):
@@ -319,13 +313,13 @@ def get_img_date(img_path):
     Returns a struct_time object."""
     # modify to look for each metadata type and fall back on mtime if needed.
 
-    if not path_exists(img_path):
+    if not os.path.exists(img_path):
         raise DirectoryNameError("Invalid path passed to get_img_date() function.")
 
-    img_name = path_basename(img_path)  # no trailing slash in path
-    img_ext = path_splitext(img_name)[-1].upper()
+    img_name = os.path.basename(img_path)  # no trailing slash in path
+    img_ext = os.path.splitext(img_name)[-1].upper()
 
-    if isdir(img_path):
+    if os.path.isdir(img_path):
         print("%s is a directory. Skipping"
                                     % img_name)
         return None
@@ -382,18 +376,18 @@ def get_img_date(img_path):
             return None
 
         if create_time:
-            create_time_obj = strptime(create_time, format)
+            create_time_obj = time.strptime(create_time, format)
             return create_time_obj
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
-            print("Falling back on fs mod time for %s" % path_basename(img_path))
-            file_mod_time_obj = localtime(getmtime(img_path))
+            print("Falling back on fs mod time for %s" % os.path.basename(img_path))
+            file_mod_time_obj = time.localtime(os.path.getmtime(img_path))
             return file_mod_time_obj
 
 
 def tz_adjust(time_str, format, shift):
     """Function to adjust timezone of a datestamp."""
-    time_obj = strptime(time_str, format)
+    time_obj = time.strptime(time_str, format)
 
     ts_list = list(time_obj)
     if ts_list[3] <= shift:
@@ -401,19 +395,19 @@ def tz_adjust(time_str, format, shift):
         return None
     else:
         ts_list[3] -= shift         # EST. DST not accounted for.
-        time_obj_adjusted = struct_time(tuple(ts_list))
-        time_str_adjusted = strftime(format, time_obj_adjusted)
+        time_obj_adjusted = time.struct_time(tuple(ts_list))
+        time_str_adjusted = time.strftime(format, time_obj_adjusted)
         return time_str_adjusted
 
 
 def meta_dump(img_path):
     """Display all available exiftool data (for any file w/ EXIF data)."""
 
-    if not path_exists(img_path):
+    if not os.path.exists(img_path):
         print("Not a valid path.")
         return None
-    elif isdir(img_path):
-        print("%s is a directory. Need path to image." % path_basename(img_path))
+    elif os.path.isdir(img_path):
+        print("%s is a directory. Need path to image." % os.path.basename(img_path))
         return None
 
     with exiftool.ExifTool() as et:
