@@ -41,7 +41,7 @@ def run_cat(buffer_root):
 
 def run_all(bu_root_dir, buffer_root_dir):
     run_offload(bu_root_dir)
-    run_org(bu_dir_root, buffer_root_dir)
+    run_org(bu_root_dir, buffer_root_dir)
     run_cat(buffer_root_dir)
 
 

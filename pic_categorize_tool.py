@@ -134,7 +134,7 @@ def photo_transfer(buffer_root, start_point=""):
                     "Check folder(s) for any uncategorized pictures and "
                     "categorize them manually.\nPress Enter to continue or 'q' to quit.\n>>> ")
         if sort_folder_response.lower() == 'q':
-            quit()
+            return
         else:
             continue
     # Once manual sort folder is empty, remove it as long as it's empty.
@@ -147,7 +147,7 @@ def photo_transfer(buffer_root, start_point=""):
                 other_folder_response = input("\nAt least one manual-sort folder in the buffer is populated.\n"
                     "Categorize content then press Enter to continue or 'q' to quit.\n>>> ")
                 if other_folder_response.lower() == 'q':
-                    quit()
+                    return
                 else:
                     continue
             if not os.listdir(buffer_root + other_folder):
