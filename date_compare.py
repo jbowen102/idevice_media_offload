@@ -1,4 +1,6 @@
-import PIL
+import PIL.Image
+# https://stackoverflow.com/questions/11911480/python-pil-has-no-attribute-image
+from PIL.ExifTags import TAGS
 import os
 import time
 import exiftool
