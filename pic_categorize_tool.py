@@ -225,19 +225,28 @@ def st_target_dir(img_path):
     return st_root + img_date
 
 
-def copy_to_target(img_path, target_dir, move_op=False):
+def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
     """Function to copy img to target directory with collision detection.
     If 'move_op' param specified, delete img from current dir."""
 
     img = os.path.basename(img_path)
     # img = img_path.split('/')[-1]
+    if not new_name:
+        new_name = img
+
+    # Need to assume trailing slash in target_dir later.
+    if target_dir[-1] != "/":
+        target_dir += "/"
 
     # Prompt user for decision if collision detected.
     target_dir_imgs = os.listdir(target_dir)
-    if img in target_dir_imgs:
+    if new_name in target_dir_imgs:
 
-        if same_hash(img_path, os.path.join(target_dir, img)):
+        if same_hash(img_path, os.path.join(target_dir, new_name)):
             # First check if they are the same file. If so, don't replace.
+            print("%s/%s with same file hash exists already. "
+                                    "Dest file not overwritten.\n"
+                                % (os.path.basename(target_dir[:-1]), new_name))
             if move_op:
                 os.remove(img_path)
             else:
@@ -247,24 +256,22 @@ def copy_to_target(img_path, target_dir, move_op=False):
             # Otherwise, need user input to decide what to do about collision.
             action = None
             while action != "s" and action != "o" and action != "k":
-
                 action = input("Collision detected: %s in dir:\n\t%s\n"
                     "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> "
-                                                % (img, target_dir))
-
+                                                % (new_name, target_dir))
                 if action.lower() == "s":
                     return
                 elif action.lower() == "o":
                     # Overwrite file in destination folder w/ same name.
-                    os.remove(os.path.join(target_dir, img))
+                    os.remove(os.path.join(target_dir, new_name))
                     shutil.move(img_path, target_dir)
                     return
                 elif action.lower() == "k":
                     # repeatedly check for existence of duplicates until a free
                     # name appears. Assume there will never be more than 9.
                     # Prefer shorter file name to spare leading zeros.
-                    img_noext = os.path.splitext(img)[0]
-                    img_ext = os.path.splitext(img)[-1]
+                    img_noext = os.path.splitext(new_name)[0]
+                    img_ext = os.path.splitext(new_name)[-1]
 
                     n = 1
                     img_noext = img_noext + "_%d" % n
@@ -283,9 +290,9 @@ def copy_to_target(img_path, target_dir, move_op=False):
                                 os.path.join(target_dir, img_noext + img_ext))
 
     elif move_op:
-        shutil.move(img_path, target_dir)
+        shutil.move(img_path, os.path.join(target_dir, new_name))
     else:
-        shutil.copy2(img_path, target_dir)
+        shutil.copy2(img_path, os.path.join(target_dir, new_name))
 
 
 def display_photo(img_path):

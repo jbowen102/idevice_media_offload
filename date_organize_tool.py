@@ -1,13 +1,10 @@
 import os
-import shutil
 import time
 from tqdm import tqdm
 
 import date_compare
 import pic_categorize_tool as cat_tool
 from pic_offload_tool import RawOffloadGroup
-
-
 
 
 
@@ -19,7 +16,8 @@ class OrganizeFolderError(Exception):
 # Creates new dated folders where needed.
 # Prepends timestamps to img names.
 
-# Instantiate an OrganizedGroup instance with bu_root_path then call its run_org() method.
+# Instantiate an OrganizedGroup instance with bu_root_path then call its
+# run_org() method.
 
 class OrganizedGroup(object):
     """Represents date-organized directory structure. Contains YrDir objects
@@ -89,7 +87,7 @@ class OrganizedGroup(object):
 
         if yr_str in self.get_latest_yrs():
             # Proceed as normal for this year and last
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time, bypass_age_warn)
+            self.yr_objs[yr_str].insert_img(img_orig_path, img_time)
         elif yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
@@ -98,7 +96,8 @@ class OrganizedGroup(object):
             NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
         elif man_img_time:
             # If a manual time asserted by user, ignore age-related warnings.
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time, bypass_age_warn)
+            self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                                                        bypass_age_warn=True)
         else:
             print("Attempted to pull image into %s-%s dir, "
                                 "but a more recent year dir exists, so "
@@ -118,22 +117,6 @@ class OrganizedGroup(object):
                 self.make_year(yr_str)
                 self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
                                                         bypass_age_warn=True)
-
-
-            # date_compare.list_all_img_dates(img_orig_path)
-            # cat_tool.display_photo(img_orig_path)
-            # man_img_time = input("Manually specify timestamp in "
-            #                     "YYYY-MM-DD format.\n>>>")
-            # if man_img_time:
-            #     try:
-            #         man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
-            #         self.insert_img(img_orig_path, man_img_time_struct)
-            #     except ValueError:
-            #         print("Bad date format. Try again.\n")
-            #         self.insert_img(img_orig_path)
-            # else:
-            #     # If nothing valid specified, repeat same call to repeat prompt.
-            #     self.insert_img(img_orig_path)
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
@@ -234,12 +217,7 @@ class YearDir(object):
             "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
 
-##
-            # date_compare.list_all_img_dates(img_orig_path)
-            # cat_tool.display_photo(img_orig_path)
-            # man_img_time = input("Manually specify timestamp in "
-            #                     "YYYY-MM-DD format.\n>>>")
-###
+
             man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
             if man_img_time_struct:
                 self.insert_img(img_orig_path, man_img_time_struct,
@@ -251,17 +229,6 @@ class YearDir(object):
                 # year-month directory doesn't exist yet, so have make it.
                 self.make_yrmonth(yrmon)
                 self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-
-            # if man_img_time:
-            #     try:
-            #         man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
-            #         self.insert_img(img_orig_path, man_img_time_struct)
-            #     except ValueError:
-            #         print("Bad date format. Try again.\n")
-            #         self.insert_img(img_orig_path)
-            # else:
-            #     # If nothing valid specified, repeat same call to repeat prompt.
-            #     self.insert_img(img_orig_path)
 
     def __str__(self):
         return self.year_name
@@ -292,24 +259,21 @@ class MoDir(object):
         # make sure image not already here
         img_name = os.path.basename(img_orig_path)   # no trailing slash
         stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
-        if stamped_name in self.get_img_list():
-            print("Attempt to pull image %s into folder %s, "
-                                "but an image of that name already exists here."
-                                                    % (img_name, self.dir_name))
-        else:
-            img_new_path = self.yrmonth_path + stamped_name
 
-            # Copy into the dated directory
-            shutil.copy2(img_orig_path, img_new_path)
+        # Copy into the dated directory
+        cat_tool.copy_to_target(img_orig_path, self.yrmonth_path,
+                                                        new_name=stamped_name)
 
-            # Also copy the img into the cat buffer for next step in prog.
-            if ".AAE" not in os.path.basename(img_orig_path):
-                # Don't copy AAE files into cat buffer.
-                # They will still exist in raw and organized folders, but it doesn't serve
-                # any value to copy them elsewhere.
-                # They can also have dates that don't match the corresponding img/vid.
-                # , causing confusion.
-                shutil.copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
+        # Also copy the img into the cat buffer for next step in prog.
+        if ".AAE" not in os.path.basename(img_orig_path):
+            # Don't copy AAE files into cat buffer.
+            # They will still exist in raw and organized folders, but it
+            # doesn't serve any value to copy them elsewhere.
+            # They can also have dates that don't match the corresponding
+            # img/vid, causing confusion.
+            cat_tool.copy_to_target(img_orig_path,
+                                self.YrDir.OrgGroup.get_buffer_root_path(),
+                                new_name=stamped_name)
 
     def __str__(self):
         return self.dir_name
