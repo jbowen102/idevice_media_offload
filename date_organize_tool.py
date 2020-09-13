@@ -3,8 +3,12 @@ import shutil
 import time
 from tqdm import tqdm
 
+import date_compare
+import pic_categorize_tool as cat_tool
 from pic_offload_tool import RawOffloadGroup
-from date_compare import get_img_date, list_all_img_dates
+
+
+
 
 
 class OrganizeFolderError(Exception):
@@ -28,10 +32,10 @@ class OrganizedGroup(object):
         if not os.path.exists(self.date_root_path):
             raise OrganizeFolderError("Organized dir not found at %s! "
                         "Pics not organized. Terminating" % self.date_root_path)
-        # Initialize object dictionary. Instantiate most recent year object.
+        # Initialize object dictionary.
         self.yr_objs = {}
 
-        # self.make_year(self.get_yr_list()[-1])
+        # Instantiate year objects.
         yr_list = self.get_yr_list()
         for yr in yr_list:
             self.make_year(yr)
@@ -51,9 +55,15 @@ class OrganizedGroup(object):
     def get_yr_objs(self):
         return self.yr_objs
 
-    def get_latest_yr(self):
-        latest_yr_name = self.get_yr_list()[-1]
-        return self.yr_objs.get(latest_yr_name)
+    def get_latest_yrs(self):
+        """Returns most recent year or two years if more than one present."""
+        if len(self.get_yr_list()) > 1:
+            latest_yr_names = self.get_yr_list()[-2:]
+            return [str(self.yr_objs.get(latest_yr_names[0])),
+                    str(self.yr_objs.get(latest_yr_names[1]))]
+        else:
+            latest_yr_name = self.get_yr_list()[-1]
+            return [str(self.yr_objs.get(latest_yr_name))]
 
     def make_year(self, year):
         # check that year doesn't already exist in list
@@ -70,39 +80,60 @@ class OrganizedGroup(object):
         if man_img_time:
             img_time = man_img_time
         else:
-            img_time = get_img_date(img_orig_path)
+            img_time = date_compare.get_img_date(img_orig_path)
 
         yr_str = str(img_time.tm_year)
         mo_str = str(img_time.tm_mon)
         # print(self.yr_objs)
         # print(str(self.get_latest_yr()))
 
-        if yr_str in self.yr_objs:
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time)
-        elif yr_str > str(self.get_latest_yr()):
+        if yr_str in self.get_latest_yrs():
+            # Proceed as normal for this year and last
+            self.yr_objs[yr_str].insert_img(img_orig_path, img_time, bypass_age_warn)
+        elif yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
-            NewYr.insert_img(img_orig_path, img_time)
+            NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
+        elif man_img_time:
+            # If a manual time asserted by user, ignore age-related warnings.
+            self.yr_objs[yr_str].insert_img(img_orig_path, img_time, bypass_age_warn)
         else:
-            print("Attempt to pull image %s into folder %s-%s, "
-                                    "but that is older than one month, so "
-                                    "timestamp is likely wrong." %
-                                    (os.path.basename(img_orig_path), yr_str, mo_str))
-            man_img_time = input("Manually specify timestamp in "
-                                "YYYY-MM-DD format.\n>>>")
-            if man_img_time:
-                try:
-                    man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
-                    self.insert_img(img_orig_path, man_img_time_struct)
-                except:
-                    print("Bad date format. Try again.\n")
-                    self.insert_img(img_orig_path)
-            else:
-                # If nothing valid specified, repeat same call to repeat prompt.
-                self.insert_img(img_orig_path)
+            print("Attempted to pull image into %s-%s dir, "
+                                "but a more recent year dir exists, so "
+                                "timestamp may be wrong.\nFallback bypasses "
+                                "warning and copies into older dir anyway."
+                                                        % (yr_str, mo_str))
 
+            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
+            if man_img_time_struct:
+                self.insert_img(img_orig_path, man_img_time_struct)
+            elif yr_str in self.get_yr_list():
+                # continue with operation anyway
+                self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                                                        bypass_age_warn=True)
+            else:
+                # year directory doesn't exist yet, so have make it.
+                self.make_year(yr_str)
+                self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                                                        bypass_age_warn=True)
+
+
+            # date_compare.list_all_img_dates(img_orig_path)
+            # cat_tool.display_photo(img_orig_path)
+            # man_img_time = input("Manually specify timestamp in "
+            #                     "YYYY-MM-DD format.\n>>>")
+            # if man_img_time:
+            #     try:
+            #         man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
+            #         self.insert_img(img_orig_path, man_img_time_struct)
+            #     except ValueError:
+            #         print("Bad date format. Try again.\n")
+            #         self.insert_img(img_orig_path)
+            # else:
+            #     # If nothing valid specified, repeat same call to repeat prompt.
+            #     self.insert_img(img_orig_path)
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
@@ -177,27 +208,60 @@ class YearDir(object):
         else:
             self.mo_objs[yrmonth] = MoDir(yrmonth, self)
 
-    def insert_img(self, img_orig_path, img_time):
+    def insert_img(self, img_orig_path, img_time, bypass_age_warn=False):
         yr_str = str(img_time.tm_year)
         # Have to zero-pad single-digit months pulled from struct_time
         mon_str = str(img_time.tm_mon).zfill(2)
         yrmon = "%s-%s" % (yr_str, mon_str)
 
-        if yrmon in self.get_mo_objs():
+        if yrmon == str(self.get_latest_mo()):
             # Pass image path to correct month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
+                                                                bypass_age_warn)
         elif (not self.get_latest_mo()) or (yrmon > str(self.get_latest_mo())):
             # If there are no months in year directory, or if the image is from
             # a later month than the existing folders, make new month object.
             self.make_yrmonth(yrmon)
             # Pass image path to new month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
+                                                                bypass_age_warn)
+        elif bypass_age_warn:
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
+                                                                bypass_age_warn)
         else:
-            # If the image is from an earlier month, then something's wrong.
-            print("Attempt to pull image %s into folder %s, "
-                        "but that folder is older than one month."
-                        % (os.path.basename(img_orig_path), yrmon))
-            list_all_img_dates(img_orig_path)
+            # If the image is from an earlier month:
+            print("Attempted to pull image into %s dir, but a more recent "
+            "month dir exists, so timestamp may be wrong.\nFallback bypasses "
+                            "warning and copies into older dir anyway." % yrmon)
+
+##
+            # date_compare.list_all_img_dates(img_orig_path)
+            # cat_tool.display_photo(img_orig_path)
+            # man_img_time = input("Manually specify timestamp in "
+            #                     "YYYY-MM-DD format.\n>>>")
+###
+            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
+            if man_img_time_struct:
+                self.insert_img(img_orig_path, man_img_time_struct,
+                                                        bypass_age_warn=True)
+            elif yrmon in self.get_mo_objs().keys():
+                # continue with operation anyway
+                self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+            else:
+                # year-month directory doesn't exist yet, so have make it.
+                self.make_yrmonth(yrmon)
+                self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+
+            # if man_img_time:
+            #     try:
+            #         man_img_time_struct = time.strptime(man_img_time, "%Y-%m-%d")
+            #         self.insert_img(img_orig_path, man_img_time_struct)
+            #     except ValueError:
+            #         print("Bad date format. Try again.\n")
+            #         self.insert_img(img_orig_path)
+            # else:
+            #     # If nothing valid specified, repeat same call to repeat prompt.
+            #     self.insert_img(img_orig_path)
 
     def __str__(self):
         return self.year_name
@@ -227,12 +291,12 @@ class MoDir(object):
     def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
         img_name = os.path.basename(img_orig_path)   # no trailing slash
-        if img_name in self.get_img_list():
+        stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
+        if stamped_name in self.get_img_list():
             print("Attempt to pull image %s into folder %s, "
                                 "but an image of that name already exists here."
                                                     % (img_name, self.dir_name))
         else:
-            stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
             img_new_path = self.yrmonth_path + stamped_name
 
             # Copy into the dated directory
@@ -244,7 +308,7 @@ class MoDir(object):
                 # They will still exist in raw and organized folders, but it doesn't serve
                 # any value to copy them elsewhere.
                 # They can also have dates that don't match the corresponding img/vid.
-                # This can cause confusion.
+                # , causing confusion.
                 shutil.copy2(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path() + stamped_name)
 
     def __str__(self):

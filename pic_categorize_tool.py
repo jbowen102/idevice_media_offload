@@ -132,7 +132,7 @@ def photo_transfer(buffer_root, start_point=""):
     while os.listdir(CAT_DIRS['u']):
         sort_folder_response = input("\nToday's manual-sort folder populated.\n"
                     "Check folder(s) for any uncategorized pictures and "
-                    "categorize them manually.\nPress Enter to continue or 'q' to quit.\n>>> ")
+                    "categorize them manually.\nPress Enter to continue or 'q' to quit.\n> ")
         if sort_folder_response.lower() == 'q':
             return
         else:
@@ -145,7 +145,7 @@ def photo_transfer(buffer_root, start_point=""):
         if "manual_" in other_folder:
             while os.listdir(buffer_root + other_folder):
                 other_folder_response = input("\nAt least one manual-sort folder in the buffer is populated.\n"
-                    "Categorize content then press Enter to continue or 'q' to quit.\n>>> ")
+                    "Categorize content then press Enter to continue or 'q' to quit.\n> ")
                 if other_folder_response.lower() == 'q':
                     return
                 else:
@@ -174,7 +174,7 @@ def get_target_dir(img_path, target_input=""):
         # Continue prompting until non-empty string input.
         display_photo(img_path)
         target_input = input("Enter target location for %s (or 'n' for no "
-                                            "transfer)\n>" % image_name)
+                                            "transfer)\n> " % image_name)
 
     if target_input == 'st':
         # 'st' type images require target folder creation in most cases.

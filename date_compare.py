@@ -4,6 +4,7 @@ from PIL.ExifTags import TAGS
 import os
 import time
 import exiftool
+import pic_categorize_tool as cat_tool
 
 
 # class ImgTypeError(Exception):
@@ -13,6 +14,7 @@ class DirectoryNameError(Exception):
     pass
 
 DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
+DATE_FORMAT = "%Y-%m-%d"  # Global format
 
 
 def list_all_img_dates(path, rename_with_datestamp=False):
@@ -267,7 +269,7 @@ def add_datestamp(img_path, long_stamp=False):
         # rename shorter-stamped names when long stamp desired.
         # note that datestamp_short appears in imgs w/ datestamp_long.
         img_lengthened = img_name.replace(datestamp_short, datestamp_long)
-        safe_rename(img_path, img_lenghthened)
+        safe_rename(img_path, img_lengthened)
     elif img_name[:4] != 'IMG_':
         # Detect presence of non-standard naming (could be pre-existing alternate datestamp)
         rename_choice = input("%s has non-standard naming. "
@@ -382,9 +384,35 @@ def get_img_date(img_path):
             return create_time_obj
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
-            print("Falling back on fs mod time for %s" % os.path.basename(img_path))
-            file_mod_time_obj = time.localtime(os.path.getmtime(img_path))
-            return file_mod_time_obj
+            print("No valid EXIF timestamp found. Enter new timestamp or "
+                                                "fall back on fs mod time")
+            manual_time_obj = spec_manual_time(img_path)
+            if manual_time_obj:
+                return manual_time_obj
+            else:
+                # Go ahead w/ fs mod time if user accepts fallback.
+                return time.localtime(os.path.getmtime(img_path))
+
+
+def spec_manual_time(img_path):
+    """Prompts user to enter a timestamp for displayed pic. Returns a
+    struct_time object or None if user accepts (caller-defined)
+    fallback option."""
+
+    list_all_img_dates(img_path)
+    cat_tool.display_photo(img_path)
+    man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
+                                    "enter nothing to accept fallback.\n>")
+    if man_img_time:
+        try:
+            man_img_time_struct = time.strptime(man_img_time, DATE_FORMAT)
+            return man_img_time_struct
+        except ValueError:
+            print("Bad date format. Try again.\n")
+            return spec_manual_time(img_path)
+    else:
+        # If nothing valid specified, indicate to caller fxn to use fallback
+        return None
 
 
 def tz_adjust(time_str, format, shift):
