@@ -45,9 +45,9 @@ def auto_cat(buffer_root):
 
             target_dir = get_target_dir(img_path, "st")
             if target_dir:
-                move_to_target(img_path, target_dir)
+                copy_to_target(img_path, target_dir, move_op=True)
             else:
-                # If None was returned by get_target_dir, delete image from buffer.
+                # If None returned by get_target_dir, delete image from buffer.
                 # This happens for .AAE files.
                 os.remove(img_path)
 
@@ -58,8 +58,8 @@ def auto_cat(buffer_root):
 
 def photo_transfer(buffer_root, start_point=""):
     """Master function to displays images in buffer and prompt user
-    where it should be copied. Execute copy.
-    Start_point can be specified (as img name) to skip processing earlier imgs."""
+    where it should be copied. Execute copy. Start_point can be specified
+    (as img name) to skip processing earlier imgs."""
 
     print("Categorizing images from buffer:\n\t%s\n" % buffer_root)
     # Print dict of directory mappings
@@ -72,8 +72,8 @@ def photo_transfer(buffer_root, start_point=""):
         print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
 
     print("\n(Append '&' to first choice if multiple destinations needed)\n"
-            "(Append '+' followed by a two-digit number to use same dest folder for "
-                    "subsequent [number] of pics)\n")
+            "(Append '+' followed by a two-digit number to use same dest "
+                    "folder for subsequent [number] of pics)\n")
 
     # Initialize manual-sort directory
     if not os.path.exists(CAT_DIRS['u']):
@@ -100,21 +100,21 @@ def photo_transfer(buffer_root, start_point=""):
             # If get_target_dir detected the trailing special character '&',
             # then after copying image into one place, the user should be
             # prompted again w/ same photo to put somewhere else.
-            shutil.copy2(img_path, target_dir[1:])
+            copy_to_target(img_path, target_dir[1:])
             photo_transfer(buffer_root, img)
             return
 
         if target_dir and (target_dir[0] == '!'):
-            move_to_target(img_path, target_dir[3:])
+            copy_to_target(img_path, target_dir[3:], move_op=True)
 
             # If get_target_dir detected the trailing special character '+' and
-            # a two-digit number, then copy multiple successive images into same place.
+            # a two-digit number, copy multiple successive images to same place.
             additional_copies = int(target_dir[1:3])
             re_buffered_imgs = os.listdir(buffer_root)
             re_buffered_imgs.sort()
             for extra_img in re_buffered_imgs[:additional_copies]:
                 extra_img_path = buffer_root + extra_img
-                move_to_target(extra_img_path, target_dir[3:])
+                copy_to_target(extra_img_path, target_dir[3:], move_op=True)
 
             photo_transfer(buffer_root)
             return
@@ -122,7 +122,7 @@ def photo_transfer(buffer_root, start_point=""):
         elif target_dir:
             # Execute the move from buffer to appropriate dir. End loop if user
             # returns an abort command due to collision prompt.
-            move_to_target(img_path, target_dir)
+            copy_to_target(img_path, target_dir, move_op=True)
 
         else:
             # If None was returned by get_target_dir, delete image from buffer.
@@ -132,7 +132,8 @@ def photo_transfer(buffer_root, start_point=""):
     while os.listdir(CAT_DIRS['u']):
         sort_folder_response = input("\nToday's manual-sort folder populated.\n"
                     "Check folder(s) for any uncategorized pictures and "
-                    "categorize them manually.\nPress Enter to continue or 'q' to quit.\n> ")
+                    "categorize them manually.\nPress Enter to continue or 'q' "
+                                                                "to quit.\n> ")
         if sort_folder_response.lower() == 'q':
             return
         else:
@@ -144,8 +145,9 @@ def photo_transfer(buffer_root, start_point=""):
     for other_folder in os.listdir(buffer_root):
         if "manual_" in other_folder:
             while os.listdir(buffer_root + other_folder):
-                other_folder_response = input("\nAt least one manual-sort folder in the buffer is populated.\n"
-                    "Categorize content then press Enter to continue or 'q' to quit.\n> ")
+                other_folder_response = input("\nAt least one manual-sort "
+                    "folder in the buffer is populated.\nCategorize content "
+                    "then press Enter to continue or 'q' to quit.\n> ")
                 if other_folder_response.lower() == 'q':
                     return
                 else:
@@ -163,8 +165,8 @@ def get_target_dir(img_path, target_input=""):
 
     # if image_name[-4:] == ".AAE":
     #     # Don't prompt for AAE files. Just delete.
-    #     # They will still exist in raw and organized folders, but it doesn't serve
-    #     # any value to copy them elsewhere.
+    #     # They will still exist in raw and organized folders, but it doesn't
+    #     # serve any value to copy them elsewhere.
     #     # They can also have dates that don't match the corresponding img/vid.
     #     # This can cause confusion.
     #     return None
@@ -181,19 +183,22 @@ def get_target_dir(img_path, target_input=""):
         return st_target_dir(img_path)
     elif target_input == 'n':
         return None
-    elif ( (target_input[-1] == '&') and
-          (CAT_DIRS.get(target_input[:-1]) or os.path.isdir(target_input[:-1])) ):
+    elif ( (target_input[-1] == '&')
+           and (CAT_DIRS.get(target_input[:-1])
+                or os.path.isdir(target_input[:-1])) ):
         # If the '&' special character invoked, it means the image needs to be
-        # copied into multiple places, and the program should prompt another time.
+        # copied into multiple places, and the program should prompt again.
         # pre-pend '*' to returned path to indicate special case to caller.
         return '*' + get_target_dir(img_path, target_input[:-1])
-    elif ( (len(target_input) >= 3) and
-           (target_input[-3] == '+') and
-           (CAT_DIRS.get(target_input[:-3]) or os.path.isdir(target_input[:-3])) ):
-        # If the '+' special character invoked, it means subsequent image(s) need to be
-        # copied into same dest.
+    elif ( len(target_input) >= 3
+           and target_input[-3] == '+'
+           and (CAT_DIRS.get(target_input[:-3])
+                or os.path.isdir(target_input[:-3])) ):
+        # If the '+' special character invoked, it means subsequent image(s)
+        # need to be copied into same dest.
         # pre-pend '!' to returned path to indicate special case to caller.
-        return '!' + target_input[-2:] + get_target_dir(img_path, target_input[:-3])
+        return '!' + target_input[-2:] + get_target_dir(img_path,
+                                                            target_input[:-3])
     elif CAT_DIRS.get(target_input):
         return CAT_DIRS[target_input]
     elif os.path.isdir(target_input):
@@ -220,8 +225,9 @@ def st_target_dir(img_path):
     return st_root + img_date
 
 
-def move_to_target(img_path, target_dir):
-    """Function to move img to target directory with collision detection."""
+def copy_to_target(img_path, target_dir, move_op=False):
+    """Function to copy img to target directory with collision detection.
+    If 'move_op' param specified, delete img from current dir."""
 
     img = os.path.basename(img_path)
     # img = img_path.split('/')[-1]
@@ -231,8 +237,11 @@ def move_to_target(img_path, target_dir):
     if img in target_dir_imgs:
 
         if same_hash(img_path, os.path.join(target_dir, img)):
-            # First check if they are the same file. If so, leave original in place.
-            return
+            # First check if they are the same file. If so, don't replace.
+            if move_op:
+                os.remove(img_path)
+            else:
+                return
 
         else:
             # Otherwise, need user input to decide what to do about collision.
@@ -240,7 +249,8 @@ def move_to_target(img_path, target_dir):
             while action != "s" and action != "o" and action != "k":
 
                 action = input("Collision detected: %s in dir:\n\t%s\n"
-                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> " % (img, target_dir))
+                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> "
+                                                % (img, target_dir))
 
                 if action.lower() == "s":
                     return
@@ -250,9 +260,9 @@ def move_to_target(img_path, target_dir):
                     shutil.move(img_path, target_dir)
                     return
                 elif action.lower() == "k":
-                    # repeatedly check for existence of duplicates until a free name appears.
-                    # assume there will never be more than 9. Prefer shorter file name
-                    # to spare leading zeros.
+                    # repeatedly check for existence of duplicates until a free
+                    # name appears. Assume there will never be more than 9.
+                    # Prefer shorter file name to spare leading zeros.
                     img_noext = os.path.splitext(img)[0]
                     img_ext = os.path.splitext(img)[-1]
 
@@ -265,17 +275,24 @@ def move_to_target(img_path, target_dir):
                             raise Exception("Image incrementer exceeded 9.\n"
                                         "Check dest folder %s" % target_dir)
                         img_noext = img_noext[:-1] + "%d" % n
+                    if move_op:
+                        shutil.move(img_path,
+                                os.path.join(target_dir, img_noext + img_ext))
+                    else:
+                        shutil.copy2(img_path,
+                                os.path.join(target_dir, img_noext + img_ext))
 
-                    shutil.move(img_path, os.path.join(target_dir, img_noext + img_ext))
-
-    else:
+    elif move_op:
         shutil.move(img_path, target_dir)
+    else:
+        shutil.copy2(img_path, target_dir)
 
 
 def display_photo(img_path):
     # Create /dev/null object to dump stdout into.
     with open(os.devnull, 'w') as FNULL:
-        subprocess.run(['xdg-open', img_path], stdout=FNULL, stderr=subprocess.PIPE)
+        subprocess.run(['xdg-open', img_path],
+                                        stdout=FNULL, stderr=subprocess.PIPE)
 
 
 def same_hash(img1_path, img2_path):
