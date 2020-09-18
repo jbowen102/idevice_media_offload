@@ -199,18 +199,15 @@ class YearDir(object):
 
         if yrmon == str(self.get_latest_mo()):
             # Pass image path to correct month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
-                                                                bypass_age_warn)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         elif (not self.get_latest_mo()) or (yrmon > str(self.get_latest_mo())):
             # If there are no months in year directory, or if the image is from
             # a later month than the existing folders, make new month object.
             self.make_yrmonth(yrmon)
             # Pass image path to new month object for insertion.
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
-                                                                bypass_age_warn)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         elif bypass_age_warn:
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time,
-                                                                bypass_age_warn)
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month:
             print("Attempted to pull image into %s dir, but a more recent "
