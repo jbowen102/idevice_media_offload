@@ -30,11 +30,12 @@ def run_org(bu_root_dir, buffer_root_dir):
 
 def run_cat(buffer_root):
     print('\n\t', '*' * 10, 'CATEGORIZE program', '*' * 10)
-    # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.
+
+    Cat = cat_tool.Categorizer(buffer_root)
+    # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.)
     # Then automatically categorize all.
-    cat_tool.auto_cat(buffer_root)
-    # Run photo_transfer()
-    cat_tool.photo_transfer(buffer_root)
+    Cat.run_auto_cat()
+    Cat.photo_transfer()
     input("\nDuplicate new st data to NAS. "
                 "Press Enter when done.")
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
