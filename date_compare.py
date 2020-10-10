@@ -17,7 +17,7 @@ DATETIME_FORMAT = "%Y-%m-%dT%H%M%S"  # Global format
 DATE_FORMAT = "%Y-%m-%d"  # Global format
 
 
-def list_all_img_dates(path, rename_with_datestamp=False):
+def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
     """Function that takes either a directory or single image path and prints
     all available timestamps for each JPG, HEIC, GIF, PNG, AAE, or MOV file for
     comparison.
@@ -208,10 +208,15 @@ def list_all_img_dates(path, rename_with_datestamp=False):
                         "        EXIFtool PLIST:AdjustmentTimestamp*:\t%s\n"
                         % (file_mod_time, adjustmentTimestamp,
                                                     adj_time)).expandtabs(28))
-
-        else:
+        elif skip_unknown:
             print("%s\n"
             "        Cannot get EXIF data for this file type. Skipping\n" % img)
+            return # Don't try to rename with datestamp.
+
+        else:
+            print((img + "\n"
+                        "        file_mod_time:\t\t%s\n"
+                        % file_mod_time).expandtabs(28))
 
         # Add datestamp to image name if desired.
         if rename_with_datestamp:
@@ -326,7 +331,7 @@ def safe_rename(img_path, new_img_name):
     os.rename(img_path, target_dir + "/" + new_img_name)
 
 
-def get_img_date(img_path):
+def get_img_date(img_path, skip_unknown=True):
     """Function that returns best available timestamp for any single JPG, HEIC,
     GIF, PNG, AAE, MP4, or MOV file located at img_path.
     Returns a struct_time object."""
@@ -391,10 +396,15 @@ def get_img_date(img_path):
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             # ex. 2019:07:05 12:46:46Z
             format = "%Y:%m:%d %H:%M:%SZ"
-        else:
-            print("%s - Cannot get EXIF data for this file type. Skipping"
+
+        elif skip_unknown:
+            print("%s - Cannot get EXIF data for this file type. Skipping."
                                         % img_name)
             return None
+        else:
+            print("%s - Cannot get EXIF data for this file type. Enter new "
+                            "timestamp or fall back on fs mod time." % img_name)
+            create_time = None
 
         if create_time:
             create_time_obj = time.strptime(create_time, format)
@@ -402,7 +412,7 @@ def get_img_date(img_path):
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
             print("No valid EXIF timestamp found. Enter new timestamp or "
-                                                "fall back on fs mod time")
+                                                "fall back on fs mod time.")
             manual_time_obj = spec_manual_time(img_path)
             if manual_time_obj:
                 return manual_time_obj
@@ -416,7 +426,7 @@ def spec_manual_time(img_path):
     struct_time object or None if user accepts (caller-defined)
     fallback option."""
 
-    list_all_img_dates(img_path)
+    list_all_img_dates(img_path, skip_unknown=False)
     cat_tool.display_photo(img_path)
     man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
                                     "enter nothing to accept fallback.\n>")

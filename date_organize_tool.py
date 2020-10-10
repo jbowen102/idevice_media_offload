@@ -78,7 +78,8 @@ class OrganizedGroup(object):
         if man_img_time:
             img_time = man_img_time
         else:
-            img_time = date_compare.get_img_date(img_orig_path)
+            img_time = date_compare.get_img_date(img_orig_path,
+                                                            skip_unknown=False)
 
         yr_str = str(img_time.tm_year)
         mo_str = str(img_time.tm_mon)
