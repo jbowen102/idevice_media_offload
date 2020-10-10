@@ -73,7 +73,7 @@ class Categorizer(object):
 
                 target_dir = self.get_target_dir(img_path, "st")
                 if target_dir:
-                    self.copy_to_target(img_path, target_dir, move_op=True)
+                    copy_to_target(img_path, target_dir, move_op=True)
                 else:
                     # If None returned by get_target_dir, delete image from buffer.
                     # This happens for .AAE files.
@@ -128,12 +128,12 @@ class Categorizer(object):
                 # If get_target_dir detected the trailing special character '&',
                 # then after copying image into one place, the user should be
                 # prompted again w/ same photo to put somewhere else.
-                self.copy_to_target(img_path, target_dir[1:])
+                copy_to_target(img_path, target_dir[1:])
                 self.photo_transfer(start_point=img)
                 return
 
             if target_dir and (target_dir[0] == '!'):
-                self.copy_to_target(img_path, target_dir[3:], move_op=True)
+                copy_to_target(img_path, target_dir[3:], move_op=True)
 
                 # If get_target_dir detected the trailing special character '+' and
                 # a two-digit number, copy multiple successive images to same place.
@@ -142,7 +142,7 @@ class Categorizer(object):
                 re_buffered_imgs.sort()
                 for extra_img in re_buffered_imgs[:additional_copies]:
                     extra_img_path = self.buffer_root + extra_img
-                    self.copy_to_target(extra_img_path, target_dir[3:], move_op=True)
+                    copy_to_target(extra_img_path, target_dir[3:], move_op=True)
 
                 self.photo_transfer()
                 return
@@ -150,7 +150,7 @@ class Categorizer(object):
             elif target_dir:
                 # Execute the move from buffer to appropriate dir. End loop if user
                 # returns an abort command due to collision prompt.
-                self.copy_to_target(img_path, target_dir, move_op=True)
+                copy_to_target(img_path, target_dir, move_op=True)
 
             else:
                 # If None was returned by get_target_dir, delete image from buffer.
@@ -202,7 +202,7 @@ class Categorizer(object):
         while not target_input:
             # Display pic or video and prompt for dest.
             # Continue prompting until non-empty string input.
-            self.display_photo(img_path)
+            display_photo(img_path)
             target_input = input("Enter target location for %s (or 'n' for no "
                                                 "transfer)\n> " % image_name)
 
@@ -255,96 +255,97 @@ class Categorizer(object):
         return st_root + img_date
 
 
-    def copy_to_target(self, img_path, target_dir, new_name=None, move_op=False):
-        """Function to copy img to target directory with collision detection.
-        If 'move_op' param specified, delete img from current dir."""
+def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
+    """Function to copy img to target directory with collision detection.
+    If 'move_op' param specified, delete img from current dir."""
 
-        img = os.path.basename(img_path)
-        # img = img_path.split('/')[-1]
-        if not new_name:
-            new_name = img
+    img = os.path.basename(img_path)
+    # img = img_path.split('/')[-1]
+    if not new_name:
+        new_name = img
 
-        # Need to assume trailing slash in target_dir later.
-        if target_dir[-1] != "/":
-            target_dir += "/"
+    # Need to assume trailing slash in target_dir later.
+    if target_dir[-1] != "/":
+        target_dir += "/"
 
-        # Prompt user for decision if collision detected.
-        target_dir_imgs = os.listdir(target_dir)
-        if new_name in target_dir_imgs:
+    # Prompt user for decision if collision detected.
+    target_dir_imgs = os.listdir(target_dir)
+    if new_name in target_dir_imgs:
 
-            if self.same_hash(img_path, os.path.join(target_dir, new_name)):
-                # First check if they are the same file. If so, don't replace.
-                print("%s/%s with same file hash exists already. "
-                                    "Dest file not overwritten.\n"
-                                % (os.path.basename(target_dir[:-1]), new_name))
-                if move_op:
-                    os.remove(img_path)
-                else:
-                    return
-
+        if same_hash(img_path, os.path.join(target_dir, new_name)):
+            # First check if they are the same file. If so, don't replace.
+            print("%s/%s with same file hash exists already. "
+                                "Dest file not overwritten.\n"
+                            % (os.path.basename(target_dir[:-1]), new_name))
+            if move_op:
+                os.remove(img_path)
             else:
-                # Otherwise, need user input to decide what to do about collision.
-                action = None
-                while action != "s" and action != "o" and action != "k":
-                    action = input("Collision detected: %s in dir:\n\t%s\n"
-                        "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> "
-                                                    % (new_name, target_dir))
-                    if action.lower() == "s":
-                        return
-                    elif action.lower() == "o":
-                        # Overwrite file in destination folder w/ same name.
-                        os.remove(os.path.join(target_dir, new_name))
-                        shutil.move(img_path, target_dir)
-                        return
-                    elif action.lower() == "k":
-                        # repeatedly check for existence of duplicates until a free
-                        # name appears. Assume there will never be more than 9.
-                        # Prefer shorter file name to spare leading zeros.
-                        img_noext = os.path.splitext(new_name)[0]
-                        img_ext = os.path.splitext(new_name)[-1]
+                return
 
-                        n = 1
-                        img_noext = img_noext + "_%d" % n
-
-                        while img_noext + img_ext in target_dir_imgs:
-                            n += 1
-                            if n > 9:
-                                raise Exception("Image incrementer exceeded 9.\n"
-                                            "Check dest folder %s" % target_dir)
-                            img_noext = img_noext[:-1] + "%d" % n
-                        if move_op:
-                            shutil.move(img_path,
-                                    os.path.join(target_dir, img_noext + img_ext))
-                        else:
-                            shutil.copy2(img_path,
-                                    os.path.join(target_dir, img_noext + img_ext))
-
-        elif move_op:
-            shutil.move(img_path, os.path.join(target_dir, new_name))
         else:
-            shutil.copy2(img_path, os.path.join(target_dir, new_name))
+            # Otherwise, need user input to decide what to do about collision.
+            action = None
+            while action != "s" and action != "o" and action != "k":
+                action = input("Collision detected: %s in dir:\n\t%s\n"
+                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> "
+                                                % (new_name, target_dir))
+                if action.lower() == "s":
+                    return
+                elif action.lower() == "o":
+                    # Overwrite file in destination folder w/ same name.
+                    os.remove(os.path.join(target_dir, new_name))
+                    shutil.move(img_path, target_dir)
+                    return
+                elif action.lower() == "k":
+                    # repeatedly check for existence of duplicates until a free
+                    # name appears. Assume there will never be more than 9.
+                    # Prefer shorter file name to spare leading zeros.
+                    img_noext = os.path.splitext(new_name)[0]
+                    img_ext = os.path.splitext(new_name)[-1]
+
+                    n = 1
+                    img_noext = img_noext + "_%d" % n
+
+                    while img_noext + img_ext in target_dir_imgs:
+                        n += 1
+                        if n > 9:
+                            raise Exception("Image incrementer exceeded 9.\n"
+                                        "Check dest folder %s" % target_dir)
+                        img_noext = img_noext[:-1] + "%d" % n
+                    if move_op:
+                        shutil.move(img_path,
+                                os.path.join(target_dir, img_noext + img_ext))
+                    else:
+                        shutil.copy2(img_path,
+                                os.path.join(target_dir, img_noext + img_ext))
+
+    elif move_op:
+        shutil.move(img_path, os.path.join(target_dir, new_name))
+    else:
+        shutil.copy2(img_path, os.path.join(target_dir, new_name))
 
 
-    def display_photo(self, img_path):
-        # Create /dev/null object to dump stdout into.
-        with open(os.devnull, 'w') as FNULL:
-            subprocess.run(['xdg-open', img_path],
-                                        stdout=FNULL, stderr=subprocess.PIPE)
+def same_hash(img1_path, img2_path):
+    with open(img1_path, 'rb') as file_obj:
+        img1_hash = hashlib.sha1(file_obj.read())
+        # print(img1_hash.hexdigest())
+
+    with open(img2_path, 'rb') as file_obj:
+        img2_hash = hashlib.sha1(file_obj.read())
+        # print(img2_hash.hexdigest())
+
+    if img1_hash.hexdigest() == img2_hash.hexdigest():
+        return True
+    else:
+        return False
 
 
-    def same_hash(self, img1_path, img2_path):
-        with open(img1_path, 'rb') as file_obj:
-            img1_hash = hashlib.sha1(file_obj.read())
-            # print(img1_hash.hexdigest())
+def display_photo(img_path):
+    # Create /dev/null object to dump stdout into.
+    with open(os.devnull, 'w') as FNULL:
+        subprocess.run(['xdg-open', img_path],
+                                    stdout=FNULL, stderr=subprocess.PIPE)
 
-        with open(img2_path, 'rb') as file_obj:
-            img2_hash = hashlib.sha1(file_obj.read())
-            # print(img2_hash.hexdigest())
-
-        if img1_hash.hexdigest() == img2_hash.hexdigest():
-            return True
-        else:
-            return False
 
 # TEST
 
