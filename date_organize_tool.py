@@ -155,6 +155,12 @@ class YearDir(object):
         # is created. Discard output.
         self.get_latest_mo()
 
+        # Create list to hold additional month directories to copy to without
+        # prompt. This is sometimes necessary when image naming puts new photo
+        # at beginning of queue and causes older photos to run "older month"
+        # prompt repeatedly.
+        self.recent_months = []
+
     def get_yr_path(self):
         return self.year_path
 
@@ -206,7 +212,7 @@ class YearDir(object):
             self.make_yrmonth(yrmon)
             # Pass image path to new month object for insertion.
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-        elif bypass_age_warn:
+        elif bypass_age_warn or yrmon in self.recent_months:
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month:
@@ -214,18 +220,20 @@ class YearDir(object):
             "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
 
-
             man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
             if man_img_time_struct:
                 self.insert_img(img_orig_path, man_img_time_struct,
                                                         bypass_age_warn=True)
-            elif yrmon in self.get_mo_objs().keys():
-                # continue with operation anyway
+            else: # continue with operation anyway
+                if yrmon not in self.get_mo_objs().keys():
+                    # year-month directory doesn't exist yet, so have make it.
+                    self.make_yrmonth(yrmon)
                 self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-            else:
-                # year-month directory doesn't exist yet, so have make it.
-                self.make_yrmonth(yrmon)
-                self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+
+                ignore = input("Ignore future warnings for this month? "
+                                                                    "[Y/N]\n>")
+                if ignore and ignore.lower() == "y":
+                    self.recent_months.append(yrmon)
 
     def __str__(self):
         return self.year_name
