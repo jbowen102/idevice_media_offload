@@ -53,10 +53,13 @@ def list_all_img_dates(path, rename_with_datestamp=False):
 
             encoded_exif = img_obj._getexif()
             pil_metadata = {}
-            for tag, value in encoded_exif.items():
-                 decoded_key = PIL.ExifTags.TAGS.get(tag, tag)
-                 if "DateTime" in str(decoded_key):
-                     pil_metadata[decoded_key] = value
+            if encoded_exif:
+                for tag, value in encoded_exif.items():
+                     decoded_key = PIL.ExifTags.TAGS.get(tag, tag)
+                     if "DateTime" in str(decoded_key):
+                         pil_metadata[decoded_key] = value
+            else:
+                pil_metadata = dict()
 
             with exiftool.ExifTool() as et:
                 exiftool_metadata = et.get_metadata(path + img)
