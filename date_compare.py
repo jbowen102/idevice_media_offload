@@ -4,7 +4,8 @@ from PIL.ExifTags import TAGS
 import os
 import time
 import exiftool
-import pic_categorize_tool as cat_tool
+
+from pic_categorize_tool import copy_to_target
 
 
 # class ImgTypeError(Exception):
