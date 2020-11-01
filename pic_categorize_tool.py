@@ -20,6 +20,9 @@ class Categorizer(object):
         self.buffer_root = buffer_root
         self.manual_dir_list = []
 
+        # Display cat buffer
+        display_dir(self.buffer_root)
+
     def add_manual_dir(self, dir_path):
         self.manual_dir_list.append(dir_path)
 
@@ -53,6 +56,9 @@ class Categorizer(object):
         st_buffer_path = self.buffer_root + "st_buffer/"
         if not os.path.exists(st_buffer_path):
             os.mkdir(st_buffer_path)
+
+        # Display cat buffer in new window.
+        display_dir(st_buffer_path)
 
         # Prompt to move stuff in bulk before looping through img display.
         input("\nDo any mass copies from categorization buffer now (e.g. "
@@ -340,11 +346,20 @@ def same_hash(img1_path, img2_path):
         return False
 
 
-def display_photo(img_path):
+def os_open(input_path):
     # Create /dev/null object to dump stdout into.
     with open(os.devnull, 'w') as FNULL:
-        subprocess.run(['xdg-open', img_path],
+        subprocess.run(['xdg-open', input_path],
                                     stdout=FNULL, stderr=subprocess.PIPE)
+
+
+def display_dir(dir_path):
+    os_open(dir_path)
+
+
+def display_photo(img_path):
+    os_open(img_path)
+
 
 
 # TEST
