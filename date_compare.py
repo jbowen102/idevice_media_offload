@@ -5,7 +5,7 @@ import os
 import time
 import exiftool
 
-from pic_categorize_tool import copy_to_target
+from pic_categorize_tool import copy_to_target, display_photo
 
 
 # class ImgTypeError(Exception):
@@ -428,7 +428,7 @@ def spec_manual_time(img_path):
     fallback option."""
 
     list_all_img_dates(img_path, skip_unknown=False)
-    cat_tool.display_photo(img_path)
+    display_photo(img_path)
     man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
                                     "enter nothing to accept fallback.\n>")
     if man_img_time:

@@ -267,7 +267,7 @@ class MoDir(object):
         stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
 
         # Copy into the dated directory
-        cat_tool.copy_to_target(img_orig_path, self.yrmonth_path,
+        copy_to_target(img_orig_path, self.yrmonth_path,
                                                         new_name=stamped_name)
 
         # Also copy the img into the cat buffer for next step in prog.
@@ -277,7 +277,7 @@ class MoDir(object):
             # doesn't serve any value to copy them elsewhere.
             # They can also have dates that don't match the corresponding
             # img/vid, causing confusion.
-            cat_tool.copy_to_target(img_orig_path,
+            copy_to_target(img_orig_path,
                                 self.YrDir.OrgGroup.get_buffer_root_path(),
                                 new_name=stamped_name)
 
