@@ -266,17 +266,19 @@ class MoDir(object):
         img_name = os.path.basename(img_orig_path)   # no trailing slash
         stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
 
-        # Copy into the dated directory
-        copy_to_target(img_orig_path, self.yrmonth_path,
+        if ".AAE" in os.path.basename(img_orig_path):
+            # Don't copy AAE files into date-organized folders or cat buffer.
+            # They will still exist in raw, but it doesn't add any value to copy
+            # them elsewhere. They can also have dates that don't match the
+            # corresponding img/vid, causing confusion.
+            return
+
+        else:
+            # Copy into the dated directory
+            copy_to_target(img_orig_path, self.yrmonth_path,
                                                         new_name=stamped_name)
 
-        # Also copy the img into the cat buffer for next step in prog.
-        if ".AAE" not in os.path.basename(img_orig_path):
-            # Don't copy AAE files into cat buffer.
-            # They will still exist in raw and organized folders, but it
-            # doesn't serve any value to copy them elsewhere.
-            # They can also have dates that don't match the corresponding
-            # img/vid, causing confusion.
+            # Also copy the img into the cat buffer for next step in prog.
             copy_to_target(img_orig_path,
                                 self.YrDir.OrgGroup.get_buffer_root_path(),
                                 new_name=stamped_name)

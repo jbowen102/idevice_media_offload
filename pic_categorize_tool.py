@@ -81,8 +81,8 @@ class Categorizer(object):
                 if target_dir:
                     copy_to_target(img_path, target_dir, move_op=True)
                 else:
-                    # If None returned by get_target_dir, delete image from buffer.
-                    # This happens for .AAE files.
+                    # If user chooses to discard img, None is returned by
+                    # get_target_dir. Delete image from buffer.
                     os.remove(img_path)
 
             print("Successfully categorized media from st_buffer.")
@@ -159,8 +159,8 @@ class Categorizer(object):
                 copy_to_target(img_path, target_dir, move_op=True)
 
             else:
-                # If None was returned by get_target_dir, delete image from buffer.
-                # This happens with .AAE files.
+                # If user chooses to discard img, None is returned by
+                # get_target_dir. Delete image from buffer.
                 os.remove(img_path)
 
         while os.listdir(CAT_DIRS['u']):
@@ -195,15 +195,6 @@ class Categorizer(object):
         into based on translated user input
         Returns target path."""
         image_name = os.path.basename(img_path)
-        # image_name = img_path.split('/')[-1]
-
-        # if image_name[-4:] == ".AAE":
-        #     # Don't prompt for AAE files. Just delete.
-        #     # They will still exist in raw and organized folders, but it doesn't
-        #     # serve any value to copy them elsewhere.
-        #     # They can also have dates that don't match the corresponding img/vid.
-        #     # This can cause confusion.
-        #     return None
 
         while not target_input:
             # Display pic or video and prompt for dest.
@@ -250,7 +241,7 @@ class Categorizer(object):
         """Function to find correct directory (or make new) within dated
         heirarchy based on image mod date. Return resulting path."""
         img_name = os.path.basename(img_path)
-        # img_name = img_path.split('/')[-1]
+
         img_date = img_name.split('_')[0]
 
         st_root = CAT_DIRS['st']
@@ -266,7 +257,7 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
     If 'move_op' param specified, delete img from current dir."""
 
     img = os.path.basename(img_path)
-    # img = img_path.split('/')[-1]
+
     if not new_name:
         new_name = img
 
