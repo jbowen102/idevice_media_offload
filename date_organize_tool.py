@@ -150,17 +150,19 @@ class YearDir(object):
 
         if not self.year_name in OrgGroup.get_yr_list():
             os.mkdir(self.year_path)
-        # Instantiate latest mo and put in dict of months
+        # Create dict of months.
+        # This will contain all directories transferred to in this job.
         self.mo_objs = {}
-        # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
-        # is created. Discard output.
-        self.get_latest_mo()
 
-        # Create list to hold additional month directories to copy to without
+        # Create set to hold month directories (names) to copy to without
         # prompt. This is sometimes necessary when image naming puts new photo
         # at beginning of queue and causes older photos to run "older month"
         # prompt repeatedly.
-        self.recent_months = []
+        self.no_prompt_months = set()
+        # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
+        # is created. Add to to no_prompt_months set.
+        if self.get_latest_mo():
+            self.no_prompt_months.add(self.get_latest_mo().get_yrmon_name())
 
     def get_yr_path(self):
         return self.year_path
@@ -191,7 +193,7 @@ class YearDir(object):
 
     def make_yrmonth(self, yrmonth):
         # chck that month doesn't already exist in list
-        if yrmonth in self.get_mo_objs():
+        if yrmonth in self.mo_objs:
             raise OrganizeFolderError("Tried to make month object for %s, "
                                         "but already exists in YearDir."
                                         % (yrmonth))
@@ -204,19 +206,47 @@ class YearDir(object):
         mon_str = str(img_time.tm_mon).zfill(2)
         yrmon = "%s-%s" % (yr_str, mon_str)
 
-        if yrmon == str(self.get_latest_mo()):
+        if ".AAE" in os.path.basename(img_orig_path):
+            # Don't copy AAE files into date-organized folders or cat buffer.
+            # They will still exist in raw, but it doesn't add any value to copy
+            # them elsewhere. They can also have dates that don't match the
+            # corresponding img/vid, causing confusion.
+            return
+
+        elif os.path.basename(img_orig_path)[:5] == "IMG_E":
+            # Look for any original/edited pairs in all org dirs used so far.
+            # "IMG_E" files appear later in sorted order than originals, so
+            # the originals are transferred first.
+            # Can't assume datestamp is the same. Could have edited later.
+            target_img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
+
+            for month in self.mo_objs.keys():
+                mo_obj = self.mo_objs[month]
+                for img_name in mo_obj.get_img_list():
+                    # If number that follows the "IMG_" or "IMG_E" matches, find
+                    # and discard the original (remains in raw_offload folder).
+                    if os.path.splitext(img_name)[0][-4:] == target_img_num:
+                        print("Keeping edited file %s and removing original "
+                           "%s." % (os.path.basename(img_orig_path), img_name))
+                        os.remove(os.path.join(mo_obj.get_mo_path() + img_name))
+                        break
+            # Continue to next conditional. Edited ("IMG_E") file is xfered.
+
+        # if yrmon == str(self.get_latest_mo()):
+        #     # Pass image path to correct month object for insertion.
+        #     self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+        if yrmon in self.no_prompt_months or bypass_age_warn:
             # Pass image path to correct month object for insertion.
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         elif (not self.get_latest_mo()) or (yrmon > str(self.get_latest_mo())):
             # If there are no months in year directory, or if the image is from
             # a later month than the existing folders, make new month object.
             self.make_yrmonth(yrmon)
+            self.no_prompt_months.add(yrmon)
             # Pass image path to new month object for insertion.
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-        elif bypass_age_warn or yrmon in self.recent_months:
-            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
-            # If the image is from an earlier month:
+            # If the image is from an earlier month not in no_prompt_months set:
             print("Attempted to pull image into %s dir, but a more recent "
             "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
@@ -226,7 +256,7 @@ class YearDir(object):
                 self.insert_img(img_orig_path, man_img_time_struct,
                                                         bypass_age_warn=True)
             else: # continue with operation anyway
-                if yrmon not in self.get_mo_objs().keys():
+                if yrmon not in self.mo_objs.keys():
                     # year-month directory doesn't exist yet, so have make it.
                     self.make_yrmonth(yrmon)
                 self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
@@ -234,7 +264,7 @@ class YearDir(object):
                 ignore = input("Ignore future warnings for this month? "
                                                                     "[Y/N]\n>")
                 if ignore and ignore.lower() == "y":
-                    self.recent_months.append(yrmon)
+                    self.no_prompt_months.add(yrmon)
 
     def __str__(self):
         return self.year_name
@@ -259,6 +289,7 @@ class MoDir(object):
 
     def get_img_list(self):
         self.img_list = os.listdir(self.yrmonth_path)
+        self.img_list.sort()
         return self.img_list
 
     def insert_img(self, img_orig_path, img_time):
@@ -266,22 +297,34 @@ class MoDir(object):
         img_name = os.path.basename(img_orig_path)   # no trailing slash
         stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
 
-        if ".AAE" in os.path.basename(img_orig_path):
-            # Don't copy AAE files into date-organized folders or cat buffer.
-            # They will still exist in raw, but it doesn't add any value to copy
-            # them elsewhere. They can also have dates that don't match the
-            # corresponding img/vid, causing confusion.
-            return
+        # if ".AAE" in os.path.basename(img_orig_path):
+        #     # Don't copy AAE files into date-organized folders or cat buffer.
+        #     # They will still exist in raw, but it doesn't add any value to copy
+        #     # them elsewhere. They can also have dates that don't match the
+        #     # corresponding img/vid, causing confusion.
+        #     return
+        #
+        # elif os.path.basename(img_orig_path)[:5] == "IMG_E":
+        #     # Look for any original/edited pairs.
+        #     # Find and discard the original (remain in raw_offload folder).
+        #     for mo_obj in self.YrDir.get_mo_objs():
+        #
+        #     pass
+        #     # "IMG_E" files appear later in sorted order than originals.
+        #
+        #
+        # else:
+        # Copy into the dated directory
+        copy_to_target(img_orig_path, self.yrmonth_path,
+                                                    new_name=stamped_name)
 
-        else:
-            # Copy into the dated directory
-            copy_to_target(img_orig_path, self.yrmonth_path,
-                                                        new_name=stamped_name)
+        # Also copy the img into the cat buffer for next step in prog.
+        copy_to_target(img_orig_path,
+                            self.YrDir.OrgGroup.get_buffer_root_path(),
+                            new_name=stamped_name)
 
-            # Also copy the img into the cat buffer for next step in prog.
-            copy_to_target(img_orig_path,
-                                self.YrDir.OrgGroup.get_buffer_root_path(),
-                                new_name=stamped_name)
+    def get_yrmon_name(self):
+        return self.dir_name
 
     def __str__(self):
         return self.dir_name
