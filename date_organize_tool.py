@@ -201,11 +201,6 @@ class YearDir(object):
             self.mo_objs[yrmonth] = MoDir(yrmonth, self)
 
     def insert_img(self, img_orig_path, img_time, bypass_age_warn=False):
-        yr_str = str(img_time.tm_year)
-        # Have to zero-pad single-digit months pulled from struct_time
-        mon_str = str(img_time.tm_mon).zfill(2)
-        yrmon = "%s-%s" % (yr_str, mon_str)
-
         if ".AAE" in os.path.basename(img_orig_path):
             # Don't copy AAE files into date-organized folders or cat buffer.
             # They will still exist in raw, but it doesn't add any value to copy
@@ -218,7 +213,8 @@ class YearDir(object):
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.
             # Can't assume datestamp is the same. Could have edited later.
-            target_img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
+            target_img_num = os.path.splitext(
+                                        os.path.basename(img_orig_path))[0][-4:]
 
             for month in self.mo_objs.keys():
                 mo_obj = self.mo_objs[month]
@@ -226,11 +222,19 @@ class YearDir(object):
                     # If number that follows the "IMG_" or "IMG_E" matches, find
                     # and discard the original (remains in raw_offload folder).
                     if os.path.splitext(img_name)[0][-4:] == target_img_num:
+                        # Replace "IMG_E" img_time with original's datestamp.
+                        img_time = time.strptime(img_name.split("_")[0],
+                                                                    "%Y-%m-%d")
                         print("Keeping edited file %s and removing original "
                            "%s." % (os.path.basename(img_orig_path), img_name))
                         os.remove(os.path.join(mo_obj.get_mo_path() + img_name))
                         break
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
+
+        yr_str = str(img_time.tm_year)
+        # Have to zero-pad single-digit months pulled from struct_time
+        mon_str = str(img_time.tm_mon).zfill(2)
+        yrmon = "%s-%s" % (yr_str, mon_str)
 
         # if yrmon == str(self.get_latest_mo()):
         #     # Pass image path to correct month object for insertion.
@@ -295,7 +299,7 @@ class MoDir(object):
     def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
         img_name = os.path.basename(img_orig_path)   # no trailing slash
-        stamped_name = time.strftime('%Y-%m-%d', img_time) + '_' + img_name
+        stamped_name = time.strftime("%Y-%m-%d", img_time) + '_' + img_name
 
         # if ".AAE" in os.path.basename(img_orig_path):
         #     # Don't copy AAE files into date-organized folders or cat buffer.
