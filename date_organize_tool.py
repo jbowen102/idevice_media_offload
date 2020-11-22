@@ -85,15 +85,35 @@ class OrganizedGroup(object):
         yr_str = str(img_time.tm_year)
         mo_str = str(img_time.tm_mon)
 
-        if yr_str > self.get_latest_yrs()[-1]:
+        # print("DEBUG")
+        # print("get_latest_yrs returns:")
+        # print(self.get_latest_yrs())
+        # print("\nyr_str in self.get_latest_yrs()?")
+        # print(yr_str in self.get_latest_yrs())
+        #
+        # print("\nbypass warning?")
+        # print(bypass_age_warn)
+        # print("\nyr_str > self.get_latest_yrs()[-1]?")
+        # print(yr_str > self.get_latest_yrs()[-1])
+        # print("\nman_img_time?")
+        # print(man_img_time)
+
+
+
+        if yr_str in self.get_latest_yrs():
+            # Proceed as normal for this year and last
+            self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                                                                bypass_age_warn)
+        elif yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
-        elif yr_str in self.get_latest_yrs() or man_img_time:
-            # Proceed as normal for this year and last, or if date manually
-            # asserted by user.
+        elif man_img_time:
+            # This is the same as a condition above, but the intervening elif
+            # should instead run if it evaluates true. A new manually-specified
+            # date might not be present in yr_objs dir.
             self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
                                                                 bypass_age_warn)
         else:
@@ -161,8 +181,9 @@ class YearDir(object):
         self.no_prompt_months = set()
         # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
         # is created. Add to to no_prompt_months set.
-        if self.get_latest_mo():
-            self.no_prompt_months.add(self.get_latest_mo().get_yrmon_name())
+        self.og_latest_mo = self.get_latest_mo()
+        if self.og_latest_mo:
+            self.no_prompt_months.add(self.og_latest_mo.get_yrmon_name())
 
     def get_yr_path(self):
         return self.year_path
@@ -236,18 +257,21 @@ class YearDir(object):
         mon_str = str(img_time.tm_mon).zfill(2)
         yrmon = "%s-%s" % (yr_str, mon_str)
 
-        # if yrmon == str(self.get_latest_mo()):
-        #     # Pass image path to correct month object for insertion.
-        #     self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-        if yrmon in self.no_prompt_months or bypass_age_warn:
+        if yrmon in self.no_prompt_months:
             # Pass image path to correct month object for insertion.
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
-        elif (not self.get_latest_mo()) or (yrmon > str(self.get_latest_mo())):
-            # If there are no months in year directory, or if the image is from
-            # a later month than the existing folders, make new month object.
+        elif (not self.og_latest_mo) or (yrmon > str(self.og_latest_mo)):
+            # If there are no months in year directory initially, or if the
+            # image is from a later month than the existing folders, make new
+            # month object.
             self.make_yrmonth(yrmon)
             self.no_prompt_months.add(yrmon)
             # Pass image path to new month object for insertion.
+            self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
+        elif bypass_age_warn:
+            # This is the same as a condition above, but the intervening elif
+            # should instead run if it evaluates true. A new manually-specified
+            # date might not be present in mo_objs.
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month not in no_prompt_months set:
