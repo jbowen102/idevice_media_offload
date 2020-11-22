@@ -26,7 +26,7 @@ class Categorizer(object):
     def add_manual_dir(self, dir_path):
         self.manual_dir_list.append(dir_path)
 
-    def find_stored_dir(self, keyword):
+    def find_stored_dir(self, keyword, silent=False):
         """Retrieve directory path from preloaded list or from previously-used
         manual paths entered in this session."""
         # First look in preloaded list.
@@ -42,7 +42,8 @@ class Categorizer(object):
                 dirs_found.append(dir_path)
 
         if len(dirs_found) == 1:
-            print("Interpreted '%s' as %s.\n" % (keyword, dirs_found[0]))
+            if not silent: # Suppress duplicate output when called twice.
+                print("Interpreted '%s' as %s.\n" % (keyword, dirs_found[0]))
             return dirs_found[0]
         else:
             # If 0 paths found with keyword or if more than one found
@@ -98,15 +99,18 @@ class Categorizer(object):
         where it should be copied. Execute copy. Start_point can be specified
         (as img name) to skip processing earlier imgs."""
 
-        print("Categorizing images from buffer:\n\t%s\n" % self.buffer_root)
-        # Print dict of directory mappings
-        print("Target directories available:")
-
         # local buffer to be categorized manually
         CAT_DIRS['u'] = self.buffer_root + "manual_" + time.strftime('%Y-%m-%d') + '/'
 
+        print("Categorizing images from buffer:\n\t%s\n" % self.buffer_root)
+        # Print dict of directory mappings
+        print("Target directories available (standard):")
         for key in CAT_DIRS:
             print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
+
+        print("\nTarget directories available (manual):")
+        for dir in self.manual_dir_list:
+            print(("\t\t\t%s" % dir).expandtabs(2))
 
         print("\n(Append '&' to first choice if multiple destinations needed)\n"
                 "(Append '+' followed by a two-digit number to use same dest "
@@ -228,7 +232,7 @@ class Categorizer(object):
             return '!' + target_input[-2:] + self.get_target_dir(img_path,
                                                                 target_input[:-3])
         elif self.find_stored_dir(target_input):
-            return self.find_stored_dir(target_input)
+            return self.find_stored_dir(target_input, silent=True)
         elif os.path.isdir(target_input):
             # Allow manual entry of target path.
             # Store manually-entered paths each session for quick lookup.
