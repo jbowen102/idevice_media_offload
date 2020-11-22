@@ -58,7 +58,7 @@ class iPhoneDCIM(object):
                 # Empty DCIM folder indicates temporary issue like locked device.
                 os_error_response = input("\nCan't access device pictures.\n"
                 "Plugging iPhone/iPad in again and unlocking will likely fix issue.\n"
-                "Plug back in then press Enter to continue, or press 'q' to quit.\n>>> ")
+                "Plug back in then press Enter to continue, or press 'q' to quit.\n> ")
                 if os_error_response.lower() == 'q':
                     raise iPhoneIOError("Cannot access files on source device. "
                     "Plug device in again and unlock to fix. Then run program again.")
@@ -167,14 +167,14 @@ class RawOffloadGroup(object):
     def remove_bad_dir_items(self):
         if os.path.isfile(self.get_RO_root() + self.get_last_offload_name()):
             input("File found where only offload folders should be in RO root.\n"
-            "Press Enter to try again.\n>>> ")
+            "Press Enter to try again.\n> ")
             # try again
             self.remove_bad_dir_items()
         elif not os.listdir(self.get_RO_root() + self.get_last_offload_name()):
             delete_empty_ro = input("Folder %s in raw_offload directory is empty, "
             "probably from previous aborted offload.\n"
             "Press 'd' to delete folder and retry operation.\n"
-            "Or press 'q' to quit.\n>>> " % self.get_last_offload_name())
+            "Or press 'q' to quit.\n> " % self.get_last_offload_name())
 
             if delete_empty_ro == 'd':
                 # Delete that folder name from list attribute
@@ -233,7 +233,7 @@ class RawOffloadGroup(object):
                 print("\t%s" % folder)
 
             while True:
-                merge_response = input("Merge folders? (Y/N)\n>>> ")
+                merge_response = input("Merge folders? (Y/N)\n> ")
                 if merge_response.lower() == 'y':
                     self.raw_offload_merge(todays_offloads)
                     break
@@ -376,7 +376,7 @@ class NewRawOffload(RawOffload):
                 "Check source device for folder %s.\n"
                 "Press Enter to retry.\n"
                 "Or press 'c' to continue, skipping overlap offload.\n"
-                "Or press 'q' to quit.\n>>> "
+                "Or press 'q' to quit.\n> "
                          % (self.overlap_folder, self.overlap_folder))
 
                 if no_ovp_response.lower() == 'c':
@@ -426,7 +426,7 @@ class NewRawOffload(RawOffload):
                         os_error_response = input("\nEncountered device I/O error during overlap "
                         "offload. iPhone/iPad may need to be restarted to fix.\n"
                         "Press Enter to attempt to continue offload.\n"
-                        "Or press 'q' to quit.\n>>> ")
+                        "Or press 'q' to quit.\n> ")
                         if os_error_response.lower() == 'q':
                             raise iPhoneIOError("Cannot access files on source device. "
                             "for overlap offload. Restart device to fix then run program again.")
@@ -482,7 +482,7 @@ class NewRawOffload(RawOffload):
                             os_error_response = input("\nEncountered device I/O error during new "
                             "offload. iPhone/iPad may need to be restarted to fix.\n"
                             "Press Enter to attempt to continue offload.\n"
-                            "Or press 'q' to quit.\n>>> ")
+                            "Or press 'q' to quit.\n> ")
                             if os_error_response.lower() == 'q':
                                 raise iPhoneIOError("Cannot access files on source device. "
                                 "for overlap offload. Restart device to fix then run program again.")

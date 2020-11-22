@@ -287,7 +287,7 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
             action = None
             while action != "s" and action != "o" and action != "k":
                 action = input("Collision detected: %s in dir:\n\t%s\n"
-                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t>>> "
+                    "\tSkip, overwrite, or keep both? [S/O/K]\n\t> "
                                                 % (new_name, target_dir))
                 if action.lower() == "s":
                     return

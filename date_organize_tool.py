@@ -266,7 +266,7 @@ class YearDir(object):
                 self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
 
                 ignore = input("Ignore future warnings for this month? "
-                                                                    "[Y/N]\n>")
+                                                                    "[Y/N]\n> ")
                 if ignore and ignore.lower() == "y":
                     self.no_prompt_months.add(yrmon)
 
@@ -299,25 +299,23 @@ class MoDir(object):
     def insert_img(self, img_orig_path, img_time):
         # make sure image not already here
         img_name = os.path.basename(img_orig_path)   # no trailing slash
-        stamped_name = time.strftime("%Y-%m-%d", img_time) + '_' + img_name
+        stamped_name = time.strftime("%Y-%m-%d", img_time) + "_" + img_name
 
-        # if ".AAE" in os.path.basename(img_orig_path):
-        #     # Don't copy AAE files into date-organized folders or cat buffer.
-        #     # They will still exist in raw, but it doesn't add any value to copy
-        #     # them elsewhere. They can also have dates that don't match the
-        #     # corresponding img/vid, causing confusion.
-        #     return
-        #
-        # elif os.path.basename(img_orig_path)[:5] == "IMG_E":
-        #     # Look for any original/edited pairs.
-        #     # Find and discard the original (remain in raw_offload folder).
-        #     for mo_obj in self.YrDir.get_mo_objs():
-        #
-        #     pass
-        #     # "IMG_E" files appear later in sorted order than originals.
-        #
-        #
-        # else:
+        img_comment = date_compare.get_comment(img_orig_path)
+        # Ensure not longer than ext4 fs allows. Ignore URLs too.
+        if (img_comment and len(img_comment) < 255-len(stamped_name)-1
+                                            and "https://" not in img_comment):
+            add_comment = input("Comment found in %s EXIF data:\n\t%s\n"
+                    "Append to filename? [Y/N]\n> " % (img_name, img_comment))
+            if add_comment:
+                # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
+                # Only character not allowed in UNIX filename is the forward slash.
+                # But I also don't like spaces.
+                formatted_comment = img_comment.replace("/", "_")
+                formatted_comment = img_comment.replace(" ", "_")
+                stamped_name = (os.path.splitext(stamped_name)[0] + "_"
+                        + formatted_comment + os.path.splitext(stamped_name)[1])
+
         # Copy into the dated directory
         copy_to_target(img_orig_path, self.yrmonth_path,
                                                     new_name=stamped_name)

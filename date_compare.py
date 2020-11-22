@@ -292,7 +292,7 @@ def add_datestamp(img_path, long_stamp=False):
         # Detect presence of non-standard naming (could be pre-existing
         # alternate datestamp)
         rename_choice = input("%s has non-standard naming. "
-                "Add %s datestamp anyway? [y/n]\n>" % (img_name, datestamp))
+                "Add %s datestamp anyway? [y/n]\n> " % (img_name, datestamp))
         if rename_choice and rename_choice.lower() == 'y':
             safe_rename(img_path, datestamp + '_' + img_name)
         else:
@@ -430,7 +430,7 @@ def spec_manual_time(img_path):
     list_all_img_dates(img_path, skip_unknown=False)
     display_photo(img_path)
     man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
-                                    "enter nothing to accept fallback.\n>")
+                                    "enter nothing to accept fallback.\n> ")
     if man_img_time:
         try:
             man_img_time_struct = time.strptime(man_img_time, DATE_FORMAT)
@@ -456,6 +456,21 @@ def tz_adjust(time_str, format, shift):
         time_obj_adjusted = time.struct_time(tuple(ts_list))
         time_str_adjusted = time.strftime(format, time_obj_adjusted)
         return time_str_adjusted
+
+
+def get_comment(img_path):
+    if not os.path.exists(img_path):
+        print("Not a valid path.")
+        return None
+    elif os.path.isdir(img_path):
+        print("%s is a directory. Need path to image."
+                                                % os.path.basename(img_path))
+        return None
+
+    with exiftool.ExifTool() as et:
+        metadata = et.get_metadata(img_path)
+        img_comment = metadata.get("EXIF:ImageDescription")
+        return img_comment
 
 
 def meta_dump(img_path):

@@ -47,10 +47,10 @@ def run_all(bu_root_dir, buffer_root_dir):
 
 
 
-device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n>")
+device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n> ")
 while device_type not in ['o', 'O', 'a', 'A', 'q', 'Q']:
     device_type = input("Input not recognized. Choose device ['o' for iPhone, "
-                                                "'a' for iPad, 'q' to quit]\n>")
+                                                "'a' for iPad, 'q' to quit]\n> ")
 if device_type.lower() == 'o':
     bu_root = IPHONE_BU_ROOT
 elif device_type.lower() == 'a':
@@ -68,7 +68,7 @@ while True:
                  "\tType 'c' to run the CATEGORIZE program only.\n"
                  "\tType 'a' or press Enter to run all three programs.\n"
                  "\tType 'q' to quit.\n"
-                 "\tType 'h' for help.\n>")
+                 "\tType 'h' for help.\n> ")
 
     if prog.lower() == 'f':
         run_offload(bu_root)
