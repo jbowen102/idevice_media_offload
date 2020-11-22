@@ -172,11 +172,13 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(path + img)
 
-            date_created = img_obj.info.get('XML:com.adobe.xmp')
-            if date_created:
-                date_created = date_created.split(
+            pil_metadata = img_obj.info.get('XML:com.adobe.xmp')
+            if pil_metadata and "<photoshop:DateCreated>" in pil_metadata:
+                pil_date_created = pil_metadata.split(
                                     "<photoshop:DateCreated>")[1].split(
                                     "</photoshop:DateCreated>")[0]
+            else:
+                pil_date_created = None
 
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(path + img)
@@ -187,7 +189,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                         "        file_mod_time:\t\t%s\n"
                         "        PIL-info date_created:\t%s\n"
                         "        EXIFtool XMP:DateCreated*:\t%s\n"
-                        % (file_mod_time, date_created,
+                        % (file_mod_time, pil_date_created,
                                             xmp_date_created)).expandtabs(28))
 
         elif img_ext == ".AAE":
