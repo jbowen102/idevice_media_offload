@@ -248,7 +248,10 @@ class YearDir(object):
                                                                     "%Y-%m-%d")
                         print("Keeping edited file %s and removing original "
                            "%s." % (os.path.basename(img_orig_path), img_name))
-                        os.remove(os.path.join(mo_obj.get_mo_path() + img_name))
+                        # Remove from both date-org folder and cat buffer.
+                        os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
+                        os.remove(os.path.join(
+                                self.OrgGroup.get_buffer_root_path(), img_name))
                         break
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
 
