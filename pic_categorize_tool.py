@@ -36,10 +36,13 @@ class Categorizer(object):
         # Look for previously-entered manual dir
         dirs_found = []
         for dir_path in self.manual_dir_list:
-            if keyword.lower() in dir_path.lower():
+            # Keyword referencing manually-entered path must be at least three
+            # characters long
+            if len(keyword) > 2 and (keyword.lower() in dir_path.lower()):
                 dirs_found.append(dir_path)
 
         if len(dirs_found) == 1:
+            print("Interpreted '%s' as %s.\n" % (keyword, dirs_found[0]))
             return dirs_found[0]
         else:
             # If 0 paths found with keyword or if more than one found
