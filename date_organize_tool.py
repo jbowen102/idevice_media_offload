@@ -77,28 +77,25 @@ class OrganizedGroup(object):
         # Allow a manually-specified img_time to be passed and substituted.
         if man_img_time:
             img_time = man_img_time
+            bypass_age_warn = True
         else:
-            img_time = date_compare.get_img_date(img_orig_path,
-                                                            skip_unknown=False)
+            (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
+                                            img_orig_path, skip_unknown=False)
 
         yr_str = str(img_time.tm_year)
         mo_str = str(img_time.tm_mon)
-        # print(self.yr_objs)
-        # print(str(self.get_latest_yr()))
 
-        if yr_str in self.get_latest_yrs():
-            # Proceed as normal for this year and last
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time)
-        elif yr_str > self.get_latest_yrs()[-1]:
+        if yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
-        elif man_img_time:
-            # If a manual time asserted by user, ignore age-related warnings.
+        elif yr_str in self.get_latest_yrs() or man_img_time:
+            # Proceed as normal for this year and last, or if date manually
+            # asserted by user.
             self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
-                                                        bypass_age_warn=True)
+                                                                bypass_age_warn)
         else:
             print("Attempted to pull image into %s-%s dir, "
                                 "but a more recent year dir exists, so "
@@ -108,9 +105,12 @@ class OrganizedGroup(object):
 
             man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
             if man_img_time_struct:
+                # If user entered a date:
                 self.insert_img(img_orig_path, man_img_time_struct)
+                # bypass_age_warn will be set True within function.
             elif yr_str in self.get_yr_list():
-                # continue with operation anyway
+                # If user chose fallback but still in valid years, continue
+                # with operation anyway
                 self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
                                                         bypass_age_warn=True)
             else:

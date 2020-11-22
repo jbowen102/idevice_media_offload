@@ -332,10 +332,11 @@ def safe_rename(img_path, new_img_name):
     os.rename(img_path, target_dir + "/" + new_img_name)
 
 
-def get_img_date(img_path, skip_unknown=True):
+def get_img_date_plus(img_path, skip_unknown=True):
     """Function that returns best available timestamp for any single JPG, HEIC,
     GIF, PNG, AAE, MP4, or MOV file located at img_path.
-    Returns a struct_time object."""
+    Returns a tuple with a struct_time object and boolean indicating if the time
+    was manually specified or automatically found."""
     # modify to look for each metadata type and fall back on mtime if needed.
 
     if not os.path.exists(img_path):
@@ -409,17 +410,27 @@ def get_img_date(img_path, skip_unknown=True):
 
         if create_time:
             create_time_obj = time.strptime(create_time, format)
-            return create_time_obj
+            return (create_time_obj, False)
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
             print("No valid EXIF timestamp found. Enter new timestamp or "
                                                 "fall back on fs mod time.")
             manual_time_obj = spec_manual_time(img_path)
             if manual_time_obj:
-                return manual_time_obj
+                return (manual_time_obj, True)
             else:
                 # Go ahead w/ fs mod time if user accepts fallback.
-                return time.localtime(os.path.getmtime(img_path))
+                return (time.localtime(os.path.getmtime(img_path)), True)
+
+
+def get_img_date(img_path, skip_unknown=True):
+    """Wrapper function for get_img_date_plus() that returns only
+    the struct_time object."""
+
+    return_vals = get_img_date_plus(img_path, skip_unknown)
+    # function might return None instead of a tuple, so have to check.
+    if return_vals:
+        return return_vals[0]
 
 
 def spec_manual_time(img_path):
