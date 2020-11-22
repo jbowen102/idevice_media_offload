@@ -1,0 +1,19 @@
+#!/bin/bash
+
+cd ~/bin
+
+FIXED_PATH="$(wpfix "$1")"
+
+DEFAULT=False
+LONGSTAMP=${2:-$DEFAULT}
+
+printf "import date_compare as dc ; dc.add_datestamp('%s', $LONGSTAMP)", "$FIXED_PATH" | python
+
+
+# LONG DATESTAMP:
+# printf "import date_compare as dc ; dc.add_datestamp('%s', '%d')", "$FIXED_PATH" 1 | python
+
+
+# https://stackoverflow.com/questions/21934880/run-function-from-the-command-line-and-pass-arguments-to-function
+# https://stackoverflow.com/questions/4139436/how-to-call-python-functions-when-running-from-terminal
+# https://stackoverflow.com/questions/2013547/assigning-default-values-to-shell-variables-with-a-single-command-in-bash
