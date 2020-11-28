@@ -1,8 +1,6 @@
 #!/bin/bash
 
-cd ~/bin
-
-FIXED_PATH="$(wpfix "$1")"
+FIXED_PATH="$(./wpfix "$1")" # only used w/ WSL
 
 DEFAULT=False
 LONGSTAMP=${2:-$DEFAULT}

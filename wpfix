@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# pass corrected path to other program by using this syntax:
+# [bash command] "$(wpfix.sh "C:/file/path")"
+
+printf "import wpfix as wp ; wp.wpfix(r'%s')", "$1" | python
+
+
+
+# PYINPUT="import wpfix as wp ; wp.wpfix(r${1})"
+# echo PYINPUT | python
+
+# https://stackoverflow.com/questions/21934880/run-function-from-the-command-line-and-pass-arguments-to-function
+# https://stackoverflow.com/questions/4139436/how-to-call-python-functions-when-running-from-terminal
