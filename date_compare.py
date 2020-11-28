@@ -199,6 +199,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                 if '<date>' in line:
                     adjustmentTimestamp = line.split("<date>")[1].split(
                                                                 "Z</date>")[0]
+                else:
+                    adjustmentTimestamp = None
 
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(path + img)
@@ -263,10 +265,18 @@ def add_datestamp(img_path, long_stamp=False):
     img_name = os.path.basename(img_path)  # no trailing slash present
     dir_path = os.path.dirname(img_path) + "/"
 
+    # See if file already datestamped (regardless of correctness)
+    if len(img_name) >= 10:
+        try:
+            time.strptime(img_name[:10], "%Y-%m-%d")
+            return
+        except ValueError:
+            pass
+
     datestamp_obj = get_img_date(img_path)
 
     if datestamp_obj:
-        datestamp_short = time.strftime('%Y-%m-%d', datestamp_obj)
+        datestamp_short = time.strftime("%Y-%m-%d", datestamp_obj)
         datestamp_long = time.strftime(DATETIME_FORMAT, datestamp_obj)
     else:
         # if get_img_date returned None (because file wasn't a recognized img
@@ -443,7 +453,7 @@ def spec_manual_time(img_path):
     list_all_img_dates(img_path, skip_unknown=False)
     display_photo(img_path)
     man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
-                                    "enter nothing to accept fallback.\n> ")
+                                        "enter nothing to accept fallback.\n> ")
     if man_img_time:
         try:
             man_img_time_struct = time.strptime(man_img_time, DATE_FORMAT)
