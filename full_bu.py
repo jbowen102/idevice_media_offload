@@ -1,8 +1,11 @@
+import subprocess
+
 import pic_offload_tool as offload_tool
 import date_organize_tool as org_tool
 import pic_categorize_tool as cat_tool
 
-from dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT
+from dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT, ST_VID_ROOT
+from dir_names import NAS_BU_ROOT, NAS_ST_DIR, SSH_PORT
 
 
 def run_offload(bu_root_dir):
@@ -11,8 +14,12 @@ def run_offload(bu_root_dir):
     # method.
     rog = offload_tool.RawOffloadGroup(bu_root_dir)
     rog.create_new_offload()
-    input("\nDuplicate new Raw_Offload data to NAS. "
-                "Press Enter when done.")
+
+    # run rsync script to copy new data to NAS
+    offload_dir = "%sRaw_Offload/" % bu_root_dir
+    call_rs_script("NAS_BU_sync.sh", offload_dir, NAS_BU_ROOT)
+    print("\nRunning NAS rsync in new terminal.\n")
+
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
     input("\nYou should proceed to run the ORGANIZE program, even if not "
             "intending to run the CAT program right now.\nThe only reason "
@@ -24,8 +31,12 @@ def run_org(bu_root_dir, buffer_root_dir):
     # Instantiate an OrganizedGroup instance then call its run_org() method.
     orgg = org_tool.OrganizedGroup(bu_root_dir, buffer_root_dir)
     orgg.run_org()
-    input("\nDuplicate new Organized data to NAS. "
-                "Press Enter when done.")
+
+    # run rsync script to copy new data to NAS
+    org_dir = "%sOrganized/" % bu_root_dir
+    call_rs_script("NAS_BU_sync.sh", org_dir, NAS_BU_ROOT)
+    print("\nRunning NAS rsync in new terminal.\n")
+
     print('\t', '*' * 10, 'ORGANIZE program complete', '*' * 10, '\n')
 
 def run_cat(buffer_root):
@@ -36,8 +47,11 @@ def run_cat(buffer_root):
     # Then automatically categorize all.
     Cat.run_auto_cat()
     Cat.photo_transfer()
-    input("\nDuplicate new st data to NAS. "
-                "Press Enter when done.")
+
+    # run rsync script to copy new data to NAS
+    call_rs_script("NAS_ST_sync.sh", ST_VID_ROOT, NAS_ST_DIR)
+    print("\nRunning NAS rsync in new terminal.\n")
+
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
 def run_all(bu_root_dir, buffer_root_dir):
@@ -46,9 +60,16 @@ def run_all(bu_root_dir, buffer_root_dir):
     run_cat(buffer_root_dir)
 
 
+def call_rs_script(script, src_dir, dest_dir):
+    shell_command = ("gnome-terminal --tab -- /bin/bash -c \"./%s %s %s %d; "
+                        "/bin/bash\"" % (script, src_dir, dest_dir, SSH_PORT))
+
+    subprocess.run([shell_command],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
 
 device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n> ")
-while device_type not in ['o', 'O', 'a', 'A', 'q', 'Q']:
+while device_type.lower() not in ['o', 'a', 'q']:
     device_type = input("Input not recognized. Choose device ['o' for iPhone, "
                                                 "'a' for iPad, 'q' to quit]\n> ")
 if device_type.lower() == 'o':
@@ -82,7 +103,7 @@ while True:
     elif prog.lower() == 'q':
         break
 
-    elif not prog.lower() or (prog.lower() == 'a'):
+    elif prog.lower() == 'a':
         run_all(bu_root, buffer_root)
         break
 

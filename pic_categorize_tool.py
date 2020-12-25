@@ -345,10 +345,8 @@ def same_hash(img1_path, img2_path):
 
 
 def os_open(input_path):
-    # Create /dev/null object to dump stdout into.
-    with open(os.devnull, 'w') as FNULL:
-        subprocess.run(['xdg-open', input_path],
-                                    stdout=FNULL, stderr=subprocess.PIPE)
+    subprocess.run(['xdg-open', input_path],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 def display_dir(dir_path):
