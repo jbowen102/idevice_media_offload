@@ -269,7 +269,10 @@ def add_datestamp(img_path, long_stamp=False):
     if len(img_name) >= 10:
         try:
             time.strptime(img_name[:10], "%Y-%m-%d")
-            return
+            if long_stamp:
+                pass
+            else:
+                return
         except ValueError:
             pass
 
