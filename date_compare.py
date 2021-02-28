@@ -428,7 +428,7 @@ def get_img_date_plus(img_path, skip_unknown=True):
             return (create_time_obj, False)
         else:
             # Fall back on fs mod time if more precise metadata unavailable.
-            print("No valid EXIF timestamp found. Enter new timestamp or "
+            print("\nNo valid EXIF timestamp found. Enter new timestamp or "
                                                 "fall back on fs mod time.")
             manual_time_obj = spec_manual_time(img_path)
             if manual_time_obj:
