@@ -324,6 +324,7 @@ class MoDir(object):
         return self.img_list
 
     def insert_img(self, img_orig_path, img_time):
+        """Prepends timestamp and appends caption (if present in metadata)."""
         # make sure image not already here
         img_name = os.path.basename(img_orig_path)   # no trailing slash
         stamped_name = time.strftime("%Y-%m-%d", img_time) + "_" + img_name
@@ -332,7 +333,7 @@ class MoDir(object):
         # Ensure not longer than ext4 fs allows. Ignore URLs too.
         if (img_comment and len(img_comment) < 255-len(stamped_name)-1
                                             and "https://" not in img_comment):
-            add_comment = input("Comment found in %s EXIF data:\n\t%s\n"
+            add_comment = input("Comment found in %s EXIF data: '%s'\n"
                     "Append to filename? [Y/N]\n> " % (img_name, img_comment))
             if add_comment:
                 # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names

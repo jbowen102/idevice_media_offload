@@ -485,18 +485,23 @@ def tz_adjust(time_str, format, shift):
 
 
 def get_comment(img_path):
-    if not os.path.exists(img_path):
-        print("Not a valid path.")
-        return None
-    elif os.path.isdir(img_path):
-        print("%s is a directory. Need path to image."
-                                                % os.path.basename(img_path))
+    if not os.path.isfile(img_path):
+        print("Not a valid image path.")
         return None
 
     with exiftool.ExifTool() as et:
         metadata = et.get_metadata(img_path)
-        img_comment = metadata.get("EXIF:ImageDescription")
-        return img_comment
+        exif_img_desc = metadata.get("EXIF:ImageDescription")
+        caption_abst = metadata.get("IPTC:Caption-Abstract")
+        if exif_img_desc and caption_abst:
+            input("Found caption in multiple EXIF tags for %s. Unhandled case."
+                                                % os.path.basename(img_path))
+        elif exif_img_desc:
+            return exif_img_desc
+        elif caption_abst:
+            return caption_abst
+        else:
+            return None
 
 
 def meta_dump(img_path):
