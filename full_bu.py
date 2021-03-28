@@ -68,16 +68,18 @@ def call_rs_script(script, src_dir, dest_dir):
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
 
-device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n> ")
-while device_type.lower() not in ['o', 'a', 'q']:
-    device_type = input("Input not recognized. Choose device ['o' for iPhone, "
-                                                "'a' for iPad, 'q' to quit]\n> ")
-if device_type.lower() == 'o':
-    bu_root = IPHONE_BU_ROOT
-elif device_type.lower() == 'a':
-    bu_root = IPAD_BU_ROOT
-elif device_type.lower() == 'q':
-    quit()
+while True:
+    device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n> ")
+    if device_type.lower() == 'o':
+        bu_root = IPHONE_BU_ROOT
+        break
+    elif device_type.lower() == 'a':
+        bu_root = IPAD_BU_ROOT
+        break
+    elif device_type.lower() == 'q':
+        quit()
+    else:
+        print("Input not recognized.")
 
 buffer_root = bu_root + "Cat_Buffer/"
 
@@ -113,7 +115,7 @@ while True:
             "\t\tLook at buffer, move all st vids or other big blocks of pics.\n"
             "\t\tRun CAT tool on rest of pics in buffer.\n"
             "\t\tProcess leftover uncategorized pics.\n"
-            "\t\tCopy data to NAS.\n")
+            "\t\tCopy data to NAS (automatic if NAS share mounted).\n")
 
     else:
         print("Invalid response. Try again.")

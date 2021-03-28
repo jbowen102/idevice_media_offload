@@ -232,8 +232,8 @@ class YearDir(object):
                         # Replace "IMG_E" img_time with original's datestamp.
                         img_time = time.strptime(img_name.split("_")[0],
                                                                     "%Y-%m-%d")
-                        print("\nKeeping edited file %s and removing original "
-                           "%s." % (os.path.basename(img_orig_path), img_name))
+                        print("Keeping edited file %s and removing original "
+                           "%s.\n" % (os.path.basename(img_orig_path), img_name))
                         # Remove from both date-org folder and cat buffer.
                         os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
                         os.remove(os.path.join(

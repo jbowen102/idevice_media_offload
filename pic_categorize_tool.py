@@ -34,20 +34,31 @@ class Categorizer(object):
             return CAT_DIRS[keyword]
 
         # Look for previously-entered manual dir
+        # Keyword referencing manually-entered path must be at least three
+        # characters long
+        if len(keyword) < 3:
+            print("Input keyword for referencing stored dirs must be >3 "
+                                                                "characters\n")
+            return None
+
         dirs_found = []
         for dir_path in self.manual_dir_list:
-            # Keyword referencing manually-entered path must be at least three
-            # characters long
-            if len(keyword) > 2 and (keyword.lower() in dir_path.lower()):
+            if keyword.lower() in dir_path.lower():
                 dirs_found.append(dir_path)
 
         if len(dirs_found) == 1:
             if not silent: # Suppress duplicate output when called twice.
-                print("Interpreted '%s' as %s.\n" % (keyword, dirs_found[0]))
+                print("Interpreted '%s' as %s." % (keyword, dirs_found[0]))
             return dirs_found[0]
-        else:
-            # If 0 paths found with keyword or if more than one found
-            # (ambiguous), don't return a path.
+        elif len(dirs_found) > 1:
+            # If more than one path found found with keyword (ambiguous),
+            # inform user and don't return a path.
+            print("Multiple matches in stored directories. Be more specific.")
+            return None
+        elif len(dirs_found) == 0:
+            # If 0 paths found with keyword, don't return a path.
+            if not silent:
+                print("No matches found in stored directories.")
             return None
 
     def run_auto_cat(self):
@@ -76,8 +87,8 @@ class Categorizer(object):
             # Loop through st_buffer categorize.
             print("Categorizing st_buffer media now. Progress:")
             for img in tqdm(st_buffer_imgs):
-                img_path = st_buffer_path + img
-                if os.path.isdir(img_path):
+                img_path = os.path.join(st_buffer_path, img)
+                if not os.path.isfile(img_path):
                     # Ignore. Shouldn't happen, but handling just in case.
                     continue
 
@@ -89,7 +100,7 @@ class Categorizer(object):
                     # get_target_dir. Delete image from buffer.
                     os.remove(img_path)
 
-            print("Successfully categorized media from st_buffer.")
+            print("Successfully categorized media from st_buffer.\n")
         else:
             print("Nothing in st_buffer.")
 
@@ -137,7 +148,17 @@ class Categorizer(object):
             # Show image and prompt for location.
             target_dir = self.get_target_dir(img_path)
 
-            if target_dir and (target_dir[0] == '*'):
+            # Have to implement (sometimes redundant) check on directory
+            # existence because stored directories might have gone stale (e.g.
+            # name changed).
+
+            if target_dir == None:
+                # If user chooses to discard img, None is returned by
+                # get_target_dir. Delete image from buffer.
+                os.remove(img_path)
+                continue
+
+            elif target_dir[0] == '*' and os.path.isdir(target_dir[1:]):
                 # If get_target_dir detected the trailing special character '&',
                 # then after copying image into one place, the user should be
                 # prompted again w/ same photo to put somewhere else.
@@ -145,7 +166,7 @@ class Categorizer(object):
                 self.photo_transfer(start_point=img)
                 return
 
-            if target_dir and (target_dir[0] == '!'):
+            elif target_dir[0] == '!' and os.path.isdir(target_dir[1:]):
                 copy_to_target(img_path, target_dir[3:], move_op=True)
 
                 # If get_target_dir detected the trailing special character '+' and
@@ -160,15 +181,18 @@ class Categorizer(object):
                 self.photo_transfer()
                 return
 
-            elif target_dir:
+            elif os.path.isdir(target_dir):
                 # Execute the move from buffer to appropriate dir. End loop if user
                 # returns an abort command due to collision prompt.
                 copy_to_target(img_path, target_dir, move_op=True)
 
             else:
-                # If user chooses to discard img, None is returned by
-                # get_target_dir. Delete image from buffer.
-                os.remove(img_path)
+                # Path returned by get_target_dir isn't a valid directory.
+                print("Invalid path specified. Path of stored dir may have "
+                                                                "changed.\n")
+                self.photo_transfer()
+                return
+
 
         while os.listdir(CAT_DIRS['u']):
             sort_folder_response = input("\nToday's manual-sort folder populated.\n"
@@ -203,60 +227,68 @@ class Categorizer(object):
         Returns target path."""
         image_name = os.path.basename(img_path)
 
-        while not target_input:
-            # Display pic or video and prompt for dest.
-            # Continue prompting until non-empty string input.
-            display_photo(img_path)
-            target_input = input("Enter target location for %s (or 'n' for no "
-                                                "transfer)\n> " % image_name)
-
-        if target_input == 'st':
-            # 'st' type images require target folder creation in most cases.
-            return self.get_st_target_dir(img_path)
-        elif target_input == 'n':
-            return None
-        elif ( (target_input[-1] == '&')
-               and (self.find_stored_dir(target_input[:-1])
-                    or os.path.isdir(target_input[:-1])) ):
-            # If the '&' special character invoked, it means the image needs to be
-            # copied into multiple places, and the program should prompt again.
-            # pre-pend '*' to returned path to indicate special case to caller.
-            return '*' + self.get_target_dir(img_path, target_input[:-1])
-        elif ( len(target_input) >= 3
-               and target_input[-3] == '+'
-               and (self.find_stored_dir(target_input[:-3])
-                    or os.path.isdir(target_input[:-3])) ):
-            # If the '+' special character invoked, it means subsequent image(s)
-            # need to be copied into same dest.
-            # pre-pend '!' to returned path to indicate special case to caller.
-            return '!' + target_input[-2:] + self.get_target_dir(img_path,
-                                                                target_input[:-3])
-        elif self.find_stored_dir(target_input):
-            return self.find_stored_dir(target_input, silent=True)
-        elif os.path.isdir(target_input):
-            # Allow manual entry of target path.
-            # Store manually-entered paths each session for quick lookup.
-            self.add_manual_dir(target_input)
-            return target_input
-        else:
-            # Recurse function call until valid input is provided.
-            print("Unrecognized input.")
-            return self.get_target_dir(img_path)
+        # Display pic or video and prompt for dest.
+        # Continue prompting until valid string input received.
+        while True:
+            if not target_input:
+                display_photo(img_path)
+                target_input = input("\nEnter target location for %s (or 'n' "
+                                            "for no transfer)\n> " % image_name)
+                continue
+            elif target_input == 'n':
+                return None
+            elif target_input == 'st':
+                # 'st' type images require target folder creation in most cases.
+                return self.get_st_target_dir(img_path)
+            elif ( (target_input[-1] == '&')
+                   and (self.find_stored_dir(target_input[:-1], silent=True)
+                        or os.path.isdir(target_input[:-1])) ):
+                # If the '&' special character invoked, it means the image needs
+                # to be copied into multiple places, and the program should
+                # prompt again.
+                # pre-pend '*' to returned path to indicate special case to
+                # caller.
+                return '*' + self.get_target_dir(img_path, target_input[:-1])
+            elif ( len(target_input) >= 3
+                   and target_input[-3] == '+'
+                   and (self.find_stored_dir(target_input[:-3], silent=True)
+                        or os.path.isdir(target_input[:-3])) ):
+                # If the '+' special character invoked, it means subsequent
+                # image(s) need to be copied into same dest.
+                # pre-pend '!' to returned path to indicate special case to
+                # caller.
+                return '!' + target_input[-2:] + self.get_target_dir(img_path,
+                                                            target_input[:-3])
+            elif self.find_stored_dir(target_input, silent=True):
+                return self.find_stored_dir(target_input)
+                # no guarantee stored dirs still valid, so have to be checked
+                # by caller.
+            elif os.path.isdir(target_input):
+                # Allow manual entry of target path.
+                # Store manually-entered paths each session for quick lookup.
+                self.add_manual_dir(target_input)
+                return target_input
+            else:
+                # Recurse function call until valid input is provided.
+                print("Unrecognized input.\n")
+                target_input = "" # reset
+                continue
 
 
     def get_st_target_dir(self, img_path):
         """Function to find correct directory (or make new) within dated
         heirarchy based on image mod date. Return resulting path."""
-        img_name = os.path.basename(img_path)
 
+        img_name = os.path.basename(img_path)
         img_date = img_name.split('_')[0]
 
         st_root = CAT_DIRS['st']
+        st_img_path = os.path.join(st_root, img_date)
 
         if not img_date in os.listdir(st_root):
-            os.mkdir(st_root + img_date)
+            os.mkdir(st_img_path)
 
-        return st_root + img_date
+        return st_img_path
 
 
 def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
