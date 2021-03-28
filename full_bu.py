@@ -1,11 +1,14 @@
 import subprocess
+import os
+import time
 
 import pic_offload_tool as offload_tool
 import date_organize_tool as org_tool
 import pic_categorize_tool as cat_tool
 
 from dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT, ST_VID_ROOT
-from dir_names import NAS_BU_ROOT, NAS_ST_DIR, SSH_PORT
+from dir_names import NAS_BU_ROOT, NAS_ST_DIR
+from dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH_PORT
 
 
 def run_offload(bu_root_dir):
@@ -17,8 +20,7 @@ def run_offload(bu_root_dir):
 
     # run rsync script to copy new data to NAS
     offload_dir = "%sRaw_Offload/" % bu_root_dir
-    call_rs_script("NAS_BU_sync.sh", offload_dir, NAS_BU_ROOT)
-    print("\nRunning NAS rsync in new terminal.\n")
+    call_rs_script("NAS_BU_sync.sh", offload_dir, NAS_BU_ROOT, NAS_BU_ROOT_SSH)
 
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
     input("\nYou should proceed to run the ORGANIZE program, even if not "
@@ -34,8 +36,7 @@ def run_org(bu_root_dir, buffer_root_dir):
 
     # run rsync script to copy new data to NAS
     org_dir = "%sOrganized/" % bu_root_dir
-    call_rs_script("NAS_BU_sync.sh", org_dir, NAS_BU_ROOT)
-    print("\nRunning NAS rsync in new terminal.\n")
+    call_rs_script("NAS_BU_sync.sh", org_dir, NAS_BU_ROOT, NAS_BU_ROOT_SSH)
 
     print('\t', '*' * 10, 'ORGANIZE program complete', '*' * 10, '\n')
 
@@ -49,8 +50,7 @@ def run_cat(buffer_root):
     Cat.photo_transfer()
 
     # run rsync script to copy new data to NAS
-    call_rs_script("NAS_ST_sync.sh", ST_VID_ROOT, NAS_ST_DIR)
-    print("\nRunning NAS rsync in new terminal.\n")
+    call_rs_script("NAS_ST_sync.sh", ST_VID_ROOT, NAS_ST_DIR, NAS_ST_DIR_SSH)
 
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
@@ -60,9 +60,22 @@ def run_all(bu_root_dir, buffer_root_dir):
     run_cat(buffer_root_dir)
 
 
-def call_rs_script(script, src_dir, dest_dir):
+def call_rs_script(script, src_dir, dest_dir, dest_dir_ssh):
+
+    while True:
+        if not os.path.isdir(dest_dir):
+            # NAS not reachable
+            input("\nCan't reach NAS share to run %s. Check network connection "
+                                        "and ensure NAS share is mounted.\n"
+                                        "Press Enter to try again." % script)
+            continue
+        else:
+            print("\nRunning NAS rsync in new terminal.\n")
+            time.sleep(2) # Pause for two seconds so user sees above message.
+            break
+
     shell_command = ("gnome-terminal --tab -- /bin/bash -c \"./%s %s %s %d; "
-                        "/bin/bash\"" % (script, src_dir, dest_dir, SSH_PORT))
+            "/bin/bash\"" % (script, src_dir, dest_dir_ssh, SSH_PORT))
 
     subprocess.run([shell_command],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)

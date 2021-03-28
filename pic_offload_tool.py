@@ -44,10 +44,12 @@ class iPhoneDCIM(object):
                 count += 1
 
         if count == 0 or not os.listdir(IPHONE_DCIM_PREFIX + iphone_handle):
-            input("Error: Can't find iOS device in %s\nPress Enter to try again." % IPHONE_DCIM_PREFIX)
+            input("Error: Can't find iOS device in %s\nPress Enter to try "
+                                                "again." % IPHONE_DCIM_PREFIX)
             self.find_root()
         elif count > 1:
-            raise iPhoneLocError("Error: Multiple 'gphoto' handles in " + IPHONE_DCIM_PREFIX)
+            raise iPhoneLocError("Error: Multiple 'gphoto' handles in %s"
+                                                        % IPHONE_DCIM_PREFIX)
             # Have not seen this happen. In fact, with two iOS devices plugged
             # in, only the first one shows up as a gvfs directory.
         else:
@@ -57,11 +59,13 @@ class iPhoneDCIM(object):
             if not self.APPLE_folders:
                 # Empty DCIM folder indicates temporary issue like locked device.
                 os_error_response = input("\nCan't access device pictures.\n"
-                "Plugging iPhone/iPad in again and unlocking will likely fix issue.\n"
-                "Plug back in then press Enter to continue, or press 'q' to quit.\n> ")
+                "Plugging device in again and unlocking will likely fix issue."
+                "\nPlug back in then press Enter to continue, or press 'q' "
+                                                                "to quit.\n> ")
                 if os_error_response.lower() == 'q':
                     raise iPhoneIOError("Cannot access files on source device. "
-                    "Plug device in again and unlock to fix. Then run program again.")
+                    "Plug device in again and unlock to fix. Then run program "
+                                                                    "again.")
                 else:
                     # Retry everything.
                     # Need to re-find gvfs root ("gphoto" handle likely changed)
