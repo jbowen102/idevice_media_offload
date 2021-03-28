@@ -83,22 +83,8 @@ class OrganizedGroup(object):
                                             img_orig_path, skip_unknown=False)
 
         yr_str = str(img_time.tm_year)
-        mo_str = str(img_time.tm_mon)
-
-        # print("DEBUG")
-        # print("get_latest_yrs returns:")
-        # print(self.get_latest_yrs())
-        # print("\nyr_str in self.get_latest_yrs()?")
-        # print(yr_str in self.get_latest_yrs())
-        #
-        # print("\nbypass warning?")
-        # print(bypass_age_warn)
-        # print("\nyr_str > self.get_latest_yrs()[-1]?")
-        # print(yr_str > self.get_latest_yrs()[-1])
-        # print("\nman_img_time?")
-        # print(man_img_time)
-
-
+        # Have to zero-pad single-digit months pulled from struct_time
+        mo_str = str(img_time.tm_mon).zfill(2)
 
         if yr_str in self.get_latest_yrs():
             # Proceed as normal for this year and last
