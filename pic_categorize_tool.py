@@ -85,7 +85,7 @@ class Categorizer(object):
             st_buffer_imgs.sort()
 
             # Loop through st_buffer categorize.
-            print("Categorizing st_buffer media now. Progress:")
+            print("\nCategorizing st_buffer media now. Progress:")
             for img in tqdm(st_buffer_imgs):
                 img_path = os.path.join(st_buffer_path, img)
                 if not os.path.isfile(img_path):
@@ -100,7 +100,7 @@ class Categorizer(object):
                     # get_target_dir. Delete image from buffer.
                     os.remove(img_path)
 
-            print("Successfully categorized media from st_buffer.\n")
+            print("Successfully categorized media from st_buffer.")
         else:
             print("Nothing in st_buffer.")
 
@@ -113,7 +113,7 @@ class Categorizer(object):
         # local buffer to be categorized manually
         CAT_DIRS['u'] = self.buffer_root + "manual_" + time.strftime('%Y-%m-%d') + '/'
 
-        print("Categorizing images from buffer:\n\t%s\n" % self.buffer_root)
+        print("\nCategorizing images from buffer:\n\t%s\n" % self.buffer_root)
         # Print dict of directory mappings
         print("Target directories available (standard):")
         for key in CAT_DIRS:
@@ -125,7 +125,7 @@ class Categorizer(object):
 
         print("\n(Append '&' to first choice if multiple destinations needed)\n"
                 "(Append '+' followed by a two-digit number to use same dest "
-                        "folder for subsequent [number] of pics)\n")
+                        "folder for subsequent [number] of pics)")
 
         # Initialize manual-sort directory
         if not os.path.exists(CAT_DIRS['u']):
@@ -166,7 +166,7 @@ class Categorizer(object):
                 self.photo_transfer(start_point=img)
                 return
 
-            elif target_dir[0] == '!' and os.path.isdir(target_dir[1:]):
+            elif target_dir[0] == '!' and os.path.isdir(target_dir[3:]):
                 copy_to_target(img_path, target_dir[3:], move_op=True)
 
                 # If get_target_dir detected the trailing special character '+' and
