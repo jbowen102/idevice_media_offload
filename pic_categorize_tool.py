@@ -37,7 +37,8 @@ class Categorizer(object):
         # Keyword referencing manually-entered path must be at least three
         # characters long
         if len(keyword) < 3:
-            print("Input keyword for referencing stored dirs must be >3 "
+            if not silent:
+                print("Input keyword for referencing stored dirs must be >3 "
                                                                 "characters\n")
             return None
 

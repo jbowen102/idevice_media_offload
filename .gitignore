@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 *.out
 dir_names.py
+dir_names.sh
+
