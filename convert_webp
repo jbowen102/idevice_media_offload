@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Read in WEBP2GIF_DIR variable
+source "$(dirname "$0")"/dir_names.sh
+# https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
+
+STARTING_DIR=$PWD
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename ${FILE_PATH}) # includes extension
+# FILENAME_NO_EXT=$(basename $(basename ${FILE_PATH} .webp) .WEBP) # handles either ext
+FILENAME_NO_EXT=$(basename ${FILE_PATH} "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname ${FILE_PATH})
+# https://linuxhandbook.com/dirname/
+
+# Try using webp2gif first. Will fail if static img
+cp ${FILE_PATH} ${WEBP2GIF_DIR}
+cd ${WEBP2GIF_DIR}
+FILENAME_GIF="${FILENAME_NO_EXT/%$EXT}.gif"
+printf "\nAttempting to convert to animated gif..."
+./webp2gif ${FILENAME} ${FILENAME_GIF} &> /dev/null
+# https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
+WEBP2GIF_RETURN=$? # gets return value of last command executed.
+
+# If webp2gif conversion failed, assume it's a static image.
+if [ ${WEBP2GIF_RETURN} -ne 0 ]
+then
+  EXT="png"
+  printf "\nwebp2gif failed to convert.\n\nAttempting to convert as static img.\n"
+  FILEPATH_PNG="${FILEPATH_NO_EXT/%$EXT}.png"
+  convert ${FILE_PATH} ${FILEPATH_PNG} &> /dev/null
+  CONVERT_RETURN=$? # gets return value of last command executed.
+  if [ ${CONVERT_RETURN} -ne 0 ]
+  then
+    printf "Static conversion failed too!\n"
+  fi
+else
+  printf "\nwebp2gif successfully converted to gif\n"
+  mv ${FILENAME_GIF} ${FILE_DIR_OG}
+fi
+
+# Both cases fall through to clean up wep2gif dir.
+rm ${FILENAME}
+cd ${STARTING_DIR} # Back to original working dir.
+
+
+# Alternate method for differentiating animation from static:
+# # Look for "Animation Loop Count" in the EXIF data.
+# exiftool ${FILE_PATH} | grep "Animation Loop Count"
+# ANIM_PRESET=$? # gets return value of last command executed.
+# # If string not present, assume it's a static image.
+# if [ ${WEBP2GIF_RETURN} -ne 0 ]
