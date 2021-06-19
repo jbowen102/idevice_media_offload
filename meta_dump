@@ -1,0 +1,6 @@
+#!/bin/bash
+
+printf "import date_compare as dc ; dc.meta_dump('${1}')" | python
+
+# https://stackoverflow.com/questions/21934880/run-function-from-the-command-line-and-pass-arguments-to-function
+# https://stackoverflow.com/questions/4139436/how-to-call-python-functions-when-running-from-terminal
