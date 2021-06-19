@@ -261,6 +261,9 @@ class YearDir(object):
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in mo_objs.
+            if yrmon not in self.mo_objs.keys():
+                # year-month directory doesn't exist yet, so have make it.
+                self.make_yrmonth(yrmon)
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month not in no_prompt_months set:
