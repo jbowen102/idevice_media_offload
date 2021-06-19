@@ -107,8 +107,8 @@ class Categorizer(object):
 
 
     def photo_transfer(self, start_point=""):
-        """Master function to displays images in buffer and prompt user
-        where it should be copied. Execute copy. Start_point can be specified
+        """Master function to display images in buffer and prompt user
+        where each should be copied. Execute copy. Start_point can be specified
         (as img name) to skip processing earlier imgs."""
 
         # local buffer to be categorized manually
@@ -144,6 +144,11 @@ class Categorizer(object):
 
             if os.path.isdir(img_path):
                 # Ignore any manual sort folder left over from previous offload.
+                continue
+            elif not os.path.exists(img_path):
+                # Handle case where user manual deletes img in buffer outside
+                # of program.
+                print("%s skipped - not found in Cat buffer." % img)
                 continue
 
             # Show image and prompt for location.
