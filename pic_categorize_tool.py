@@ -44,6 +44,9 @@ class Categorizer(object):
 
         dirs_found = []
         for dir_path in self.manual_dir_list:
+            if keyword.lower() == dir_path.lower():
+                # If an already-stored path is entered again, don't print.
+                return keyword
             if keyword.lower() in dir_path.lower():
                 dirs_found.append(dir_path)
 
