@@ -430,9 +430,14 @@ def get_img_date_plus(img_path, skip_unknown=True):
             # Fall back on fs mod time if more precise metadata unavailable.
             print("\nNo valid EXIF timestamp found. Enter new timestamp or "
                                                 "fall back on fs mod time.")
-            manual_time_obj = spec_manual_time(img_path)
-            if manual_time_obj:
-                return (manual_time_obj, True)
+            man_date_output = spec_manual_date(img_path)
+            # will be a time_struct object if a date entered.
+            if isinstance(man_date_output, time.struct_time):
+                # If user entered a date:
+                return (man_date_output, True)
+            elif man_date_output=="s":
+                # Skip
+                return (None, False)
             else:
                 # Go ahead w/ fs mod time if user accepts fallback.
                 return (time.localtime(os.path.getmtime(img_path)), True)
@@ -448,22 +453,25 @@ def get_img_date(img_path, skip_unknown=True):
         return return_vals[0]
 
 
-def spec_manual_time(img_path):
+def spec_manual_date(img_path):
     """Prompts user to enter a timestamp for displayed pic. Returns a
-    struct_time object or None if user accepts (caller-defined)
-    fallback option."""
+    struct_time object or "s" to skip this file or None if user accepts
+    (caller-defined) fallback option."""
 
     list_all_img_dates(img_path, skip_unknown=False)
     display_photo(img_path)
-    man_img_time = input("Manually specify timestamp in YYYY-MM-DD format or "
-                                        "enter nothing to accept fallback.\n> ")
-    if man_img_time:
+    man_date_response = input("Manually specify datestamp in YYYY-MM-DD format, "
+                                        "enter nothing to accept fallback, "
+                            "or enter 's' to skip organizing this file.\n> ")
+    if man_date_response in ["s", "S"]:
+        return "s"
+    elif man_date_response:
         try:
-            man_img_time_struct = time.strptime(man_img_time, DATE_FORMAT)
+            man_img_time_struct = time.strptime(man_date_response, DATE_FORMAT)
             return man_img_time_struct
         except ValueError:
-            print("Bad date format. Try again.\n")
-            return spec_manual_time(img_path)
+            print("Invalid reponse. Confirm proper date format.\n")
+            return spec_manual_date(img_path)
     else:
         # If nothing valid specified, indicate to caller fxn to use fallback
         return None

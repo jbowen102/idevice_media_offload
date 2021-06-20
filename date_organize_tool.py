@@ -73,14 +73,17 @@ class OrganizedGroup(object):
             # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
-    def insert_img(self, img_orig_path, man_img_time=False):
+    def insert_img(self, img_orig_path, man_img_date=False):
         # Allow a manually-specified img_time to be passed and substituted.
-        if man_img_time:
-            img_time = man_img_time
+        if man_img_date:
+            img_time = man_img_date
             bypass_age_warn = True
         else:
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                             img_orig_path, skip_unknown=False)
+        if not img_time:
+            # If user said to skip file when asked to spec time.
+            return
 
         yr_str = str(img_time.tm_year)
         # Have to zero-pad single-digit months pulled from struct_time
@@ -96,7 +99,7 @@ class OrganizedGroup(object):
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
-        elif man_img_time:
+        elif man_img_date:
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in yr_objs dir.
@@ -109,11 +112,15 @@ class OrganizedGroup(object):
                                 "warning and copies into older dir anyway."
                                                         % (yr_str, mo_str))
 
-            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
-            if man_img_time_struct:
+            man_date_output = date_compare.spec_manual_date(img_orig_path)
+            # will be a time_struct object if a date entered.
+            if isinstance(man_date_output, time.struct_time):
                 # If user entered a date:
-                self.insert_img(img_orig_path, man_img_time_struct)
+                self.insert_img(img_orig_path, man_date_output)
                 # bypass_age_warn will be set True within function.
+            elif man_date_output=="s":
+                # Skip
+                return
             elif yr_str in self.get_yr_list():
                 # If user chose fallback but still in valid years, continue
                 # with operation anyway
@@ -276,10 +283,15 @@ class YearDir(object):
             "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
 
-            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
-            if man_img_time_struct:
-                self.insert_img(img_orig_path, man_img_time_struct,
+            man_date_output = date_compare.spec_manual_date(img_orig_path)
+            # will be a time_struct object if a date entered.
+            if isinstance(man_date_output, time.struct_time):
+                # If user entered a date:
+                self.insert_img(img_orig_path, man_date_output,
                                                         bypass_age_warn=True)
+            elif man_date_output=="s":
+                # Skip
+                return
             else: # continue with operation anyway
                 if yrmon not in self.mo_objs.keys():
                     # year-month directory doesn't exist yet, so have make it.
