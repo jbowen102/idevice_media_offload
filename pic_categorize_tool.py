@@ -319,6 +319,7 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
             print("%s/%s with same file hash exists already. "
                                 "Dest file not overwritten.\n"
                             % (os.path.basename(target_dir[:-1]), new_name))
+            time.sleep(1) # Pause for one second so user sees above message.
             if move_op:
                 os.remove(img_path)
             else:

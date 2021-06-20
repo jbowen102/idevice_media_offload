@@ -324,7 +324,7 @@ class MoDir(object):
                                             and "https://" not in img_comment):
             add_comment = input("Comment found in %s EXIF data: '%s'\n"
                     "Append to filename? [Y/N]\n> " % (img_name, img_comment))
-            if add_comment:
+            if add_comment in ["y", "Y"]:
                 # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
                 # Only character not allowed in UNIX filename is the forward slash.
                 # But I also don't like spaces.
