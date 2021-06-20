@@ -236,7 +236,12 @@ class YearDir(object):
                            "%s.\n" % (os.path.basename(img_orig_path), img_name))
                         # Remove from both date-org folder and cat buffer.
                         os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
-                        os.remove(os.path.join(
+
+                        if os.path.exists(os.path.join(
+                            self.OrgGroup.get_buffer_root_path(), img_name)):
+                            # Might not exist if the newly-edited pic had its
+                            # original offloaded previously.
+                            os.remove(os.path.join(
                                 self.OrgGroup.get_buffer_root_path(), img_name))
                         break
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
