@@ -337,8 +337,17 @@ class MoDir(object):
 
         img_comment = date_compare.get_comment(img_orig_path)
         # Ensure not longer than ext4 fs allows. Ignore URLs too.
-        if (img_comment and len(img_comment) < 255-len(stamped_name)-1
-                                            and "https://" not in img_comment):
+        # 255 is max ext4 char count. Subtract one to account for underscore
+        # to be prepended to comment below. Subtract 2 to account for potential
+        # collision-resolving underscore+digit applied in copy_to_target()
+        max_comment_len = 255-len(stamped_name)-1-2
+        if img_comment > max_comment_len:
+            print("Comment found in %s EXIF data: '%s'\n"
+                "Too long to append to filename.\n" % (img_name, img_comment))
+        elif "http" in img_comment:
+            print("Comment found in %s EXIF data: '%s'\n"
+                    "Can't add URL to filename.\n" % (img_name, img_comment))
+        else:
             add_comment = input("Comment found in %s EXIF data: '%s'\n"
                     "Append to filename? [Y/N]\n> " % (img_name, img_comment))
             if add_comment in ["y", "Y"]:
