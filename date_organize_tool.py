@@ -73,11 +73,44 @@ class OrganizedGroup(object):
             # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
+    def search_img(self, target_img_num, remove=False):
+        img_path_found = None # fallback if no img found
+
+        for year in self.get_yr_objs().keys():
+            yr_obj = self.get_yr_objs()[year]
+            for month in yr_obj.get_mo_objs().keys():
+                mo_obj = yr_obj.get_mo_objs()[month]
+                for img_name in mo_obj.get_img_list():
+                    # If number that follows the "IMG_" or "IMG_E" matches,
+                    # store then return this datestamp.
+                    if os.path.splitext(img_name)[0][-4:] == target_img_num:
+                        img_path_found = os.path.join(mo_obj.get_mo_path(),
+                                                                    img_name)
+                        if remove:
+                            os.remove(os.path.join(mo_obj.get_mo_path(),
+                                                                    img_name))
+                        break
+
+        return img_path_found # will default to None if none found
+
+
     def insert_img(self, img_orig_path, man_img_date=False):
         # Allow a manually-specified img_time to be passed and substituted.
         if man_img_date:
             img_time = man_img_date
             bypass_age_warn = True
+        elif os.path.basename(img_orig_path)[:5] == "IMG_E":
+            # Don't need to search or prompt for date if original pic is in
+            # org group. Get its datestamp.
+            img_path_found = self.search_img(img_num)
+            # search_img() ends up being called twice, but it runs fast.
+            # runs a second time in YearDir when original gets removed.
+            # Needs to be run first here in case edited photo doesn't have
+            # good EXIF datestamp. That way program only prompts once (og pic).
+            if img_path_found:
+                img_name = os.path.basename(img_path_found)
+                img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
+            # bypass_age_warn = True # <- not sure if I want this. TBD
         else:
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                             img_orig_path, skip_unknown=False)
@@ -227,30 +260,27 @@ class YearDir(object):
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.
             # Can't assume datestamp is the same. Could have edited later.
-            target_img_num = os.path.splitext(
-                                        os.path.basename(img_orig_path))[0][-4:]
+            img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
+            # If image found, retrieve its name and delete it (remains in
+            # raw_offload folder).
+            img_path_found = self.OrgGroup.search_img(img_num, remove=True)
 
-            for month in self.mo_objs.keys():
-                mo_obj = self.mo_objs[month]
-                for img_name in mo_obj.get_img_list():
-                    # If number that follows the "IMG_" or "IMG_E" matches, find
-                    # and discard the original (remains in raw_offload folder).
-                    if os.path.splitext(img_name)[0][-4:] == target_img_num:
-                        # Replace "IMG_E" img_time with original's datestamp.
-                        img_time = time.strptime(img_name.split("_")[0],
-                                                                    "%Y-%m-%d")
-                        print("Keeping edited file %s and removing original "
-                           "%s.\n" % (os.path.basename(img_orig_path), img_name))
-                        # Remove from both date-org folder and cat buffer.
-                        os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
+            if img_path_found:
+                img_name = os.path.basename(img_path_found)
+                print("Keeping edited file %s and removing original "
+                   "%s.\n" % (os.path.basename(img_orig_path), img_name))
 
-                        if os.path.exists(os.path.join(
-                            self.OrgGroup.get_buffer_root_path(), img_name)):
-                            # Might not exist if the newly-edited pic had its
-                            # original offloaded previously.
-                            os.remove(os.path.join(
+                # Remove from cat buffer (already removed from date-org dir).
+                img_buffer_path = os.path.join(
                                 self.OrgGroup.get_buffer_root_path(), img_name))
-                        break
+                if os.path.exists(img_buffer_path):
+                    # Might not exist if the newly-edited pic had its
+                    # original offloaded and categorized previously.
+                    os.remove(img_buffer_path)
+
+               # Replace "IMG_E" img_time with original's datestamp.
+                img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
+
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
 
         yr_str = str(img_time.tm_year)
