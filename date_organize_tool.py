@@ -272,7 +272,7 @@ class YearDir(object):
 
                 # Remove from cat buffer (already removed from date-org dir).
                 img_buffer_path = os.path.join(
-                                self.OrgGroup.get_buffer_root_path(), img_name))
+                                self.OrgGroup.get_buffer_root_path(), img_name)
                 if os.path.exists(img_buffer_path):
                     # Might not exist if the newly-edited pic had its
                     # original offloaded and categorized previously.

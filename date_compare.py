@@ -268,7 +268,7 @@ def add_datestamp(img_path, long_stamp=False):
     # See if file already datestamped (regardless of correctness)
     if len(img_name) >= 10:
         try:
-            time.strptime(img_name[:10], "%Y-%m-%d")
+            time.strptime(img_name[:10], DATE_FORMAT)
             if long_stamp:
                 pass
             else:
@@ -279,7 +279,7 @@ def add_datestamp(img_path, long_stamp=False):
     datestamp_obj = get_img_date(img_path)
 
     if datestamp_obj:
-        datestamp_short = time.strftime("%Y-%m-%d", datestamp_obj)
+        datestamp_short = time.strftime(DATE_FORMAT, datestamp_obj)
         datestamp_long = time.strftime(DATETIME_FORMAT, datestamp_obj)
     else:
         # if get_img_date returned None (because file wasn't a recognized img
