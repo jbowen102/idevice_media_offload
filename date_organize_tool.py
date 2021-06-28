@@ -102,6 +102,7 @@ class OrganizedGroup(object):
         elif os.path.basename(img_orig_path)[:5] == "IMG_E":
             # Don't need to search or prompt for date if original pic is in
             # org group. Get its datestamp.
+            img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
             img_path_found = self.search_img(img_num)
             # search_img() ends up being called twice, but it runs fast.
             # runs a second time in YearDir when original gets removed.
@@ -110,7 +111,7 @@ class OrganizedGroup(object):
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
-            # bypass_age_warn = True # <- not sure if I want this. TBD
+            bypass_age_warn = True
         else:
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                             img_orig_path, skip_unknown=False)
