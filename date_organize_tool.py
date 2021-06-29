@@ -73,14 +73,51 @@ class OrganizedGroup(object):
             # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
-    def insert_img(self, img_orig_path, man_img_time=False):
+    def search_img(self, target_img_num, remove=False):
+        img_path_found = None # fallback if no img found
+
+        for year in self.get_yr_objs().keys():
+            yr_obj = self.get_yr_objs()[year]
+            for month in yr_obj.get_mo_objs().keys():
+                mo_obj = yr_obj.get_mo_objs()[month]
+                for img_name in mo_obj.get_img_list():
+                    # If number that follows the "IMG_" or "IMG_E" matches,
+                    # store then return this datestamp.
+                    if os.path.splitext(img_name)[0][-4:] == target_img_num:
+                        img_path_found = os.path.join(mo_obj.get_mo_path(),
+                                                                    img_name)
+                        if remove:
+                            os.remove(os.path.join(mo_obj.get_mo_path(),
+                                                                    img_name))
+                        break
+
+        return img_path_found # will default to None if none found
+
+
+    def insert_img(self, img_orig_path, man_img_date=False):
         # Allow a manually-specified img_time to be passed and substituted.
-        if man_img_time:
-            img_time = man_img_time
+        if man_img_date:
+            img_time = man_img_date
+            bypass_age_warn = True
+        elif os.path.basename(img_orig_path)[:5] == "IMG_E":
+            # Don't need to search or prompt for date if original pic is in
+            # org group. Get its datestamp.
+            img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
+            img_path_found = self.search_img(img_num)
+            # search_img() ends up being called twice, but it runs fast.
+            # runs a second time in YearDir when original gets removed.
+            # Needs to be run first here in case edited photo doesn't have
+            # good EXIF datestamp. That way program only prompts once (og pic).
+            if img_path_found:
+                img_name = os.path.basename(img_path_found)
+                img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
             bypass_age_warn = True
         else:
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                             img_orig_path, skip_unknown=False)
+        if not img_time:
+            # If user said to skip file when asked to spec time.
+            return
 
         yr_str = str(img_time.tm_year)
         # Have to zero-pad single-digit months pulled from struct_time
@@ -96,7 +133,7 @@ class OrganizedGroup(object):
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
-        elif man_img_time:
+        elif man_img_date:
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in yr_objs dir.
@@ -109,11 +146,15 @@ class OrganizedGroup(object):
                                 "warning and copies into older dir anyway."
                                                         % (yr_str, mo_str))
 
-            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
-            if man_img_time_struct:
+            man_date_output = date_compare.spec_manual_date(img_orig_path)
+            # will be a time_struct object if a date entered.
+            if isinstance(man_date_output, time.struct_time):
                 # If user entered a date:
-                self.insert_img(img_orig_path, man_img_time_struct)
+                self.insert_img(img_orig_path, man_date_output)
                 # bypass_age_warn will be set True within function.
+            elif man_date_output=="s":
+                # Skip
+                return
             elif yr_str in self.get_yr_list():
                 # If user chose fallback but still in valid years, continue
                 # with operation anyway
@@ -220,25 +261,27 @@ class YearDir(object):
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.
             # Can't assume datestamp is the same. Could have edited later.
-            target_img_num = os.path.splitext(
-                                        os.path.basename(img_orig_path))[0][-4:]
+            img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
+            # If image found, retrieve its name and delete it (remains in
+            # raw_offload folder).
+            img_path_found = self.OrgGroup.search_img(img_num, remove=True)
 
-            for month in self.mo_objs.keys():
-                mo_obj = self.mo_objs[month]
-                for img_name in mo_obj.get_img_list():
-                    # If number that follows the "IMG_" or "IMG_E" matches, find
-                    # and discard the original (remains in raw_offload folder).
-                    if os.path.splitext(img_name)[0][-4:] == target_img_num:
-                        # Replace "IMG_E" img_time with original's datestamp.
-                        img_time = time.strptime(img_name.split("_")[0],
-                                                                    "%Y-%m-%d")
-                        print("Keeping edited file %s and removing original "
-                           "%s.\n" % (os.path.basename(img_orig_path), img_name))
-                        # Remove from both date-org folder and cat buffer.
-                        os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
-                        os.remove(os.path.join(
-                                self.OrgGroup.get_buffer_root_path(), img_name))
-                        break
+            if img_path_found:
+                img_name = os.path.basename(img_path_found)
+                print("Keeping edited file %s and removing original "
+                   "%s.\n" % (os.path.basename(img_orig_path), img_name))
+
+                # Remove from cat buffer (already removed from date-org dir).
+                img_buffer_path = os.path.join(
+                                self.OrgGroup.get_buffer_root_path(), img_name)
+                if os.path.exists(img_buffer_path):
+                    # Might not exist if the newly-edited pic had its
+                    # original offloaded and categorized previously.
+                    os.remove(img_buffer_path)
+
+               # Replace "IMG_E" img_time with original's datestamp.
+                img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
+
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
 
         yr_str = str(img_time.tm_year)
@@ -261,6 +304,9 @@ class YearDir(object):
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in mo_objs.
+            if yrmon not in self.mo_objs.keys():
+                # year-month directory doesn't exist yet, so have make it.
+                self.make_yrmonth(yrmon)
             self.mo_objs[yrmon].insert_img(img_orig_path, img_time)
         else:
             # If the image is from an earlier month not in no_prompt_months set:
@@ -268,10 +314,15 @@ class YearDir(object):
             "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
 
-            man_img_time_struct = date_compare.spec_manual_time(img_orig_path)
-            if man_img_time_struct:
-                self.insert_img(img_orig_path, man_img_time_struct,
+            man_date_output = date_compare.spec_manual_date(img_orig_path)
+            # will be a time_struct object if a date entered.
+            if isinstance(man_date_output, time.struct_time):
+                # If user entered a date:
+                self.insert_img(img_orig_path, man_date_output,
                                                         bypass_age_warn=True)
+            elif man_date_output=="s":
+                # Skip
+                return
             else: # continue with operation anyway
                 if yrmon not in self.mo_objs.keys():
                     # year-month directory doesn't exist yet, so have make it.
@@ -316,12 +367,24 @@ class MoDir(object):
         stamped_name = time.strftime("%Y-%m-%d", img_time) + "_" + img_name
 
         img_comment = date_compare.get_comment(img_orig_path)
+        max_comment_len = 255-len(stamped_name)-1-2
         # Ensure not longer than ext4 fs allows. Ignore URLs too.
-        if (img_comment and len(img_comment) < 255-len(stamped_name)-1
-                                            and "https://" not in img_comment):
+        # 255 is max ext4 char count. Subtract one to account for underscore
+        # to be prepended to comment below. Subtract 2 to account for potential
+        # collision-resolving underscore+digit applied in copy_to_target()
+
+        if not img_comment:
+            pass # do nothing
+        elif len(img_comment) > max_comment_len:
+            print("Comment found in %s EXIF data: '%s'\n"
+                "Too long to append to filename.\n" % (img_name, img_comment))
+        elif "http" in img_comment.lower():
+            print("Comment found in %s EXIF data: '%s'\n"
+                    "Can't add URL to filename.\n" % (img_name, img_comment))
+        else:
             add_comment = input("Comment found in %s EXIF data: '%s'\n"
                     "Append to filename? [Y/N]\n> " % (img_name, img_comment))
-            if add_comment:
+            if add_comment in ["y", "Y"]:
                 # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
                 # Only character not allowed in UNIX filename is the forward slash.
                 # But I also don't like spaces.

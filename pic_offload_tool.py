@@ -2,7 +2,8 @@
 import os
 import shutil
 import time
-from tqdm import tqdm
+from tqdm import tqdm, trange
+import subprocess
 
 from dir_names import IPHONE_DCIM_PREFIX
 
@@ -36,6 +37,7 @@ class iPhoneDCIM(object):
     def find_root(self):
         # Look at all gvfs handles to find one having name starting w/ "gphoto".
         # There should only be one.
+        # If none found, an alternate method of mounting will be attempted.
         gvfs_handles = os.listdir(IPHONE_DCIM_PREFIX)
         count = 0
         for i, handle in enumerate(gvfs_handles):
@@ -43,16 +45,66 @@ class iPhoneDCIM(object):
                 iphone_handle = handle
                 count += 1
 
-        if count == 0 or not os.listdir(IPHONE_DCIM_PREFIX + iphone_handle):
-            input("Error: Can't find iOS device in %s\nPress Enter to try "
-                                                "again." % IPHONE_DCIM_PREFIX)
-            self.find_root()
-        elif count > 1:
-            raise iPhoneLocError("Error: Multiple 'gphoto' handles in %s"
-                                                        % IPHONE_DCIM_PREFIX)
-            # Have not seen this happen. In fact, with two iOS devices plugged
-            # in, only the first one shows up as a gvfs directory.
+        if count:
+            dir_type = "gphoto"
         else:
+            timeout = 20
+            print("Standard DCIM location not found. Attempting fallback "
+                                            "method (%d seconds)." % timeout)
+            # Try fallback method of mounting device
+            # Find device S/N
+            SN_return = subprocess.run(["dmesg | grep SerialNumber:"],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+            # Parse grep output. S/N is 24 digits
+            iphone_SN = str(SN_return.stdout).split("SerialNumber: ")[1][:24]
+
+            ### mount device by using its S/N
+            pid = os.fork()
+            # https://stackoverflow.com/questions/3032805/starting-a-separate-process
+            if pid: # parent process
+                for i in trange(timeout):
+                    time.sleep(1)
+                pass
+            else: # child process
+                try:
+                    subprocess.run(["nemo", "afc://%s" % iphone_SN],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=timeout)
+                   # Will throw error but often still mounts.
+                except subprocess.TimeoutExpired:
+                    print("Timeout expired")
+                    quit()
+                except:
+                    print("Child process encountered unexpected error before timeout.")
+                    quit()
+                finally:
+                    quit()
+
+            for i, handle in enumerate(gvfs_handles):
+                # Target dir has S/N digits as last characters in name
+                if handle[-len(iphone_SN):] == iphone_SN:
+                    iphone_handle = handle
+                    count += 1
+            if count:
+                dir_type = "fallback (S/N-based)"
+                while True:
+                    fallback_ans = input("Use fallback DCIM (includes deleted "
+                                    "images) [Y] or retry DCIM search [N].\n> ")
+                    if fallback_ans in ["Y", "y"]:
+                        try:
+                            subprocess.run(["xdg-open", "%s" % iphone_handle],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        except OSError:
+                            print("Fallback DCIM not reachable. Retrying search.")
+                            print("\n")
+                            self.find_root()
+                            return
+                        break
+                    elif fallback_ans in ["N", "n"]:
+                        print("\n")
+                        self.find_root()
+                        return
+
+        if count == 1 and os.listdir(IPHONE_DCIM_PREFIX + iphone_handle):
             # Found exactly one "gphoto" folder
             self.DCIM_path = IPHONE_DCIM_PREFIX + iphone_handle + "/DCIM/"
             self.APPLE_folders = os.listdir(self.DCIM_path)
@@ -69,8 +121,33 @@ class iPhoneDCIM(object):
                 else:
                     # Retry everything.
                     # Need to re-find gvfs root ("gphoto" handle likely changed)
+                    print("\n")
                     self.find_root()
+                    return
+            else:
+                print("Successfully accessed %s DCIM mount point." % dir_type)
             self.APPLE_folders.sort()
+
+        elif count == 1:
+            # iPhone handle exists, but DCIM folder not present.
+            # Unlocking doesn't always solve it.
+            input("Error: Found %s mount point, but DCIM folder not "
+                                    "present.\nUnlock device (or reconnect) and "
+                                        "press Enter to try again." % dir_type)
+            print("\n")
+            self.find_root()
+            return
+        elif count > 1:
+            raise iPhoneLocError("Error: Multiple '%s' handles in %s"
+                                               % (dir_type, IPHONE_DCIM_PREFIX))
+            # Have not seen this happen. In fact, with two iOS devices plugged
+            # in, only the first one shows up as a gvfs directory.
+        else:
+            input("Error: Can't find iOS device in %s\nPress Enter to try "
+                                                "again." % IPHONE_DCIM_PREFIX)
+            print("\n")
+            self.find_root()
+            return
 
     def get_root(self):
         return self.DCIM_path

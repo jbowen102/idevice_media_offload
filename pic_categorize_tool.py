@@ -37,12 +37,16 @@ class Categorizer(object):
         # Keyword referencing manually-entered path must be at least three
         # characters long
         if len(keyword) < 3:
-            print("Input keyword for referencing stored dirs must be >3 "
+            if not silent:
+                print("Input keyword for referencing stored dirs must be >3 "
                                                                 "characters\n")
             return None
 
         dirs_found = []
         for dir_path in self.manual_dir_list:
+            if keyword.lower() == dir_path.lower():
+                # If an already-stored path is entered again, don't print.
+                return keyword
             if keyword.lower() in dir_path.lower():
                 dirs_found.append(dir_path)
 
@@ -106,8 +110,8 @@ class Categorizer(object):
 
 
     def photo_transfer(self, start_point=""):
-        """Master function to displays images in buffer and prompt user
-        where it should be copied. Execute copy. Start_point can be specified
+        """Master function to display images in buffer and prompt user
+        where each should be copied. Execute copy. Start_point can be specified
         (as img name) to skip processing earlier imgs."""
 
         # local buffer to be categorized manually
@@ -143,6 +147,11 @@ class Categorizer(object):
 
             if os.path.isdir(img_path):
                 # Ignore any manual sort folder left over from previous offload.
+                continue
+            elif not os.path.exists(img_path):
+                # Handle case where user manual deletes img in buffer outside
+                # of program.
+                print("%s skipped - not found in Cat buffer." % img)
                 continue
 
             # Show image and prompt for location.
@@ -313,6 +322,7 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
             print("%s/%s with same file hash exists already. "
                                 "Dest file not overwritten.\n"
                             % (os.path.basename(target_dir[:-1]), new_name))
+            time.sleep(1) # Pause for one second so user sees above message.
             if move_op:
                 os.remove(img_path)
             else:
