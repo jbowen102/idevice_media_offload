@@ -30,9 +30,9 @@ WEBP2GIF_RETURN=$? # gets return value of last command executed.
 # If webp2gif conversion failed, assume it's a static image.
 if [ ${WEBP2GIF_RETURN} -ne 0 ]
 then
-  EXT="png"
+  EXT="jpg"
   printf "\nwebp2gif failed to convert.\n\nAttempting to convert as static img.\n"
-  FILEPATH_PNG="${FILEPATH_NO_EXT/%$EXT}.png"
+  FILEPATH_PNG="${FILEPATH_NO_EXT/%$EXT}.${EXT}"
   convert ${FILE_PATH} ${FILEPATH_PNG} &> /dev/null
   CONVERT_RETURN=$? # gets return value of last command executed.
   if [ ${CONVERT_RETURN} -ne 0 ]
