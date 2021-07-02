@@ -41,7 +41,7 @@ then
   fi
 else
   printf "\nwebp2gif successfully converted to gif\n"
-  mv ${FILENAME_GIF} ${FILE_DIR_OG}
+  mv ${FILENAME_GIF} ${FILE_DIR_OG} # overwrites any existing file w/ same name and ext.
 fi
 
 # Both cases fall through to clean up wep2gif dir.
