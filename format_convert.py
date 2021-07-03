@@ -22,7 +22,8 @@ def write_exif_comment(file_path, comment):
 
 
 def convert_gif_to_mp4(gif_path):
-    """Wrapper for bash script that copies EXIF comment if present."""
+    """Wrapper for bash script convert_gif_to_mp4 that also copies
+    EXIF comment if present."""
 
     dir_name = os.path.dirname(gif_path)
     CompProc = subprocess.run(["./convert_gif_to_mp4", gif_path],

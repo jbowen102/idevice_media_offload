@@ -16,27 +16,28 @@ FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
-# put timestamps in GIF filename
+NEW_EXT=".gif"
+# put timestamps in output filename
 if [[ $# == 2 ]];
 then
-  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}_${2}s-.gif"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}s-${NEW_EXT}"
 elif [[ $# == 3 ]];
 then
-  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}_${2}-${3}s.gif"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s${NEW_EXT}"
 else
-  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}.gif"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}${NEW_EXT}"
 fi
 
 # Check for existence of output file before attempting conversion.
 # ffmpeg has this check, but it requires the rest of the verbose output
 # (which is suppressed below)
-if [[ -f "${FILEPATH_GIF}" ]];
+if [[ -f "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file exists. Overwrite? [Y/N]\n"
   read -p ">" answer
   if [ "$answer" == "y" -o "$answer" == "Y" ];
   then
-    rm "${FILEPATH_GIF}"
+    rm "${FILEPATH_OUT}"
   else
     printf "Exiting\n"
     exit 1
@@ -50,22 +51,20 @@ then
 fi
 
 printf "\nAttempting to convert to gif..."
-if [[ $# == 1 ]];
+if [[ $# == 1 ]]; # one arg
 then
   ffmpeg -i "${FILE_PATH}" \
   -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_GIF}" &> /dev/null
+  -loop 0 "${FILEPATH_OUT}" &> /dev/null
   # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
   # https://www.ubuntubuzz.com/2017/08/convert-mp4-webm-video-to-gif-using-ffmpeg.html
-elif [[ $# == 2 ]];
+elif [[ $# == 2 ]]; # two args
 then
-  # two args
   ffmpeg -ss ${2} -i "${FILE_PATH}" \
   -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_GIF}" &> /dev/null
-elif [[ $# == 3 ]];
+  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+elif [[ $# == 3 ]]; # three args
 then
-  # three args
   # have to convert from end time to duration ffmpeg expects
   START_TIME=$2
   END_TIME=$3
@@ -77,9 +76,9 @@ then
     printf "FAIL\nEnd time must be greater than start time\n"
     exit 1
   else
-    ffmpeg -ss ${2} -t ${3} -i "${FILE_PATH}" \
+    ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" \
     -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-    -loop 0 "${FILEPATH_GIF}" &> /dev/null
+    -loop 0 "${FILEPATH_OUT}" &> /dev/null
   fi
 fi
 
@@ -88,7 +87,8 @@ FFMPEG_RETURN=$? # gets return value of last command executed.
 if [ ${FFMPEG_RETURN} == 0 ]
 then
   printf "SUCCESS\n"
-	xdg-open 2>/dev/null "${FILEPATH_GIF}"
+  # Open gif so user can confirm valid output file.
+	xdg-open 2>/dev/null "${FILEPATH_OUT}"
 else
   printf "FAIL\n"
   exit 1
