@@ -1,0 +1,35 @@
+#!/bin/bash
+#!/bin/bash
+
+STARTING_DIR="$PWD"
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename "${FILE_PATH}") # includes extension
+
+FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname "${FILE_PATH}")
+# https://linuxhandbook.com/dirname/
+
+FILEPATH_MP4="${FILEPATH_NO_EXT/%$EXT}.mp4"
+printf "\nAttempting to convert gif to mp4..."
+
+ffmpeg -i "${FILE_PATH}" -movflags faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "${FILEPATH_MP4}" &> /dev/null
+
+# https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
+FFMPEG_RETURN=$? # gets return value of last command executed.
+
+# Check ffmpeg conversion result
+if [ ${FFMPEG_RETURN} == 0 ]
+then
+  printf "SUCCESS\n"
+else
+  printf "FAIL\n"
+  exit 1
+fi
+
+cd "${STARTING_DIR}" # Back to original working dir.
