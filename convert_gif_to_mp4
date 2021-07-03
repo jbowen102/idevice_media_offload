@@ -17,7 +17,8 @@ FILE_DIR_OG=$(dirname "${FILE_PATH}")
 FILEPATH_MP4="${FILEPATH_NO_EXT/%$EXT}.mp4"
 printf "\nAttempting to convert gif to mp4..."
 
-ffmpeg -i "${FILE_PATH}" -movflags faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "${FILEPATH_MP4}" &> /dev/null
+ffmpeg -i "${FILE_PATH}" -movflags faststart -pix_fmt yuv420p \
+-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "${FILEPATH_MP4}" &> /dev/null
 
 # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
 FFMPEG_RETURN=$? # gets return value of last command executed.

@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# works w/ WEBM, MP4, and MOV input formats (at least)
+
+STARTING_DIR="$PWD"
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename "${FILE_PATH}") # includes extension
+
+FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname "${FILE_PATH}")
+# https://linuxhandbook.com/dirname/
+
+# put timestamps in GIF filename
+if [[ $# == 2 ]];
+then
+  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}_${2}s-.gif"
+elif [[ $# == 3 ]];
+then
+  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}_${2}-${3}s.gif"
+else
+  FILEPATH_GIF="${FILEPATH_NO_EXT/%$EXT}.gif"
+fi
+
+# Check for existence of output file before attempting conversion.
+# ffmpeg has this check, but it requires the rest of the verbose output
+# (which is suppressed below)
+if [[ -f "${FILEPATH_GIF}" ]];
+then
+  printf "\nTarget file exists. Overwrite? [Y/N]\n"
+  read -p ">" answer
+  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  then
+    rm "${FILEPATH_GIF}"
+  else
+    printf "Exiting\n"
+    exit 1
+  fi
+fi
+
+if [ $# -gt 3 ];
+then
+  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  exit 1
+fi
+
+printf "\nAttempting to convert to gif..."
+if [[ $# == 1 ]];
+then
+  ffmpeg -i "${FILE_PATH}" \
+  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  -loop 0 "${FILEPATH_GIF}" &> /dev/null
+  # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
+  # https://www.ubuntubuzz.com/2017/08/convert-mp4-webm-video-to-gif-using-ffmpeg.html
+elif [[ $# == 2 ]];
+then
+  # two args
+  ffmpeg -ss ${2} -i "${FILE_PATH}" \
+  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  -loop 0 "${FILEPATH_GIF}" &> /dev/null
+elif [[ $# == 3 ]];
+then
+  # three args
+  # have to convert from end time to duration ffmpeg expects
+  START_TIME=$2
+  END_TIME=$3
+  DURATION="$((END_TIME - START_TIME))"
+  # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
+  # check for negative number
+  if [ ${DURATION} -lt 1 ];
+  then
+    printf "FAIL\nEnd time must be greater than start time\n"
+    exit 1
+  else
+    ffmpeg -ss ${2} -t ${3} -i "${FILE_PATH}" \
+    -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+    -loop 0 "${FILEPATH_GIF}" &> /dev/null
+  fi
+fi
+
+# Test if conversion was successful since ffmpeg output suppressed.
+FFMPEG_RETURN=$? # gets return value of last command executed.
+if [ ${FFMPEG_RETURN} == 0 ]
+then
+  printf "SUCCESS\n"
+	xdg-open 2>/dev/null "${FILEPATH_GIF}"
+else
+  printf "FAIL\n"
+  exit 1
+fi
