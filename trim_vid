@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# works w/ WEBM, MP4, and MOV input formats (at least)
+
+STARTING_DIR="$PWD"
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename "${FILE_PATH}") # includes extension
+
+FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname "${FILE_PATH}")
+# https://linuxhandbook.com/dirname/
+
+NEW_EXT=".mp4"
+# put timestamps in output filename
+if [[ $# == 2 ]];
+then
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}s-${NEW_EXT}"
+elif [[ $# == 3 ]];
+then
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s${NEW_EXT}"
+else
+  FILEPATH_OUT="${FILEPATH_NO_EXT}${NEW_EXT}"
+fi
+
+# Check for existence of output file before attempting conversion.
+# ffmpeg has this check, but it requires the rest of the verbose output
+# (which is suppressed below)
+if [[ ${FILE_PATH} == ${FILEPATH_OUT} ]]; # trivial case of mp4 input file w/ no timestamps passed.
+then
+  printf "\nOutput file cannot have same name as input file.\n"
+  exit 1
+elif [[ -f "${FILEPATH_OUT}" ]];
+then
+  printf "\nTarget file exists. Overwrite? [Y/N]\n"
+  read -p ">" answer
+  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  then
+    rm "${FILEPATH_OUT}"
+  else
+    printf "Exiting\n"
+    exit 1
+  fi
+fi
+
+if [[ $# -gt 3 ]];
+then
+  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  exit 1
+fi
+
+printf "\nAttempting to truncate and/or convert..."
+if [[ $# == 1 ]]; # one args
+then
+  # The utility of this case is a simple format conversion to mp4
+  ffmpeg -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
+  # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
+elif [[ $# == 2 ]]; # two args
+then
+  ffmpeg -ss ${2} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
+  # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
+elif [[ $# == 3 ]]; # three args
+then
+  # have to convert from end time to duration ffmpeg expects
+  START_TIME=$2
+  END_TIME=$3
+  DURATION="$((END_TIME - START_TIME))"
+  # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
+  # check for negative number
+  if [ ${DURATION} -lt 1 ];
+  then
+    printf "FAIL\nEnd time must be greater than start time\n"
+    exit 1
+  else
+    ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
+  fi
+fi
+
+# Test if conversion was successful since ffmpeg output suppressed.
+FFMPEG_RETURN=$? # gets return value of last command executed.
+if [ ${FFMPEG_RETURN} == 0 ]
+then
+  printf "SUCCESS\n"
+else
+  printf "FAIL\n"
+  exit 1
+fi
