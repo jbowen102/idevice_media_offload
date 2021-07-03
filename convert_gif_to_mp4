@@ -15,11 +15,29 @@ FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
 NEW_EXT=".mp4"
-FILEPATH_MP4="${FILEPATH_NO_EXT}${NEW_EXT}"
+FILEPATH_OUT="${FILEPATH_NO_EXT}${NEW_EXT}"
+
+# Check for existence of output file before attempting conversion.
+# ffmpeg has this check, but it requires the rest of the verbose output
+# (which is suppressed below)
+if [[ -f "${FILEPATH_OUT}" ]];
+then
+  printf "\nTarget file exists. Overwrite? [Y/N]\n"
+  read -p ">" answer
+  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  then
+    rm "${FILEPATH_OUT}"
+  else
+    printf "Exiting\n"
+    exit 1
+  fi
+fi
+
+
 printf "\nAttempting to convert gif to mp4..."
 
 ffmpeg -i "${FILE_PATH}" -movflags faststart -pix_fmt yuv420p \
--vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "${FILEPATH_MP4}" &> /dev/null
+-vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" "${FILEPATH_OUT}" &> /dev/null
 # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
 FFMPEG_RETURN=$? # gets return value of last command executed.
 

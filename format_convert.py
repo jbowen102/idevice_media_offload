@@ -27,22 +27,19 @@ def convert_gif_to_mp4(gif_path):
 
     dir_name = os.path.dirname(gif_path)
     CompProc = subprocess.run(["./convert_gif_to_mp4", gif_path],
-                            stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
-                            # stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                                    stderr=subprocess.STDOUT)
+    # bash prompts passed to user - no stdout= param passed to subprocess.run() call.
 
     if CompProc.returncode == 0:
-        # this is only needed if can't get bash output to show up
-        print("SUCCESS")
-
         converted_filename = os.path.splitext(gif_path)[0] + ".mp4"
         converted_filepath = os.path.join(dir_name, converted_filename)
 
         # Transcribe any comment/caption in original GIF.
-        img_comment = date_compare.get_comment(img_orig_path)
+        img_comment = date_compare.get_comment(gif_path)
         if img_comment:
             write_exif_comment(converted_filepath, img_comment)
 
-        gif_size = os.path.getsize(og_path)
+        gif_size = os.path.getsize(gif_path)
         mp4_size = os.path.getsize(converted_filepath)
 
         print("\t%s  ->  %s  (%.2fx)" %
@@ -74,6 +71,7 @@ def convert_all_webp(dir_name, delete_webp=False):
                 print("Converting: %s" % file)
                 CompProc = subprocess.run(["./convert_webp", og_path],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                # bash output suppressed. No prompts in convert_webp.
 
                 # Check for success
                 if CompProc.returncode == 0:
