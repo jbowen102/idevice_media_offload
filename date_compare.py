@@ -492,7 +492,7 @@ def tz_adjust(time_str, format, shift):
         return time_str_adjusted
 
 
-def get_comment(img_path):
+def get_comment(img_path, print_type=False):
     if not os.path.isfile(img_path):
         print("Not a valid image path.")
         return None
@@ -501,13 +501,24 @@ def get_comment(img_path):
         metadata = et.get_metadata(img_path)
         exif_img_desc = metadata.get("EXIF:ImageDescription")
         caption_abst = metadata.get("IPTC:Caption-Abstract")
-        if exif_img_desc and caption_abst:
+        qt_comment = metadata.get("QuickTime:Comment")
+
+        # Count non-empty comment/caption values
+        if sum(x is not None for x in [exif_img_desc, caption_abst, qt_comment]) > 1:
             input("Found caption in multiple EXIF tags for %s. Unhandled case."
                                                 % os.path.basename(img_path))
         elif exif_img_desc:
+            if print_type:
+                print("%s: %s" % ("EXIF:ImageDescription", exif_img_desc))
             return exif_img_desc
         elif caption_abst:
+            if print_type:
+                print("%s: %s" % ("IPTC:Caption-Abstract", caption_abst))
             return caption_abst
+        elif qt_comment:
+            if print_type:
+                print("%s: %s" % ("QuickTime:Comment", qt_comment))
+            return qt_comment
         else:
             return None
 
