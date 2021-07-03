@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 STARTING_DIR="$PWD"
 

@@ -3,6 +3,54 @@ import os
 import subprocess
 import glob
 
+import date_compare
+
+
+def write_exif_comment(file_path, comment):
+    CompProc = subprocess.run(["exiftool",
+                            "-Comment=%s" % comment, file_path],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # Seems like this should work, but it doesn't (requires import exiftool)
+    # with exiftool.ExifTool() as et:
+    #     cmd_text = "-Comment='%s' '%s'" % (img_comment, converted_filepath))
+    #     et.execute(cmd_text.encode("utf-8"))
+
+    if CompProc.returncode == 0 and os.path.exists(file_path + "_original"):
+        # If exiftool call failed, then don't want to delete a pre-existing
+        # "_original" file
+        os.remove(file_path + "_original")
+
+
+def convert_gif_to_mp4(gif_path):
+    """Wrapper for bash script that copies EXIF comment if present."""
+
+    dir_name = os.path.dirname(gif_path)
+    CompProc = subprocess.run(["./convert_gif_to_mp4", gif_path],
+                            stdout=subprocess.STDOUT, stderr=subprocess.STDOUT)
+                            # stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    if CompProc.returncode == 0:
+        # this is only needed if can't get bash output to show up
+        print("SUCCESS")
+
+        converted_filename = os.path.splitext(gif_path)[0] + ".mp4"
+        converted_filepath = os.path.join(dir_name, converted_filename)
+
+        # Transcribe any comment/caption in original GIF.
+        img_comment = date_compare.get_comment(img_orig_path)
+        if img_comment:
+            write_exif_comment(converted_filepath, img_comment)
+
+        gif_size = os.path.getsize(og_path)
+        mp4_size = os.path.getsize(converted_filepath)
+
+        print("\t%s  ->  %s  (%.2fx)" %
+                (humanbytes(gif_size), humanbytes(mp4_size), mp4_size/gif_size))
+
+    else:
+        print("\tFAILED TO CONVERT")
+
+
 # Call bash convert script
 def convert_all_webp(dir_name, delete_webp=False):
     webp_accum_size = 0
