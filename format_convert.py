@@ -50,58 +50,82 @@ def convert_gif_to_mp4(gif_path):
 
 
 # Call bash convert script
-def convert_all_webp(dir_name, delete_webp=False):
-    webp_accum_size = 0
+def convert_all_webx(dir_name, webx_type, delete_webx=False):
+    """Use bash scripts convert_webp or trim_vid to convert either webp or
+    webm files in a directory.
+    *.webp (animated) ->  *.gif
+    *.webp (static)   ->  *.jpg
+    *.webm            ->  *.mp4
+    "type" parameter is either 'webp' or 'webm'
+    "delete_webx" parameter determines if webx files get deleted after conversions.
+    If conversion fails, webx file not deleted.
+    """
+    webx_accum_size = 0
     output_accum_size = 0
 
     file_list = os.listdir(dir_name)
     for file in file_list:
         og_path = os.path.join(dir_name, file)
-        if os.path.splitext(file)[1].lower() == ".webp":
+        if os.path.splitext(file)[1].lower() == ".%s" % webx_type:
             # Check for existing converted file
             file_no_ext = os.path.splitext(file)[0]
             wildcard_filename = file_no_ext + "." + "*"
 
             # Check if two files w/ same name already exist in the directory.
+            # Can't let bash script handle collisions because it
+            # can't prompt user when its output is suppressed.
             matches = glob.glob(os.path.join(dir_name, wildcard_filename))
             if len(matches) > 1:
                 print("Skipped: %s (File with same name and different "
                                                 "extension exists here)" % file)
             else:
                 print("Converting: %s" % file)
-                CompProc = subprocess.run(["./convert_webp", og_path],
+                if webx_type == "webp":
+                    CompProc = subprocess.run(["./convert_webp", og_path],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                # bash output suppressed. No prompts in convert_webp.
+                    # bash output suppressed. No prompts in convert_webp.
+                if webx_type == "webm":
+                    CompProc = subprocess.run(["./trim_vid", og_path],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    # bash output suppressed. No prompts in convert_webp.
 
                 # Check for success
                 if CompProc.returncode == 0:
-                    # find matches again now that there are two
-                    matches = glob.glob(os.path.join(dir_name, wildcard_filename))
-                    # Find non-webp one by deducting sets
-                    # https://stackoverflow.com/a/21502564
-                    converted_filepath = ( set(matches) - set([og_path]) ).pop()
+                    if webx_type == "webp":
+                        # find matches again now that there are two
+                        # can't do this above because set.pop() will fail if conversion failed.
+                        matches = glob.glob(os.path.join(dir_name, wildcard_filename))
+                        # Find non-webx one by deducting sets
+                        # https://stackoverflow.com/a/21502564
+                        converted_filepath = ( set(matches) - set([og_path]) ).pop()
 
-                    webp_size = os.path.getsize(og_path)
+                    elif webx_type == "webm":
+                        converted_filepath = os.path.join(dir_name, file_no_ext + ".mp4")
+
+                    webx_size = os.path.getsize(og_path)
                     output_size = os.path.getsize(converted_filepath)
 
-                    webp_accum_size += webp_size
+                    webx_accum_size += webx_size
                     output_accum_size += output_size
 
                     print("\t%s  ->  %s  (%.2fx)" %
-                                (humanbytes(webp_size), humanbytes(output_size),
-                                                        output_size/webp_size))
+                                (humanbytes(webx_size), humanbytes(output_size),
+                                                        output_size/webx_size))
+                    if delete_webx:
+                        os.remove(os.path.join(dir_name, file))
+
                 else:
                     print("\tFAILED TO CONVERT")
 
-            if delete_webp:
-                os.remove(os.path.join(dir_name, file))
+    if webx_accum_size: # if no files found, will get div by zero
+        print("\nOverall:\n\t%s  ->  %s  (%.2fx)" %
+                (humanbytes(webx_accum_size), humanbytes(output_accum_size),
+                                            output_accum_size/webx_accum_size))
+    else:
+        print("\nNo %s files found to convert in %s" % (webx_type, dir_name))
 
-    print("Overall:\n\t%s  ->  %s  (%.2fx)" %
-                (humanbytes(webp_accum_size), humanbytes(output_accum_size),
-                                            output_accum_size/webp_accum_size))
 
-
-# humanbytes() copied from here:
+# humanbytes() copied from here (slight formatting modification by me):
 # https://stackoverflow.com/a/21502564
 def humanbytes(B):
    'Return the given bytes as a human friendly KB, MB, GB, or TB string'
@@ -114,13 +138,13 @@ def humanbytes(B):
    if B < KB:
       return '{0} {1}'.format(B,'Bytes' if 0 == B > 1 else 'Byte')
    elif KB <= B < MB:
-      return '{0:.2f} KB'.format(B/KB)
+      return '{0:6.2f} KB'.format(B/KB)
    elif MB <= B < GB:
-      return '{0:.2f} MB'.format(B/MB)
+      return '{0:6.2f} MB'.format(B/MB)
    elif GB <= B < TB:
-      return '{0:.2f} GB'.format(B/GB)
+      return '{0:6.2f} GB'.format(B/GB)
    elif TB <= B:
-      return '{0:.2f} TB'.format(B/TB)
+      return '{0:6.2f} TB'.format(B/TB)
 
 # tests = [1, 1024, 500000, 1048576, 50000000, 1073741824, 5000000000, 1099511627776, 5000000000000]
 #
