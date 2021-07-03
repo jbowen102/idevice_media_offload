@@ -35,14 +35,15 @@ then
 else
   EXT="jpg"
   printf "FAIL\nAttempting to convert as static img..."
-  FILEPATH_PNG="${FILEPATH_NO_EXT/%$EXT}.${EXT}"
-  convert "${FILE_PATH}" "${FILEPATH_PNG}" &> /dev/null
+  FILEPATH_JPG="${FILEPATH_NO_EXT/%$EXT}.${EXT}"
+  convert "${FILE_PATH}" "${FILEPATH_JPG}" &> /dev/null
   CONVERT_RETURN=$? # gets return value of last command executed.
   if [ ${CONVERT_RETURN} == 0 ]
   then
     printf "SUCCESS\n"
   else
     printf "Static conversion failed too!\n"
+    exit 1
   fi
 fi
 

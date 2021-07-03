@@ -5,6 +5,9 @@ import glob
 
 # Call bash convert script
 def convert_all_webp(dir_name, delete_webp=False):
+    webp_accum_size = 0
+    output_accum_size = 0
+
     file_list = os.listdir(dir_name)
     for file in file_list:
         og_path = os.path.join(dir_name, file)
@@ -16,25 +19,39 @@ def convert_all_webp(dir_name, delete_webp=False):
             # Check if two files w/ same name already exist in the directory.
             matches = glob.glob(os.path.join(dir_name, wildcard_filename))
             if len(matches) > 1:
-                print("Skipping: %s (File with same name and different "
+                print("Skipped: %s (File with same name and different "
                                                 "extension exists here)" % file)
             else:
                 print("Converting: %s" % file)
-                subprocess.run(["./convert_webp", og_path],
+                CompProc = subprocess.run(["./convert_webp", og_path],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-                # find matches again now that there are two
-                matches = glob.glob(os.path.join(dir_name, wildcard_filename))
-                # Find non-webp one by deducting sets
-                # https://stackoverflow.com/a/21502564
-                converted_filepath = ( set(matches) - set([og_path]) ).pop()
+                # Check for success
+                if CompProc.returncode == 0:
+                    # find matches again now that there are two
+                    matches = glob.glob(os.path.join(dir_name, wildcard_filename))
+                    # Find non-webp one by deducting sets
+                    # https://stackoverflow.com/a/21502564
+                    converted_filepath = ( set(matches) - set([og_path]) ).pop()
 
-                webp_size = humanbytes(os.path.getsize(og_path))
-                new_size = humanbytes(os.path.getsize(converted_filepath))
-                print("\t%s  ->  %s" % (webp_size, new_size))
+                    webp_size = os.path.getsize(og_path)
+                    output_size = os.path.getsize(converted_filepath)
+
+                    webp_accum_size += webp_size
+                    output_accum_size += output_size
+
+                    print("\t%s  ->  %s  (%.2fx)" %
+                                (humanbytes(webp_size), humanbytes(output_size),
+                                                        output_size/webp_size))
+                else:
+                    print("\tFAILED TO CONVERT")
 
             if delete_webp:
                 os.remove(os.path.join(dir_name, file))
+
+    print("Overall:\n\t%s  ->  %s  (%.2fx)" %
+                (humanbytes(webp_accum_size), humanbytes(output_accum_size),
+                                            output_accum_size/webp_accum_size))
 
 
 # humanbytes() copied from here:
