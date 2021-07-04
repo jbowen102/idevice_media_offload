@@ -3,7 +3,7 @@
 # Trim a given video (or GIF) according to specified start and (optional) end timestamp.
 # Output is in mp4 format.
 # If neither timestamp specified, can be used to just convert input vid to mp4 format.
-# works w/ WEBM, MP4, and MOV input formats (at least)
+# works w/ WEBM, MP4, MOV, and GIF input formats (at least)
 
 STARTING_DIR="$PWD"
 
@@ -19,26 +19,36 @@ FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
-NEW_EXT=".mp4"
+NEW_EXT="mp4"
 # put timestamps in output filename
 if [[ $# == 2 ]];
 then
-  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}s-${NEW_EXT}"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}s-.${NEW_EXT}"
 elif [[ $# == 3 ]];
 then
-  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s${NEW_EXT}"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s.${NEW_EXT}"
 else
-  FILEPATH_OUT="${FILEPATH_NO_EXT}${NEW_EXT}"
+  FILEPATH_OUT="${FILEPATH_NO_EXT}.${NEW_EXT}"
+fi
+
+# Validate input path
+if [[ -e "${FILE_PATH}" ]];
+then
+  :
+else
+  printf "\nSpecified file cannot be found.\n"
+  exit 1
 fi
 
 # Check for existence of output file before attempting conversion.
 # ffmpeg has this check, but it requires the rest of the verbose output
 # (which is suppressed below)
+# Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
 if [[ ${FILE_PATH} == ${FILEPATH_OUT} ]]; # trivial case of mp4 input file w/ no timestamps passed.
 then
   printf "\nOutput file cannot have same name as input file.\n"
   exit 1
-elif [[ -f "${FILEPATH_OUT}" ]];
+elif [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file exists. Overwrite? [Y/N]\n"
   read -p ">" answer
@@ -57,7 +67,7 @@ then
   exit 1
 fi
 
-printf "\nAttempting to truncate and/or convert..."
+printf "\nAttempting to trim/convert..."
 if [[ $# == 1 ]]; # one arg
 then
   # The utility of this case is a simple format conversion to mp4
@@ -71,16 +81,18 @@ then
   # have to convert from end time to duration ffmpeg expects
   START_TIME=$2
   END_TIME=$3
-  DURATION="$((END_TIME - START_TIME))"
+  # DURATION="$((END_TIME - START_TIME))"
   # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
   # check for negative number
-  if [ ${DURATION} -lt 1 ];
-  then
-    printf "FAIL\nEnd time must be greater than start time\n"
-    exit 1
-  else
-    ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
-  fi
+  # if [ ${DURATION} -lt 1 ];
+  # then
+  #   printf "FAIL\nEnd time must be greater than start time\n"
+  #   exit 1
+  # else
+  #   ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
+  # fi
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} "${FILEPATH_OUT}" &> /dev/null
+
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.
