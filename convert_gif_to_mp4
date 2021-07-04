@@ -1,5 +1,10 @@
 #!/bin/bash
 
+
+
+
+
+
 STARTING_DIR="$PWD"
 
 FILE_PATH="$(realpath "${1}")"

@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# works w/ WEBM, MP4, and MOV input formats (at least)
+# Convert a given video to a gif w/ optional start and end time
+# Works w/ WEBM, MP4, and MOV input formats (at least)
+
+
 
 STARTING_DIR="$PWD"
 

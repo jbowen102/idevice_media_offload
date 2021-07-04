@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Trim a given video (or GIF) according to specified start and (optional) end timestamp.
+# Output is in mp4 format.
+# If neither timestamp specified, can be used to just convert input vid to mp4 format.
 # works w/ WEBM, MP4, and MOV input formats (at least)
 
 STARTING_DIR="$PWD"
@@ -55,7 +58,7 @@ then
 fi
 
 printf "\nAttempting to truncate and/or convert..."
-if [[ $# == 1 ]]; # one args
+if [[ $# == 1 ]]; # one arg
 then
   # The utility of this case is a simple format conversion to mp4
   ffmpeg -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
@@ -63,7 +66,6 @@ then
 elif [[ $# == 2 ]]; # two args
 then
   ffmpeg -ss ${2} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
-  # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
 elif [[ $# == 3 ]]; # three args
 then
   # have to convert from end time to duration ffmpeg expects

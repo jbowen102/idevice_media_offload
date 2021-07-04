@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# Extract all frames from a given video of GIF w/ optional start and end time
+# Works w/ WEBM, MP4, MOV, and GIF input formats (at least)
+
+
+
+STARTING_DIR="$PWD"
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename "${FILE_PATH}") # includes extension
+
+FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname "${FILE_PATH}")
+# https://linuxhandbook.com/dirname/
+
+# Create "frames" directory to store output
+OUTPUT_FOLDER="${FILE_DIR_OG}/frames/"
+if [ -d "${OUTPUT_FOLDER}" ];
+then
+	: # do nothing
+else
+	mkdir "${OUTPUT_FOLDER}"
+fi
+
+FILEPATH_OUT="${OUTPUT_FOLDER}/${FILENAME_NO_EXT::20}_%05d.jpg"
+# https://ngelinux.com/brief-explanation-string-and-array-slicing-in-bash-shell-linux/
+# Prepend first 20 characters of input (vid) filename to frame filenames.
+# If input file name is shorter than 20 characters, output string will truncate appropriately.
+# Append 5-digit serial num.
+
+# Output-file collisions not handled
+
+if [[ $# -gt 3 ]];
+then
+  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  exit 1
+fi
+
+printf "\nAttempting to extract video frames..."
+if [[ $# == 1 ]]; # one arg
+then
+  # Extract frames from entire vid
+  ffmpeg -i "${FILE_PATH}" -qscale:v 2 "${FILEPATH_OUT}" &> /dev/null
+  # https://stackoverflow.com/questions/10957412/fastest-way-to-extract-frames-using-ffmpeg
+  # https://stackoverflow.com/questions/10225403/how-can-i-extract-a-good-quality-jpeg-image-from-a-video-file-with-ffmpeg/10234065#10234065
+  # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
+elif [[ $# == 2 ]]; # two args
+then
+  # Extract all frames from given timestamp to end.
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -qscale:v 2 "${FILEPATH_OUT}" &> /dev/null
+elif [[ $# == 3 ]]; # three args
+then
+  # Extract frames only in time range specified.
+  # Have to convert from end time to duration ffmpeg expects
+  START_TIME=$2
+  END_TIME=$3
+  DURATION="$((END_TIME - START_TIME))"
+  # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
+  # check for negative number
+  if [ ${DURATION} -lt 1 ];
+  then
+    printf "FAIL\nEnd time must be greater than start time\n"
+    exit 1
+  else
+    ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" -qscale:v 2 "${FILEPATH_OUT}" &> /dev/null
+  fi
+fi
+
+# Test if conversion was successful since ffmpeg output suppressed.
+FFMPEG_RETURN=$? # gets return value of last command executed.
+if [ ${FFMPEG_RETURN} == 0 ]
+then
+  FRAME_COUNT=$(find "${OUTPUT_FOLDER}" -maxdepth 1 -type f|wc -l)
+  # https://stackoverflow.com/a/11132110
+  printf "SUCCESS - ${FRAME_COUNT} frames\n"
+else
+  printf "FAIL\n"
+  exit 1
+fi
