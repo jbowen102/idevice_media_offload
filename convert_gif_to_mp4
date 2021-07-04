@@ -19,13 +19,32 @@ FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
-NEW_EXT=".mp4"
-FILEPATH_OUT="${FILEPATH_NO_EXT}${NEW_EXT}"
+NEW_EXT="mp4"
+FILEPATH_OUT="${FILEPATH_NO_EXT}.${NEW_EXT}"
+
+
+
+
+
+
+
+
+
+
+# Validate input path
+if [[ -e "${FILE_PATH}" ]];
+then
+  :
+else
+  printf "\nSpecified file cannot be found.\n"
+  exit 1
+fi
 
 # Check for existence of output file before attempting conversion.
 # ffmpeg has this check, but it requires the rest of the verbose output
 # (which is suppressed below)
-if [[ -f "${FILEPATH_OUT}" ]];
+# Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
+if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file exists. Overwrite? [Y/N]\n"
   read -p ">" answer

@@ -22,7 +22,7 @@ FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # Try using webp2gif first. Will fail if static img
 cp "${FILE_PATH}" "${WEBP2GIF_DIR}"
 cd "${WEBP2GIF_DIR}"
-FILENAME_GIF="${FILENAME_NO_EXT/%$EXT}.gif"
+FILENAME_GIF="${FILENAME_NO_EXT}.gif"
 printf "\nAttempting to convert to animated gif..."
 ./webp2gif "${FILENAME}" "${FILENAME_GIF}" &> /dev/null
 # https://stackoverflow.com/questions/617182/how-can-i-suppress-all-output-from-a-command-using-bash
@@ -34,9 +34,9 @@ then
   printf "SUCCESS\n"
   mv "${FILENAME_GIF}" "${FILE_DIR_OG}" # overwrites any existing file w/ same name and ext.
 else
-  EXT="jpg"
+  NEW_EXT="jpg"
   printf "FAIL\nAttempting to convert as static img..."
-  FILEPATH_JPG="${FILEPATH_NO_EXT/%$EXT}.${EXT}"
+  FILEPATH_JPG="${FILEPATH_NO_EXT}.${NEW_EXT}"
   convert "${FILE_PATH}" "${FILEPATH_JPG}" &> /dev/null
   CONVERT_RETURN=$? # gets return value of last command executed.
   if [ ${CONVERT_RETURN} == 0 ]

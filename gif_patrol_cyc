@@ -1,0 +1,185 @@
+#!/bin/bash
+
+# Convert a given gif or video w/ optional start and end time to a "patrol cycle"
+# gif that loops back and forth.
+# Works w/ GIF, WEBM, MP4, MOV input formats (at least)
+
+
+STARTING_DIR="$PWD"
+
+FILE_PATH="$(realpath "${1}")"
+# https://code-maven.com/bash-absolute-path
+FILEPATH_NO_EXT="${FILE_PATH%.*}"
+EXT="${FILE_PATH##*.}"
+FILENAME=$(basename "${FILE_PATH}") # includes extension
+
+FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
+# https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
+# https://linuxhandbook.com/basename/
+FILE_DIR_OG=$(dirname "${FILE_PATH}")
+# https://linuxhandbook.com/dirname/
+
+NEW_EXT="gif"
+# put timestamps in output filename
+if [[ $# == 2 ]];
+then
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}s-_pcyc.${NEW_EXT}"
+elif [[ $# == 3 ]];
+then
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s_pcyc.${NEW_EXT}"
+else
+  FILEPATH_OUT="${FILEPATH_NO_EXT}_pcyc.${NEW_EXT}"
+fi
+
+# Validate input path
+if [[ -e "${FILE_PATH}" ]];
+then
+  :
+else
+  printf "\nSpecified file cannot be found.\n"
+  exit 1
+fi
+
+# Check for existence of output file before attempting conversion.
+# ffmpeg has this check, but it requires the rest of the verbose output
+# (which is suppressed below)
+# Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
+if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
+then
+  printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
+  read -p ">" answer
+  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  then
+    rm "${FILEPATH_OUT}"
+  else
+    printf "Exiting\n"
+    exit 1
+  fi
+fi
+
+if [ $# -gt 3 ];
+then
+  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  exit 1
+fi
+
+# Collisions in intermediate files not handled
+
+if [[ $# == 1 ]]; # one arg
+then
+  # If not already a gif, convert to gif first. Case-insensitive comparison:
+  if [[ "${EXT,,}" == "${NEW_EXT,,}" ]]; # https://stackoverflow.com/a/27679748
+  then
+    printf "\nAttempting to create patrol-cycle gif..."
+
+    convert "${FILE_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+    -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  else
+    INTER_GIF_PATH="${FILE_PATH%.*}.gif"
+    if [[ -e "${INTER_GIF_PATH}" ]];
+    then
+      rm "${INTER_GIF_PATH}"
+    fi
+
+    ./convert_vid_to_gif "${FILE_PATH}"
+    GIF_CONVERT_RETURN=$? # gets return value of last command executed.
+    if [ ${GIF_CONVERT_RETURN} == 0 ];
+    then
+      printf "\nAttempting to create patrol-cycle gif..."
+
+      convert "${INTER_GIF_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+      -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+      # https://askubuntu.com/a/1107473
+      # Delete intermediary gif.
+      # rm "${INTER_GIF_PATH}"
+    else
+      printf "FAIL\nConversion to GIF format failed.\n"
+      exit 1
+    fi
+  fi
+
+elif [[ $# == 2 ]]; # two args
+then
+  INTER_VID_PATH="${FILEPATH_NO_EXT}_${2}s-.mp4"
+  if [[ -e "${INTER_VID_PATH}" ]];
+  then
+    rm "${INTER_VID_PATH}"
+  fi
+
+  ./trim_vid "${FILE_PATH}" ${2} # handles both vid formats and gif
+  TRIM_VID_RETURN=$? # gets return value of last command executed.
+  if [ ${TRIM_VID_RETURN} == 0 ];
+  then
+    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}s-.gif"
+    if [[ -e "${INTER_GIF_PATH}" ]];
+    then
+      rm "${INTER_GIF_PATH}"
+    fi
+
+    ./convert_vid_to_gif "${INTER_VID_PATH}" # already trimmed above
+    GIF_CONVERT_RETURN=$? # gets return value of last command executed.
+    if [ ${GIF_CONVERT_RETURN} == 0 ];
+    then
+      printf "\nAttempting to create patrol-cycle gif..."
+
+      convert "${INTER_GIF_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+      -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+      # rm "${INTER_GIF_PATH}"
+    else
+      printf "FAIL\nConversion to GIF format unsuccessful.\n"
+      exit 1
+    fi
+    # rm "${INTER_VID_PATH}"
+  else
+    printf "FAIL\nTrim operation unsuccessful.\n"
+    exit 1
+  fi
+elif [[ $# == 3 ]]; # three args
+then
+  INTER_VID_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.mp4"
+  if [[ -e "${INTER_VID_PATH}" ]];
+  then
+    rm "${INTER_VID_PATH}"
+  fi
+
+  ./trim_vid "${FILE_PATH}" ${2} ${3} # handles both vid formats and gif
+  TRIM_VID_RETURN=$? # gets return value of last command executed.
+  if [ ${TRIM_VID_RETURN} == 0 ];
+  then
+    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.gif"
+    if [[ -e "${INTER_GIF_PATH}" ]];
+    then
+      rm "${INTER_GIF_PATH}"
+    fi
+
+    ./convert_vid_to_gif "${INTER_VID_PATH}" # already trimmed above
+    GIF_CONVERT_RETURN=$? # gets return value of last command executed.
+    if [ ${GIF_CONVERT_RETURN} == 0 ];
+    then
+      printf "\nAttempting to create patrol-cycle gif..."
+
+      convert "${INTER_GIF_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+      -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+      # rm "${INTER_GIF_PATH}"
+    else
+      printf "FAIL\nConversion to GIF format unsuccessful.\n"
+      exit 1
+    fi
+    # rm "${INTER_VID_PATH}"
+  else
+    printf "FAIL\nTrim operation unsuccessful.\n"
+    exit 1
+  fi
+fi
+
+# Test if conversion was successful since ffmpeg output suppressed.
+PATROL_CYC_RETURN=$? # gets return value of last command executed.
+if [ ${PATROL_CYC_RETURN} == 0 ]
+then
+  printf "SUCCESS\n"
+  # Open gif so user can confirm valid output file.
+	xdg-open 2>/dev/null "${FILEPATH_OUT}"
+else
+  printf "FAIL\n"
+  exit 1
+fi
