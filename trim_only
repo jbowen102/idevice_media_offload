@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Convert a given video to a gif w/ optional start and end time
-# Works w/ WEBM, MP4, and MOV input formats (at least)
+# Trim a given video (or GIF) according to specified start and (optional) end timestamp.
+# Output is in mp4 format.
+# If neither timestamp specified, can be used to just convert input vid to mp4 format.
+# works w/ WEBM, MP4, MOV, and GIF input formats (at least)
 # Start and end time can either be integers or in "00:00.00" format
-
-
 STARTING_DIR="$PWD"
 
 FILE_PATH="$(realpath "${1}")"
@@ -19,7 +19,7 @@ FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
-NEW_EXT="gif"
+NEW_EXT="${EXT,,}" # convert to lowercase for caller functions to correctly predict naming # https://stackoverflow.com/a/2264537
 # put timestamps in output filename
 if [[ $# == 2 ]];
 then
@@ -44,7 +44,11 @@ fi
 # ffmpeg has this check, but it requires the rest of the verbose output
 # (which is suppressed below)
 # Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
-if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
+if [[ $# -lt 2 ]]; # no timestamps specified.
+then
+  printf "\nExpected at least two arguments - filename, start time, and end time (optional)\n"
+  exit 1
+elif [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
   read -p ">" answer
@@ -57,25 +61,16 @@ then
   fi
 fi
 
-if [ $# -gt 3 ];
+if [[ $# -gt 3 ]];
 then
-  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  printf "\nExpected up to three arguments - filename, start time, and end time (optional)\n"
   exit 1
 fi
 
-printf "\nAttempting to convert to gif..."
-if [[ $# == 1 ]]; # one arg
+printf "\nAttempting to trim..."
+if [[ $# == 2 ]]; # two args
 then
-  ffmpeg -i "${FILE_PATH}" \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
-  # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
-  # https://www.ubuntubuzz.com/2017/08/convert-mp4-webm-video-to-gif-using-ffmpeg.html
-elif [[ $# == 2 ]]; # two args
-then
-  ffmpeg -ss ${2} -i "${FILE_PATH}" \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ffmpeg -ss ${2} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
   # have to convert from end time to duration ffmpeg expects
@@ -89,13 +84,10 @@ then
   #   printf "FAIL\nEnd time must be greater than start time\n"
   #   exit 1
   # else
-  #   ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" \
-  #   -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  #   -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  #   ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
   # fi
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} "${FILEPATH_OUT}" &> /dev/null
+
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.
@@ -103,8 +95,6 @@ FFMPEG_RETURN=$? # gets return value of last command executed.
 if [ ${FFMPEG_RETURN} == 0 ]
 then
   printf "SUCCESS\n"
-  # Open gif so user can confirm valid output file.
-	xdg-open 2>/dev/null "${FILEPATH_OUT}"
 else
   printf "FAIL\n"
   exit 1

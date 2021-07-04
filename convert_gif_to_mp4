@@ -46,7 +46,7 @@ fi
 # Check for both resolvable path and broken symlink # https://unix.stackexchange.com/a/550837
 if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
-  printf "\nTarget file exists. Overwrite? [Y/N]\n"
+  printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
   read -p ">" answer
   if [ "$answer" == "y" -o "$answer" == "Y" ];
   then

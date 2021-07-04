@@ -3,7 +3,7 @@
 # Convert a given gif or video w/ optional start and end time to a "patrol cycle"
 # gif that loops back and forth.
 # Works w/ GIF, WEBM, MP4, MOV input formats (at least)
-
+# Start and end time can either be integers or in "00:00.00" format
 
 STARTING_DIR="$PWD"
 
@@ -75,7 +75,7 @@ then
     convert "${FILE_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
     -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
   else
-    INTER_GIF_PATH="${FILE_PATH%.*}.gif"
+    INTER_GIF_PATH="${FILE_PATH%.*}.${NEW_EXT}"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
@@ -100,15 +100,8 @@ then
 
 elif [[ $# == 2 ]]; # two args
 then
-  INTER_VID_PATH="${FILEPATH_NO_EXT}_${2}s-.mp4"
-  if [[ -e "${INTER_VID_PATH}" ]];
-  then
-    rm "${INTER_VID_PATH}"
-  fi
-
-  ./trim_vid "${FILE_PATH}" ${2} # handles both vid formats and gif
-  TRIM_VID_RETURN=$? # gets return value of last command executed.
-  if [ ${TRIM_VID_RETURN} == 0 ];
+  # If not already a gif, convert to gif first. Case-insensitive comparison:
+  if [[ "${EXT,,}" == "${NEW_EXT,,}" ]]; # https://stackoverflow.com/a/27679748
   then
     INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}s-.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
@@ -116,7 +109,27 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${INTER_VID_PATH}" # already trimmed above
+    ./trim_only "${FILE_PATH}" ${2}
+    TRIM_RETURN=$? # gets return value of last command executed.
+    if [ ${TRIM_RETURN} == 0 ];
+    then
+      printf "\nAttempting to create patrol-cycle gif..."
+
+      convert "${INTER_GIF_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+      -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+      # rm "${INTER_GIF_PATH}"
+    else
+      printf "FAIL\nTrim operation unsuccessful.\n"
+      exit 1
+    fi
+  else
+    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}s-.gif"
+    if [[ -e "${INTER_GIF_PATH}" ]];
+    then
+      rm "${INTER_GIF_PATH}"
+    fi
+
+    ./convert_vid_to_gif "${FILE_PATH}" ${2} # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -129,22 +142,11 @@ then
       printf "FAIL\nConversion to GIF format unsuccessful.\n"
       exit 1
     fi
-    # rm "${INTER_VID_PATH}"
-  else
-    printf "FAIL\nTrim operation unsuccessful.\n"
-    exit 1
   fi
 elif [[ $# == 3 ]]; # three args
 then
-  INTER_VID_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.mp4"
-  if [[ -e "${INTER_VID_PATH}" ]];
-  then
-    rm "${INTER_VID_PATH}"
-  fi
-
-  ./trim_vid "${FILE_PATH}" ${2} ${3} # handles both vid formats and gif
-  TRIM_VID_RETURN=$? # gets return value of last command executed.
-  if [ ${TRIM_VID_RETURN} == 0 ];
+  # If not already a gif, convert to gif first. Case-insensitive comparison:
+  if [[ "${EXT,,}" == "${NEW_EXT,,}" ]]; # https://stackoverflow.com/a/27679748
   then
     INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
@@ -152,7 +154,27 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${INTER_VID_PATH}" # already trimmed above
+    ./trim_only "${FILE_PATH}" ${2} ${3}
+    TRIM_RETURN=$? # gets return value of last command executed.
+    if [ ${TRIM_RETURN} == 0 ];
+    then
+      printf "\nAttempting to create patrol-cycle gif..."
+
+      convert "${INTER_GIF_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
+      -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
+      # rm "${INTER_GIF_PATH}"
+    else
+      printf "FAIL\nTrim operation unsuccessful.\n"
+      exit 1
+    fi
+  else
+    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.gif"
+    if [[ -e "${INTER_GIF_PATH}" ]];
+    then
+      rm "${INTER_GIF_PATH}"
+    fi
+
+    ./convert_vid_to_gif "${FILE_PATH}" # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -165,10 +187,6 @@ then
       printf "FAIL\nConversion to GIF format unsuccessful.\n"
       exit 1
     fi
-    # rm "${INTER_VID_PATH}"
-  else
-    printf "FAIL\nTrim operation unsuccessful.\n"
-    exit 1
   fi
 fi
 

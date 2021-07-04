@@ -2,7 +2,7 @@
 
 # Extract all frames from a given video of GIF w/ optional start and end time
 # Works w/ WEBM, MP4, MOV, and GIF input formats (at least)
-
+# Start and end time can either be integers or in "00:00.00" format
 
 
 STARTING_DIR="$PWD"
