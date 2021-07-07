@@ -7,18 +7,11 @@ import date_compare
 
 
 def write_exif_comment(file_path, comment):
-    CompProc = subprocess.run(["exiftool",
-                            "-Comment=%s" % comment, file_path],
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    # Seems like this should work, but it doesn't (requires import exiftool)
-    # with exiftool.ExifTool() as et:
-    #     cmd_text = "-Comment='%s' '%s'" % (img_comment, converted_filepath))
-    #     et.execute(cmd_text.encode("utf-8"))
-
-    if CompProc.returncode == 0 and os.path.exists(file_path + "_original"):
-        # If exiftool call failed, then don't want to delete a pre-existing
-        # "_original" file
-        os.remove(file_path + "_original")
+    """Wrapper for bash script write_exif_comment."""
+    CompProc = subprocess.run(["./write_exif_comment", "%s" % comment,
+	"%s" % file_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if CompProc != 0:
+	raise Exception("Call to write_exif_comment failed.")
 
 
 def convert_gif_to_mp4(gif_path):
