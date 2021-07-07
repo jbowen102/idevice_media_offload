@@ -5,7 +5,6 @@
 # If neither timestamp specified, can be used to just convert input vid to mp4 format.
 # works w/ WEBM, MP4, MOV, and GIF input formats (at least)
 # Start and end time can either be integers or in "00:00.00" format
-STARTING_DIR="$PWD"
 
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path

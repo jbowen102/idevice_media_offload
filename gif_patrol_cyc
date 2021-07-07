@@ -19,6 +19,22 @@ FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 FILE_DIR_OG=$(dirname "${FILE_PATH}")
 # https://linuxhandbook.com/dirname/
 
+
+if [ $# -gt 3 ];
+then
+  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
+  exit 1
+fi
+# Validate input path
+if [[ -e "${FILE_PATH}" ]];
+then
+  :
+else
+  printf "\nSpecified file cannot be found.\n"
+  exit 1
+fi
+
+
 NEW_EXT="gif"
 # put timestamps in output filename
 if [[ $# == 2 ]];
@@ -29,15 +45,6 @@ then
   FILEPATH_OUT="${FILEPATH_NO_EXT}_${2}-${3}s_pcyc.${NEW_EXT}"
 else
   FILEPATH_OUT="${FILEPATH_NO_EXT}_pcyc.${NEW_EXT}"
-fi
-
-# Validate input path
-if [[ -e "${FILE_PATH}" ]];
-then
-  :
-else
-  printf "\nSpecified file cannot be found.\n"
-  exit 1
 fi
 
 # Check for existence of output file before attempting conversion.
@@ -57,13 +64,21 @@ then
   fi
 fi
 
-if [ $# -gt 3 ];
+# Create temp directory to store output
+TEMP_FOLDER="${FILE_DIR_OG}/gif_temp/"
+if [ -d "${TEMP_FOLDER}" ];
 then
-  printf "\nExpected one to three arguments - filename, start time (optional), and end time (optional)\n"
-  exit 1
+	: # do nothing
+else
+	mkdir "${TEMP_FOLDER}"
 fi
 
-# Collisions in intermediate files not handled
+# Copy original file into temp folder
+cp "${FILE_PATH}" "${TEMP_FOLDER}"
+TEMP_PATH="${TEMP_FOLDER}"/"${FILENAME}"
+TEMP_PATH_NOEXT="${TEMP_FOLDER}"/"${FILENAME_NO_EXT}"
+
+# Collisions in temp files not handled
 
 if [[ $# == 1 ]]; # one arg
 then
@@ -75,13 +90,13 @@ then
     convert "${FILE_PATH}" -coalesce -duplicate 1,-2-1 -quiet \
     -layers OptimizePlus -loop 0 "${FILEPATH_OUT}" &> /dev/null
   else
-    INTER_GIF_PATH="${FILE_PATH%.*}.${NEW_EXT}"
+    INTER_GIF_PATH="${TEMP_PATH%.*}.${NEW_EXT}"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${FILE_PATH}"
+    ./convert_vid_to_gif "${TEMP_PATH}"
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -103,7 +118,7 @@ then
   # If not already a gif, convert to gif first. Case-insensitive comparison:
   if [[ "${EXT,,}" == "${NEW_EXT,,}" ]]; # https://stackoverflow.com/a/27679748
   then
-    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}s-.gif"
+    INTER_GIF_PATH="${TEMP_PATH_NO_EXT}_${2}s-.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
@@ -123,13 +138,13 @@ then
       exit 1
     fi
   else
-    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}s-.gif"
+    INTER_GIF_PATH="${TEMP_PATH_NOEXT}_${2}s-.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${FILE_PATH}" ${2} # trim and convert to gif at once
+    ./convert_vid_to_gif "${TEMP_PATH}" ${2} # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -148,13 +163,13 @@ then
   # If not already a gif, convert to gif first. Case-insensitive comparison:
   if [[ "${EXT,,}" == "${NEW_EXT,,}" ]]; # https://stackoverflow.com/a/27679748
   then
-    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.gif"
+    INTER_GIF_PATH="${TEMP_PATH_NOEXT}_${2}-${3}s.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./trim_only "${FILE_PATH}" ${2} ${3}
+    ./trim_only "${TEMP_PATH}" ${2} ${3}
     TRIM_RETURN=$? # gets return value of last command executed.
     if [ ${TRIM_RETURN} == 0 ];
     then
@@ -168,13 +183,13 @@ then
       exit 1
     fi
   else
-    INTER_GIF_PATH="${FILEPATH_NO_EXT}_${2}-${3}s.gif"
+    INTER_GIF_PATH="${TEMP_PATH_NOEXT}_${2}-${3}s.gif"
     if [[ -e "${INTER_GIF_PATH}" ]];
     then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${FILE_PATH}" # trim and convert to gif at once
+    ./convert_vid_to_gif "${TEMP_PATH}" ${2} ${3} # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -196,6 +211,7 @@ if [ ${PATROL_CYC_RETURN} == 0 ]
 then
   printf "SUCCESS\n"
   # Open gif so user can confirm valid output file.
+  nemo "${TEMP_FOLDER}"
 	xdg-open 2>/dev/null "${FILEPATH_OUT}"
 else
   printf "FAIL\n"
