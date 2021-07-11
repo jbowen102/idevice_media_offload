@@ -21,7 +21,7 @@ fi
 
 
 printf "\nAttempting to write EXIF comment..."
-exiftool -Comment="${COMMENT}" "${FILE_PATH}" $> /dev/null
+exiftool -Comment="${COMMENT}" "${FILE_PATH}" &> /dev/null
 EXIF_RETURN=$?
 OG_BU_PATH="${FILE_PATH}_original"
 
@@ -29,13 +29,13 @@ if [[ ${EXIF_RETURN} == 0 ]];
 then
 	if [[ -f "${OG_BU_PATH}" ]];
 	then
-		rm OG_BU_PATH
+		rm "${OG_BU_PATH}"
 		printf "SUCCESS\n"
 	else
-		printf "FAIL\nCan't find '_original' file."
-		return 1
+		printf "FAIL\nCan't find '_original' file.\n"
+		exit 1
 	fi
 else
-	printf "FAIL\nCall to exiftool unsuccessful."
-	return 1
+	printf "FAIL\nCall to exiftool unsuccessful.\n"
+	exit 1
 fi

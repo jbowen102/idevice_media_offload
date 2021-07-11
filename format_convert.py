@@ -8,10 +8,18 @@ import date_compare
 
 def write_exif_comment(file_path, comment):
     """Wrapper for bash script write_exif_comment."""
-    CompProc = subprocess.run(["./write_exif_comment", "%s" % comment,
-            "%s" % file_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if CompProc != 0:
+    CompProc = subprocess.run(["./write_exif_comment", file_path, comment],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if CompProc.returncode != 0:
         raise Exception("Call to write_exif_comment failed.")
+
+
+def transfer_exif_comment(from_path, to_path):
+    # Transcribe any comment/caption in original GIF.
+    img_comment = date_compare.get_comment(from_path)
+    print("Transferring EXIF comment '%s'" % img_comment)
+    if img_comment:
+        write_exif_comment(to_path, img_comment)
 
 
 def convert_gif_to_mp4(gif_path):
@@ -28,9 +36,7 @@ def convert_gif_to_mp4(gif_path):
         converted_filepath = os.path.join(dir_name, converted_filename)
 
         # Transcribe any comment/caption in original GIF.
-        img_comment = date_compare.get_comment(gif_path)
-        if img_comment:
-            write_exif_comment(converted_filepath, img_comment)
+        transfer_exif_comment(gif_path, converted_filepath)
 
         gif_size = os.path.getsize(gif_path)
         mp4_size = os.path.getsize(converted_filepath)

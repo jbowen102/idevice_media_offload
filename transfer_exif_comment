@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
+# Temporarily switch working directory to script location to call python
+cd "${SCRIPT_DIR}"
+python <<< "import format_convert as fc ; fc.transfer_exif_comment('${1}', '${2}')"
+# https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
+cd - > /dev/null # suppress outputs
+
+
+PYTHON_RETURN=$? # gets return value of last command executed.
+# Make sure the program ran correctly
+if [ ${PYTHON_RETURN} -ne 0 ]
+then
+	printf "\nSomething went wrong when executing the Python program.\n"
+	exit 1
+fi
