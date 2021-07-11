@@ -79,9 +79,7 @@ then
                      "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  START_TIME=${2}
-  END_TIME=${3}
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} -movflags faststart \
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} -movflags faststart \
                      "${FILEPATH_OUT}" &> /dev/null
 fi
 

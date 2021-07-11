@@ -65,23 +65,45 @@ fi
 printf "\nAttempting to convert to gif..."
 if [[ $# == 1 ]]; # one arg
 then
+  ### high quality/size:
   ffmpeg -i "${FILE_PATH}" \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
   -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### medium quality/size:
+  # ffmpeg -i "${FILE_PATH}" \
+  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### low quality/size:
+  # ffmpeg -i "${FILE_PATH}" \
+  # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
   # https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
   # https://www.ubuntubuzz.com/2017/08/convert-mp4-webm-video-to-gif-using-ffmpeg.html
 elif [[ $# == 2 ]]; # two args
 then
+  ### high quality/size:
   ffmpeg -ss ${2} -i "${FILE_PATH}" \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
   -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### medium quality/size:
+  # ffmpeg -ss ${2} -i "${FILE_PATH}" \
+  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### low quality/size:
+  # ffmpeg -ss ${2} -i "${FILE_PATH}" \
+  # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  START_TIME=${2}
-  END_TIME=${3}
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} \
-  -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  ### high quality/size:
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} \
+  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
   -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### medium quality/size:
+  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} \
+  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### low quality/size:
+  # ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} \
+  # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.
