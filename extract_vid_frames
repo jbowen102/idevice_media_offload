@@ -55,7 +55,6 @@ then
 elif [[ $# == 3 ]]; # three args
 then
   # Extract frames only in time range specified.
-  # Have to convert from end time to duration ffmpeg expects
   START_TIME=$2
   END_TIME=$3
   DURATION="$((END_TIME - START_TIME))"

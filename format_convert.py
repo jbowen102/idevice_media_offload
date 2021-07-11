@@ -9,17 +9,17 @@ import date_compare
 def write_exif_comment(file_path, comment):
     """Wrapper for bash script write_exif_comment."""
     CompProc = subprocess.run(["./write_exif_comment", "%s" % comment,
-	"%s" % file_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            "%s" % file_path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if CompProc != 0:
-	raise Exception("Call to write_exif_comment failed.")
+        raise Exception("Call to write_exif_comment failed.")
 
 
 def convert_gif_to_mp4(gif_path):
-    """Wrapper for bash script convert_gif_to_mp4 that also copies
-    EXIF comment if present."""
+    """Wrapper for bash script trim_to_mp4 that also copies EXIF comment (if
+    present) and displays file sizes."""
 
     dir_name = os.path.dirname(gif_path)
-    CompProc = subprocess.run(["./convert_gif_to_mp4", gif_path],
+    CompProc = subprocess.run(["./trim_to_mp4", gif_path],
                                                     stderr=subprocess.STDOUT)
     # bash prompts passed to user - no stdout= param passed to subprocess.run() call.
 
@@ -44,7 +44,7 @@ def convert_gif_to_mp4(gif_path):
 
 # Call bash convert script
 def convert_all_webx(dir_name, webx_type, delete_webx=False):
-    """Use bash scripts convert_webp or trim_vid to convert either webp or
+    """Use bash scripts convert_webp or trim_to_mp4 to convert either webp or
     webm files in a directory.
     *.webp (animated) ->  *.gif
     *.webp (static)   ->  *.jpg
@@ -78,7 +78,7 @@ def convert_all_webx(dir_name, webx_type, delete_webx=False):
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     # bash output suppressed. No prompts in convert_webp.
                 if webx_type == "webm":
-                    CompProc = subprocess.run(["./trim_vid", og_path],
+                    CompProc = subprocess.run(["./trim_to_mp4", og_path],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     # bash output suppressed. No prompts in convert_webp.
 
