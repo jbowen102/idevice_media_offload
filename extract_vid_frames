@@ -5,6 +5,7 @@
 # Start and end time can either be integers or in "00:00.00" format
 
 
+
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path
 FILEPATH_NO_EXT="${FILE_PATH%.*}"
@@ -14,7 +15,7 @@ FILENAME=$(basename "${FILE_PATH}") # includes extension
 FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 # https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
 # https://linuxhandbook.com/basename/
-FILE_DIR_OG=$(dirname "${FILE_PATH}")
+FILE_DIR_OG="$(realpath "$(dirname "${FILE_PATH}")")"
 # https://linuxhandbook.com/dirname/
 
 # Create "frames" directory to store output
@@ -55,8 +56,8 @@ then
 elif [[ $# == 3 ]]; # three args
 then
   # Extract frames only in time range specified.
-  START_TIME=$2
-  END_TIME=$3
+  START_TIME=${2}
+  END_TIME=${3}
   DURATION="$((END_TIME - START_TIME))"
   # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
   # check for negative number

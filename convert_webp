@@ -2,11 +2,10 @@
 
 
 # Read in WEBP2GIF_DIR variable
-source "$(dirname "$0")"/dir_names.sh
+source "$(realpath "$(dirname "${0}")")/dir_names.sh"
 # https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
 
-STARTING_DIR="$PWD"
-
+STARTING_DIR="${PWD}"
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path
 FILEPATH_NO_EXT="${FILE_PATH%.*}"
@@ -16,7 +15,7 @@ FILENAME=$(basename "${FILE_PATH}") # includes extension
 FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 # https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
 # https://linuxhandbook.com/basename/
-FILE_DIR_OG=$(dirname "${FILE_PATH}")
+FILE_DIR_OG="$(realpath "$(dirname "${FILE_PATH}")")"
 # https://linuxhandbook.com/dirname/
 
 # Try using webp2gif first. Will fail if static img

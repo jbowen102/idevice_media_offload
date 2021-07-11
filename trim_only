@@ -15,7 +15,7 @@ FILENAME=$(basename "${FILE_PATH}") # includes extension
 FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 # https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
 # https://linuxhandbook.com/basename/
-FILE_DIR_OG=$(dirname "${FILE_PATH}")
+FILE_DIR_OG="$(realpath "$(dirname "${FILE_PATH}")")"
 # https://linuxhandbook.com/dirname/
 
 NEW_EXT="${EXT,,}" # convert to lowercase for caller functions to correctly predict naming # https://stackoverflow.com/a/2264537
@@ -51,7 +51,7 @@ elif [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
   read -p ">" answer
-  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  if [ "${answer}" == "y" -o "${answer}" == "Y" ];
   then
     rm "${FILEPATH_OUT}"
   else
@@ -72,8 +72,8 @@ then
   ffmpeg -ss ${2} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  START_TIME=$2
-  END_TIME=$3
+  START_TIME=${2}
+  END_TIME=${3}
   ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} "${FILEPATH_OUT}" &> /dev/null
 fi
 

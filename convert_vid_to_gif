@@ -5,6 +5,7 @@
 # Start and end time can either be integers or in "00:00.00" format
 
 
+
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path
 FILEPATH_NO_EXT="${FILE_PATH%.*}"
@@ -14,7 +15,7 @@ FILENAME=$(basename "${FILE_PATH}") # includes extension
 FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 # https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
 # https://linuxhandbook.com/basename/
-FILE_DIR_OG=$(dirname "${FILE_PATH}")
+FILE_DIR_OG="$(realpath "$(dirname "${FILE_PATH}")")"
 # https://linuxhandbook.com/dirname/
 
 NEW_EXT="gif"
@@ -46,7 +47,7 @@ if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
   read -p ">" answer
-  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  if [ "${answer}" == "y" -o "${answer}" == "Y" ];
   then
     rm "${FILEPATH_OUT}"
   else
@@ -76,8 +77,8 @@ then
   -loop 0 "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  START_TIME=$2
-  END_TIME=$3
+  START_TIME=${2}
+  END_TIME=${3}
   ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} \
   -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
   -loop 0 "${FILEPATH_OUT}" &> /dev/null
@@ -89,7 +90,8 @@ if [ ${FFMPEG_RETURN} == 0 ]
 then
   printf "SUCCESS\n"
   # Open gif so user can confirm valid output file.
-	xdg-open 2>/dev/null "${FILEPATH_OUT}"
+  sleep 1
+  xdg-open 2>/dev/null "${FILEPATH_OUT}"
 else
   printf "FAIL\n"
   exit 1

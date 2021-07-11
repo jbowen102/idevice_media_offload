@@ -5,8 +5,8 @@
 # Works w/ GIF, WEBM, MP4, MOV input formats (at least)
 # Start and end time can either be integers or in "00:00.00" format
 
-STARTING_DIR="$PWD"
-
+STARTING_DIR="${PWD}"
+SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path
 FILEPATH_NO_EXT="${FILE_PATH%.*}"
@@ -16,7 +16,7 @@ FILENAME=$(basename "${FILE_PATH}") # includes extension
 FILENAME_NO_EXT=$(basename "${FILE_PATH}" "."${EXT})
 # https://unix.stackexchange.com/questions/313017/bash-function-splitting-name-and-extension-of-a-file
 # https://linuxhandbook.com/basename/
-FILE_DIR_OG=$(dirname "${FILE_PATH}")
+FILE_DIR_OG="$(realpath "$(dirname "${FILE_PATH}")")"
 # https://linuxhandbook.com/dirname/
 
 
@@ -55,7 +55,7 @@ if [[ -e "${FILEPATH_OUT}" ]] || [[ -h "${FILEPATH_OUT}" ]];
 then
   printf "\nTarget file $(basename ${FILEPATH_OUT}) exists. Overwrite? [Y/N]\n"
   read -p ">" answer
-  if [ "$answer" == "y" -o "$answer" == "Y" ];
+  if [ "${answer}" == "y" -o "${answer}" == "Y" ];
   then
     rm "${FILEPATH_OUT}"
   else
@@ -75,8 +75,8 @@ fi
 
 # Copy original file into temp folder
 cp "${FILE_PATH}" "${TEMP_FOLDER}"
-TEMP_PATH="${TEMP_FOLDER}"/"${FILENAME}"
-TEMP_PATH_NOEXT="${TEMP_FOLDER}"/"${FILENAME_NO_EXT}"
+TEMP_PATH="${TEMP_FOLDER}/${FILENAME}"
+TEMP_PATH_NOEXT="${TEMP_FOLDER}/${FILENAME_NO_EXT}"
 
 # Collisions in temp files not handled
 
@@ -96,7 +96,7 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${TEMP_PATH}"
+    "${SCRIPT_DIR}"/convert_vid_to_gif "${TEMP_PATH}"
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -124,7 +124,7 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./trim_only "${FILE_PATH}" ${2}
+    "${SCRIPT_DIR}"/trim_only "${FILE_PATH}" ${2}
     TRIM_RETURN=$? # gets return value of last command executed.
     if [ ${TRIM_RETURN} == 0 ];
     then
@@ -144,7 +144,7 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${TEMP_PATH}" ${2} # trim and convert to gif at once
+    "${SCRIPT_DIR}"/convert_vid_to_gif "${TEMP_PATH}" ${2} # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -169,7 +169,7 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./trim_only "${TEMP_PATH}" ${2} ${3}
+    "${SCRIPT_DIR}"/trim_only "${TEMP_PATH}" ${2} ${3}
     TRIM_RETURN=$? # gets return value of last command executed.
     if [ ${TRIM_RETURN} == 0 ];
     then
@@ -189,7 +189,7 @@ then
       rm "${INTER_GIF_PATH}"
     fi
 
-    ./convert_vid_to_gif "${TEMP_PATH}" ${2} ${3} # trim and convert to gif at once
+    "${SCRIPT_DIR}"/convert_vid_to_gif "${TEMP_PATH}" ${2} ${3} # trim and convert to gif at once
     GIF_CONVERT_RETURN=$? # gets return value of last command executed.
     if [ ${GIF_CONVERT_RETURN} == 0 ];
     then
@@ -212,6 +212,7 @@ then
   printf "SUCCESS\n"
   # Open gif so user can confirm valid output file.
   nemo "${TEMP_FOLDER}"
+  sleep 1
 	xdg-open 2>/dev/null "${FILEPATH_OUT}"
 else
   printf "FAIL\n"
