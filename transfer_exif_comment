@@ -12,6 +12,6 @@ PYTHON_RETURN=$? # gets return value of last command executed.
 # Make sure the program ran correctly
 if [ ${PYTHON_RETURN} -ne 0 ]
 then
-	printf "\nSomething went wrong when executing the Python program.\n"
+	printf "\nSomething went wrong when transferring EXIF comment.\n"
 	exit 1
 fi

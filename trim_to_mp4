@@ -5,7 +5,7 @@
 # If neither timestamp specified, can be used to just convert input vid to mp4 format.
 # works w/ WEBM, MP4, MOV, and GIF input formats (at least)
 
-
+SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 FILE_PATH="$(realpath "${1}")"
 # https://code-maven.com/bash-absolute-path
 FILEPATH_NO_EXT="${FILE_PATH%.*}"
@@ -89,7 +89,16 @@ fi
 FFMPEG_RETURN=$? # gets return value of last command executed.
 if [ ${FFMPEG_RETURN} == 0 ]
 then
-  printf "SUCCESS\n"
+  # transcribe EXIF comment, if present
+  "${SCRIPT_DIR}"/transfer_exif_comment "${FILE_PATH}" "${FILEPATH_OUT}"
+  COMMENT_RETURN=$? # gets return value of last command executed.
+  if [ ${COMMENT_RETURN} == 0 ];
+  then
+    printf "SUCCESS\n"
+  else
+    printf "FAIL\nEXIF-comment transfer unsuccessful.\n"
+    exit 1
+  fi
 else
   printf "FAIL\n"
   exit 1

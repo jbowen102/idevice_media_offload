@@ -17,8 +17,8 @@ def write_exif_comment(file_path, comment):
 def transfer_exif_comment(from_path, to_path):
     # Transcribe any comment/caption in original GIF.
     img_comment = date_compare.get_comment(from_path)
-    print("Transferring EXIF comment '%s'" % img_comment)
     if img_comment:
+        print("Transferring EXIF comment '%s'" % img_comment)
         write_exif_comment(to_path, img_comment)
 
 

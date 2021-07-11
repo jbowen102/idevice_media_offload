@@ -209,7 +209,16 @@ fi
 PATROL_CYC_RETURN=$? # gets return value of last command executed.
 if [ ${PATROL_CYC_RETURN} == 0 ]
 then
-  printf "SUCCESS\n"
+  # transcribe EXIF comment, if present
+  "${SCRIPT_DIR}"/transfer_exif_comment "${FILE_PATH}" "${FILEPATH_OUT}"
+  COMMENT_RETURN=$? # gets return value of last command executed.
+  if [ ${COMMENT_RETURN} == 0 ];
+  then
+    printf "SUCCESS\n"
+  else
+    printf "FAIL\nEXIF-comment transfer unsuccessful.\n"
+    exit 1
+  fi
   # Open gif so user can confirm valid output file.
   nemo "${TEMP_FOLDER}"
   sleep 1
