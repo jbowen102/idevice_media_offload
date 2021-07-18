@@ -220,9 +220,14 @@ then
     exit 1
   fi
   # Open gif so user can confirm valid output file.
-  nemo "${TEMP_FOLDER}"
-  sleep 1
+  # nemo "${TEMP_FOLDER}" # this is throwing error messages now for some reason.
+  # https://askubuntu.com/questions/1157832/cannot-start-nemo-if-udisks2-is-disabled
+  # Seems to fail only when folder is on a different drive than ~
+  # sleep 1
 	xdg-open 2>/dev/null "${FILEPATH_OUT}"
+  # Prompt user to check/clear temp folder if desired
+  read -p "Notice: temp folder ${TEMP_FOLDER} populated. Press Enter to continue."
+  # read -p ">" answer # input not used
 else
   printf "FAIL\n"
   exit 1
