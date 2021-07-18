@@ -2,5 +2,6 @@ __pycache__/
 .~*
 *.pyc
 *.out
+timestamp_compare.py
 dir_names.py
 dir_names.sh

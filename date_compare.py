@@ -106,7 +106,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                       exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
                       )).expandtabs(28))
 
-        elif img_ext == ".GIF":
+        elif img_ext in [".GIF", ".WEBP"]:
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(path + img)
                 fmod_date = metadata.get("File:FileModifyDate")
@@ -379,14 +379,17 @@ def get_img_date_plus(img_path, skip_unknown=True):
             create_time = metadata.get("XMP:DateCreated")
             # ex. 2019:08:26 03:51:19
             format = "%Y:%m:%d %H:%M:%S"
-        elif img_ext == ".GIF":
-            create_time = metadata.get("File:FileModifyDate")
-            # ex. 2019:10:05 10:13:04-04:00
-            # non-standard format - adjust manually before passing to strftime
-            if create_time:
-                create_time = create_time[0:22] + create_time[23:]
-                # Now formatted this way: 2019:08:26 19:22:27-0400
-                format = "%Y:%m:%d %H:%M:%S%z"
+        elif img_ext in [".GIF", ".WEBP"]:
+            # create_time = metadata.get("File:FileModifyDate")
+            # # ex. 2019:10:05 10:13:04-04:00
+            # # non-standard format - adjust manually before passing to strftime
+            # if create_time:
+            #     create_time = create_time[0:22] + create_time[23:]
+            #     # Now formatted this way: 2019:08:26 19:22:27-0400
+            #     format = "%Y:%m:%d %H:%M:%S%z"
+
+            # only file mod time available.
+            create_time = None
         elif img_ext == ".MOV":
             create_time = metadata.get("QuickTime:CreationDate")
             # ex. 2019:08:26 19:22:27-04:00
@@ -413,15 +416,13 @@ def get_img_date_plus(img_path, skip_unknown=True):
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             # ex. 2019:07:05 12:46:46Z
             format = "%Y:%m:%d %H:%M:%SZ"
-
-        elif skip_unknown:
-            print("%s - Cannot get EXIF data for this file type. Skipping."
-                                        % img_name)
-            return None
         else:
-            print("%s - Cannot get EXIF data for this file type. Enter new "
-                            "timestamp or fall back on fs mod time." % img_name)
-            create_time = None
+            print("%s - Cannot get EXIF data for this file type." % img_name)
+            if skip_unknown:
+                print("Skipping.")
+                return None
+            else:
+                create_time = None
 
         if create_time:
             create_time_obj = time.strptime(create_time, format)
@@ -547,29 +548,6 @@ def meta_dump(img_path):
              print(str(key) + ": " + str(metadata[key]))
 
 
-def wpfix(path_in, modify_prefix=True):
-    """Function that accepts a Windows path name with backslashes
-    and replaces them with forward slashes. Also replaces prefix like C:/ with
-    /mnt/c/ for use w/ Windows Subsystem for Linux. Second parameter switches
-    this behavior.
-    MUST PASS PATH ARGUMENT WITH AN R PREPENDED SO IT'S INTERPRETED AS RAW.
-    Example usage:
-    datestamp_all(wpfix(r"C:\\my\dir\path"))
-    """
-    # https://stackoverflow.com/questions/6275695/python-replace-backslashes-to-slashes#6275710
-
-    path_out = path_in.replace("\\", "/")
-
-    if modify_prefix:
-        drive_letter = path_out[0]
-        path_out = path_out.replace("%s:" % drive_letter,
-                                    "/mnt/%s" % drive_letter.lower())
-
-    return path_out
-
-
-
-
 # References:
 # https://www.blog.pythonlibrary.org/2010/03/28/getting-photo-metadata-exif-using-python/
 # https://stackoverflow.com/questions/4764932/in-python-how-do-i-read-the-exif-data-for-an-image#4765242
@@ -581,380 +559,3 @@ def wpfix(path_in, modify_prefix=True):
 # https://github.com/smarnach/pyexiftool
 # https://smarnach.github.io/pyexiftool/
 # https://sno.phy.queensu.ca/~phil/exiftool/
-
-
-
-###########################
-###### Example output:
-
-# AAE
-# >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata([filepath])
-# ...
-# >>> for key in metadata:
-# ...     print(str(key) + ": " + str(metadata[key]))
-# ...
-# SourceFile: [filepath]
-# ExifTool:ExifToolVersion: 11.65
-# File:FileName: IMG_7611.AAE
-# File:Directory: [folder path]
-# File:FileSize: 829
-# File:FileModifyDate: 2019:07:05 10:32:50-04:00
-# File:FileAccessDate: 2019:09:08 21:45:01-04:00
-# File:FileInodeChangeDate: 2019:09:08 21:45:01-04:00
-# File:FilePermissions: 700
-# File:FileType: AAE
-# File:FileTypeExtension: AAE
-# File:MIMEType: application/vnd.apple.photos
-# PLIST:AdjustmentBaseVersion: 0
-# PLIST:AdjustmentData: (Binary data 150 bytes, use -b option to extract)
-# PLIST:AdjustmentEditorBundleID: com.apple.mobileslideshow
-# PLIST:AdjustmentFormatIdentifier: com.apple.photo
-# PLIST:AdjustmentFormatVersion: 1.4
-# PLIST:AdjustmentRenderTypes: 0
-# PLIST:AdjustmentTimestamp: 2019:07:05 12:46:46Z
-
-
-
-# PNG
-# >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("[filepath])
-# ...
-# >>> for key in metadata:
-# ...     print(str(key) + ": " + str(metadata[key]))
-# ...
-# SourceFile: [filepath]
-# ExifTool:ExifToolVersion: 11.65
-# File:FileName: IMG_8552.PNG
-# File:Directory: [folder path]
-# File:FileSize: 85705
-# File:FileModifyDate: 2019:09:02 00:06:12-04:00
-# File:FileAccessDate: 2019:09:15 09:16:32-04:00
-# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
-# File:FilePermissions: 700
-# File:FileType: PNG
-# File:FileTypeExtension: PNG
-# File:MIMEType: image/png
-# PNG:ImageWidth: 750
-# PNG:ImageHeight: 1334
-# PNG:BitDepth: 8
-# PNG:ColorType: 2
-# PNG:Compression: 0
-# PNG:Filter: 0
-# PNG:Interlace: 0
-# PNG:SRGBRendering: 0
-# XMP:XMPToolkit: XMP Core 5.4.0
-# XMP:DateCreated: 2019:08:26 03:51:19
-# XMP:UserComment: Screenshot
-# Composite:ImageSize: 750 1334
-# Composite:Megapixels: 1.0005
-
-
-
-
-# MOV
-# >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata("[filepath])
-# ...
-# >>> for key in metadata:
-# ...     print(str(key) + ": " + str(metadata[key]))
-# ...
-# SourceFile: [filepath]
-# ExifTool:ExifToolVersion: 11.65
-# ExifTool:Warning: [minor] The ExtractEmbedded option may find more tags in the movie data
-# File:FileName: IMG_8621.MOV
-# File:Directory: [folder path]
-# File:FileSize: 77769964
-# File:FileModifyDate: 2019:08:26 23:26:42-04:00
-# File:FileAccessDate: 2019:09:15 09:16:34-04:00
-# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
-# File:FilePermissions: 700
-# File:FileType: MOV
-# File:FileTypeExtension: MOV
-# File:MIMEType: video/quicktime
-# QuickTime:MajorBrand: qt
-# QuickTime:MinorVersion: 0.0.0
-# QuickTime:CompatibleBrands: ['qt  ']
-# QuickTime:MovieDataSize: 77750760
-# QuickTime:MovieDataOffset: 36
-# QuickTime:MovieHeaderVersion: 0
-# QuickTime:CreateDate: 2019:08:26 23:24:43
-# QuickTime:ModifyDate: 2019:08:26 23:24:43
-# QuickTime:TimeScale: 600
-# QuickTime:Duration: 39.5466666666667
-# QuickTime:PreferredRate: 1
-# QuickTime:PreferredVolume: 1
-# QuickTime:PreviewTime: 0
-# QuickTime:PreviewDuration: 0
-# QuickTime:PosterTime: 0
-# QuickTime:SelectionTime: 0
-# QuickTime:SelectionDuration: 0
-# QuickTime:CurrentTime: 0
-# QuickTime:NextTrackID: 5
-# QuickTime:TrackHeaderVersion: 0
-# QuickTime:TrackCreateDate: 2019:08:26 23:24:43
-# QuickTime:TrackModifyDate: 2019:08:26 23:24:43
-# QuickTime:TrackID: 1
-# QuickTime:TrackDuration: 39.5466666666667
-# QuickTime:TrackLayer: 0
-# QuickTime:TrackVolume: 1
-# QuickTime:ImageWidth: 1920
-# QuickTime:ImageHeight: 1080
-# QuickTime:CleanApertureDimensions: 1920 1080
-# QuickTime:ProductionApertureDimensions: 1920 1080
-# QuickTime:EncodedPixelsDimensions: 1920 1080
-# QuickTime:GraphicsMode: 64
-# QuickTime:OpColor: 32768 32768 32768
-# QuickTime:CompressorID: avc1
-# QuickTime:SourceImageWidth: 1920
-# QuickTime:SourceImageHeight: 1080
-# QuickTime:XResolution: 72
-# QuickTime:YResolution: 72
-# QuickTime:CompressorName: H.264
-# QuickTime:BitDepth: 24
-# QuickTime:VideoFrameRate: 29.9787827099888
-# QuickTime:Balance: 0
-# QuickTime:AudioFormat: mp4a
-# QuickTime:AudioBitsPerSample: 16
-# QuickTime:AudioSampleRate: 44100
-# QuickTime:LayoutFlags: 100
-# QuickTime:AudioChannels: 1
-# QuickTime:PurchaseFileFormat: mp4a
-# QuickTime:MatrixStructure: 1 0 0 0 1 0 0 0 1
-# QuickTime:ContentDescribes: 1
-# QuickTime:MediaHeaderVersion: 0
-# QuickTime:MediaCreateDate: 2019:08:26 23:24:43
-# QuickTime:MediaModifyDate: 2019:08:26 23:24:43
-# QuickTime:MediaTimeScale: 600
-# QuickTime:MediaDuration: 91.065
-# QuickTime:MediaLanguageCode: und
-# QuickTime:GenMediaVersion: 0
-# QuickTime:GenFlags: 0 0 0
-# QuickTime:GenGraphicsMode: 64
-# QuickTime:GenOpColor: 32768 32768 32768
-# QuickTime:GenBalance: 0
-# QuickTime:HandlerClass: dhlr
-# QuickTime:HandlerVendorID: appl
-# QuickTime:HandlerDescription: Core Media Data Handler
-# QuickTime:MetaFormat: mebx
-# QuickTime:HandlerType: mdta
-# QuickTime:Make: Apple
-# QuickTime:Model: iPhone 6s
-# QuickTime:Software: 12.4
-# QuickTime:CreationDate: 2019:08:26 19:22:27-04:00
-# Composite:ImageSize: 1920 1080
-# Composite:Megapixels: 2.0736
-# Composite:AvgBitrate: 15728407
-# Composite:Rotation: 90
-
-
-
-
-# JPG
-# >>> with exiftool.ExifTool() as et:
-# ...     metadata = et.get_metadata([filepath])
-#
-# >>> for key in metadata:
-# ...     print(str(key) + ": " + str(metadata[key]))
-# ...
-# SourceFile: [filepath]
-# ExifTool:ExifToolVersion: 11.65
-# File:FileName: IMG_8563.JPG
-# File:Directory: [folder path]
-# File:FileSize: 2340281
-# File:FileModifyDate: 2019:08:26 09:11:21-04:00
-# File:FileAccessDate: 2019:09:15 09:16:33-04:00
-# File:FileInodeChangeDate: 2019:09:15 08:40:01-04:00
-# File:FilePermissions: 700
-# File:FileType: JPEG
-# File:FileTypeExtension: JPG
-# File:MIMEType: image/jpeg
-# File:ExifByteOrder: MM
-# File:ImageWidth: 4032
-# File:ImageHeight: 3024
-# File:EncodingProcess: 0
-# File:BitsPerSample: 8
-# File:ColorComponents: 3
-# File:YCbCrSubSampling: 2 2
-# EXIF:Make: Apple
-# EXIF:Model: iPhone 6s
-# EXIF:Orientation: 1
-# EXIF:XResolution: 72
-# EXIF:YResolution: 72
-# EXIF:ResolutionUnit: 2
-# EXIF:Software: 12.4
-# EXIF:ModifyDate: 2019:08:26 09:11:21
-# EXIF:YCbCrPositioning: 1
-# EXIF:ExposureTime: 0.01666666667
-# EXIF:FNumber: 2.2
-# EXIF:ExposureProgram: 2
-# EXIF:ISO: 32
-# EXIF:ExifVersion: 0221
-# EXIF:DateTimeOriginal: 2019:08:26 09:11:21
-# EXIF:CreateDate: 2019:08:26 09:11:21
-# EXIF:ComponentsConfiguration: 1 2 3 0
-# EXIF:ShutterSpeedValue: 0.0166649999460157
-# EXIF:ApertureValue: 2.20000000038133
-# EXIF:BrightnessValue: 4.780345489
-# EXIF:ExposureCompensation: 0
-# EXIF:MeteringMode: 5
-# EXIF:Flash: 24
-# EXIF:FocalLength: 4.15
-# EXIF:SubjectArea: 2015 1511 2217 1330
-# EXIF:SubSecTimeOriginal: 184
-# EXIF:SubSecTimeDigitized: 184
-# EXIF:FlashpixVersion: 0100
-# EXIF:ColorSpace: 1
-# EXIF:ExifImageWidth: 4032
-# EXIF:ExifImageHeight: 3024
-# EXIF:SensingMethod: 2
-# EXIF:SceneType: 1
-# EXIF:ExposureMode: 0
-# EXIF:WhiteBalance: 0
-# EXIF:FocalLengthIn35mmFormat: 29
-# EXIF:SceneCaptureType: 0
-# EXIF:LensInfo: 4.15 4.15 2.2 2.2
-# EXIF:LensMake: Apple
-# EXIF:LensModel: iPhone 6s back camera 4.15mm f/2.2
-# EXIF:Compression: 6
-# EXIF:ThumbnailOffset: 1772
-# EXIF:ThumbnailLength: 10680
-# EXIF:ThumbnailImage: (Binary data 10680 bytes, use -b option to extract)
-# MakerNotes:RunTimeFlags: 1
-# MakerNotes:RunTimeValue: 34717646045291
-# MakerNotes:RunTimeScale: 1000000000
-# MakerNotes:RunTimeEpoch: 0
-# MakerNotes:AccelerationVector: -0.9088873265 -0.01614983752 -0.4305499197
-# Composite:RunTimeSincePowerUp: 34717.646045291
-# Composite:Aperture: 2.2
-# Composite:ImageSize: 4032 3024
-# Composite:Megapixels: 12.192768
-# Composite:ScaleFactor35efl: 6.98795180722891
-# Composite:ShutterSpeed: 0.01666666667
-# Composite:SubSecCreateDate: 2019:08:26 09:11:21.184
-# Composite:SubSecDateTimeOriginal: 2019:08:26 09:11:21.184
-# Composite:CircleOfConfusion: 0.00429972350378608
-# Composite:FOV: 63.6549469203797
-# Composite:FocalLength35efl: 29
-# Composite:HyperfocalDistance: 1.8206773258829
-# Composite:LightValue: 9.82575383259457
-
-
-
-# MP4
-# ExifTool:ExifToolVersion: 11.65
-# File:FileName: IMG_9088.MP4
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/special_cases
-# File:FileSize: 612230
-# File:FileModifyDate: 2019:09:19 23:18:17-04:00
-# File:FileAccessDate: 2019:09:23 22:38:25-04:00
-# File:FileInodeChangeDate: 2019:09:23 22:38:24-04:00
-# File:FilePermissions: 600
-# File:FileType: MP4
-# File:FileTypeExtension: MP4
-# File:MIMEType: video/mp4
-# QuickTime:MajorBrand: mp42
-# QuickTime:MinorVersion: 0.0.1
-# QuickTime:CompatibleBrands: ['mp41', 'mp42', 'isom']
-# QuickTime:MovieDataSize: 608775
-# QuickTime:MovieDataOffset: 44
-# QuickTime:MovieHeaderVersion: 0
-# QuickTime:CreateDate: 2019:09:18 18:05:52
-# QuickTime:ModifyDate: 2019:09:18 18:05:53
-# QuickTime:TimeScale: 600
-# QuickTime:Duration: 6.60666666666667
-# QuickTime:PreferredRate: 1
-# QuickTime:PreferredVolume: 1
-# QuickTime:PreviewTime: 0
-# QuickTime:PreviewDuration: 0
-# QuickTime:PosterTime: 0
-# QuickTime:SelectionTime: 0
-# QuickTime:SelectionDuration: 0
-# QuickTime:CurrentTime: 0
-# QuickTime:NextTrackID: 2
-# QuickTime:TrackHeaderVersion: 0
-# QuickTime:TrackCreateDate: 2019:09:18 18:05:52
-# QuickTime:TrackModifyDate: 2019:09:18 18:05:53
-# QuickTime:TrackID: 1
-# QuickTime:TrackDuration: 6.60666666666667
-# QuickTime:TrackLayer: 0
-# QuickTime:TrackVolume: 1
-# QuickTime:MatrixStructure: 1 0 0 0 1 0 0 0 1
-# QuickTime:ImageWidth: 272
-# QuickTime:ImageHeight: 480
-# QuickTime:MediaHeaderVersion: 0
-# QuickTime:MediaCreateDate: 2019:09:18 18:05:52
-# QuickTime:MediaModifyDate: 2019:09:18 18:05:53
-# QuickTime:MediaTimeScale: 600
-# QuickTime:MediaDuration: 6.60666666666667
-# QuickTime:MediaLanguageCode: und
-# QuickTime:HandlerType: vide
-# QuickTime:HandlerDescription: Core Media Video
-# QuickTime:GraphicsMode: 0
-# QuickTime:OpColor: 0 0 0
-# QuickTime:CompressorID: avc1
-# QuickTime:SourceImageWidth: 272
-# QuickTime:SourceImageHeight: 480
-# QuickTime:XResolution: 72
-# QuickTime:YResolution: 72
-# QuickTime:BitDepth: 24
-# QuickTime:ColorRepresentation: nclx 6 1 6
-# QuickTime:VideoFrameRate: 29.6670030272452
-# Composite:ImageSize: 272 480
-# Composite:Megapixels: 0.13056
-# Composite:AvgBitrate: 737164
-# Composite:Rotation: 0
-
-
-# GIF
-# >>> meta_dump("/media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test/IMG_9402.GIF")
-# SourceFile: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test/IMG_9402.GIF
-# ExifTool:ExifToolVersion: 11.65
-# File:FileName: IMG_9402.GIF
-# File:Directory: /media/veracrypt11/BU_Data/iPhone_Pictures/TEST/date_rename_test
-# File:FileSize: 276345
-# File:FileModifyDate: 2019:10:05 10:13:04-04:00
-# File:FileAccessDate: 2019:10:05 10:13:31-04:00
-# File:FileInodeChangeDate: 2019:10:05 10:13:27-04:00
-# File:FilePermissions: 644
-# File:FileType: GIF
-# File:FileTypeExtension: GIF
-# File:MIMEType: image/gif
-# GIF:GIFVersion: 89a
-# GIF:ImageWidth: 200
-# GIF:ImageHeight: 115
-# GIF:HasColorMap: 1
-# GIF:ColorResolutionDepth: 8
-# GIF:BitsPerPixel: 8
-# GIF:BackgroundColor: 0
-# GIF:AnimationIterations: 0
-# GIF:FrameCount: 20
-# GIF:Duration: 1.4
-# XMP:XMPToolkit: Adobe XMP Core 5.0-c061 64.140949, 2010/12/07-10:57:01
-# XMP:CreatorTool: Adobe Photoshop CS5.1 Windows
-# XMP:InstanceID: xmp.iid:8E3C9BB665E711E5AF58E864FAAB9660
-# XMP:DocumentID: xmp.did:8E3C9BB765E711E5AF58E864FAAB9660
-# XMP:DerivedFromInstanceID: xmp.iid:8E3C9BB465E711E5AF58E864FAAB9660
-# XMP:DerivedFromDocumentID: xmp.did:8E3C9BB565E711E5AF58E864FAAB9660
-# Composite:ImageSize: 200 115
-# Composite:Megapixels: 0.023
-
-
-
-
-
-
-
-
-#
-# from PIL import Image
-# from PIL.ExifTags import TAGS
-# ret = {}
-# i = Image.open('IMG_8559.JPG')
-# info = i._getexif()
-#
-# for tag, value in info.items():
-#      decoded = TAGS.get(tag, tag)
-#      ret[decoded] = value
-#      print(decoded)
-#      print(value)
