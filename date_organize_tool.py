@@ -129,7 +129,12 @@ class OrganizedGroup(object):
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
-            bypass_age_warn = True
+                bypass_age_warn = True
+            else:
+                # If image can't be found in org structure for whatever reason,
+                # treat it like any other image.
+                (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
+                                            img_orig_path, skip_unknown=False)
         else:
             img_path = img_orig_path
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
@@ -215,11 +220,14 @@ class YearDir(object):
         self.year_path = OrgGroup.get_root_path() + self.year_name + '/'
         self.OrgGroup = OrgGroup
 
-        if not self.year_name in OrgGroup.get_yr_list():
+        if not self.year_name in self.OrgGroup.get_yr_list():
             os.mkdir(self.year_path)
-        # Create dict of months.
-        # This will contain all directories transferred to in this job.
+        # Initialize object dictionary.
         self.mo_objs = {}
+        # Instantiate object for each month in directory, populating dict.
+        mo_list = self.get_mo_list()
+        for mo in mo_list:
+            self.make_yrmonth(mo)
 
         # Create set to hold month directories (names) to copy to without
         # prompt. This is sometimes necessary when image naming puts new photo
@@ -227,7 +235,7 @@ class YearDir(object):
         # prompt repeatedly.
         self.no_prompt_months = set()
         # Run get_latest_mo in case it hasn't been run yet so latest_mo obj
-        # is created. Add to to no_prompt_months set.
+        # is created. Add to no_prompt_months set.
         self.og_latest_mo = self.get_latest_mo()
         if self.og_latest_mo:
             self.no_prompt_months.add(self.og_latest_mo.get_yrmon_name())
@@ -260,7 +268,7 @@ class YearDir(object):
             return self.mo_objs.get(latest_mo_name)
 
     def make_yrmonth(self, yrmonth):
-        # chck that month doesn't already exist in list
+        # check that month doesn't already exist in list
         if yrmonth in self.mo_objs:
             raise OrganizeFolderError("Tried to make month object for %s, "
                                         "but already exists in YearDir."
@@ -301,10 +309,11 @@ class YearDir(object):
                     # original offloaded and categorized previously.
                     os.remove(img_buffer_path)
 
-               # Replace "IMG_E" img_time with original's datestamp.
+                # Replace "IMG_E" img_time with original's datestamp.
                 img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
 
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
+            # If original version of IMG_E not found, treated as standard img.
 
         yr_str = str(img_time.tm_year)
         # Have to zero-pad single-digit months pulled from struct_time
@@ -333,7 +342,7 @@ class YearDir(object):
         else:
             # If the image is from an earlier month not in no_prompt_months set:
             print("Attempted to pull image into %s dir, but a more recent "
-            "month dir exists, so timestamp may be wrong.\nFallback bypasses "
+              "month dir exists, so timestamp may be wrong.\nFallback bypasses "
                             "warning and copies into older dir anyway." % yrmon)
 
             man_date_output = date_compare.spec_manual_date(img_orig_path)
