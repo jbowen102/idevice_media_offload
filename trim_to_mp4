@@ -79,7 +79,7 @@ then
                      "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} -movflags faststart \
+  ffmpeg -i "${FILE_PATH}" -ss ${2} -to ${3} -movflags faststart \
                      "${FILEPATH_OUT}" &> /dev/null
 fi
 

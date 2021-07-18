@@ -66,12 +66,12 @@ printf "\nAttempting to convert to gif..."
 if [[ $# == 1 ]]; # one arg
 then
   ### high quality/size:
-  ffmpeg -i "${FILE_PATH}" \
-  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
-  ### medium quality/size:
   # ffmpeg -i "${FILE_PATH}" \
+  # -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
   # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ### medium quality/size:
+  ffmpeg -i "${FILE_PATH}" \
+  -loop 0 "${FILEPATH_OUT}" &> /dev/null
   ### low quality/size:
   # ffmpeg -i "${FILE_PATH}" \
   # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
@@ -81,29 +81,29 @@ then
 elif [[ $# == 2 ]]; # two args
 then
   ### high quality/size:
-  ffmpeg -ss ${2} -i "${FILE_PATH}" \
-  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
-  ### medium quality/size:
-  # ffmpeg -ss ${2} -i "${FILE_PATH}" \
-  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  # ffmpeg -i "${FILE_PATH}" \
+  # -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  # -loop 0 -ss ${2} "${FILEPATH_OUT}" &> /dev/null
+  ## medium quality/size:
+  ffmpeg -i "${FILE_PATH}" \
+  -loop 0 -ss ${2} "${FILEPATH_OUT}" &> /dev/null
   ### low quality/size:
-  # ffmpeg -ss ${2} -i "${FILE_PATH}" \
+  # ffmpeg -i "${FILE_PATH}" \
   # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  # -loop 0 -ss ${2} "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
   ### high quality/size:
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} \
-  -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  # ffmpeg -i "${FILE_PATH}" \
+  # -vf "split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+  # -loop 0 -ss ${2} -to ${3} "${FILEPATH_OUT}" &> /dev/null
   ### medium quality/size:
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} \
-  -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  ffmpeg -i "${FILE_PATH}" \
+  -loop 0 -ss ${2} -to ${3} "${FILEPATH_OUT}" &> /dev/null
   ### low quality/size:
-  # ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${END_TIME} \
+  # ffmpeg -i "${FILE_PATH}" \
   # -vf "fps=10,scale=320:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
-  # -loop 0 "${FILEPATH_OUT}" &> /dev/null
+  # -loop 0 -ss ${2} -to ${3} "${FILEPATH_OUT}" &> /dev/null
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.

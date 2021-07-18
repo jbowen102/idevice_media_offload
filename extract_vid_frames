@@ -55,19 +55,7 @@ then
   ffmpeg -ss ${2} -i "${FILE_PATH}" -qscale:v 2 "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  # Extract frames only in time range specified.
-  START_TIME=${2}
-  END_TIME=${3}
-  DURATION="$((END_TIME - START_TIME))"
-  # https://unix.stackexchange.com/questions/232384/argument-string-to-integer-in-bash
-  # check for negative number
-  if [ ${DURATION} -lt 1 ];
-  then
-    printf "FAIL\nEnd time must be greater than start time\n"
-    exit 1
-  else
-    ffmpeg -ss ${2} -t ${DURATION} -i "${FILE_PATH}" -qscale:v 2 "${FILEPATH_OUT}" &> /dev/null
-  fi
+  ffmpeg -i "${FILE_PATH}" -qscale:v 2  -ss ${2} -to ${3} "${FILEPATH_OUT}" &> /dev/null
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.

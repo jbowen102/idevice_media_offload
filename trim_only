@@ -72,7 +72,7 @@ then
   ffmpeg -ss ${2} -i "${FILE_PATH}" "${FILEPATH_OUT}" &> /dev/null
 elif [[ $# == 3 ]]; # three args
 then
-  ffmpeg -ss ${2} -i "${FILE_PATH}" -to ${3} "${FILEPATH_OUT}" &> /dev/null
+  ffmpeg -i "${FILE_PATH}" -ss ${2} -to ${3} "${FILEPATH_OUT}" &> /dev/null
 fi
 
 # Test if conversion was successful since ffmpeg output suppressed.

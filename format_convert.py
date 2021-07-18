@@ -23,8 +23,7 @@ def transfer_exif_comment(from_path, to_path):
 
 
 def convert_gif_to_mp4(gif_path):
-    """Wrapper for bash script trim_to_mp4 that also copies EXIF comment (if
-    present) and displays file sizes."""
+    """Wrapper for bash script trim_to_mp4 that also displays file sizes."""
 
     dir_name = os.path.dirname(gif_path)
     CompProc = subprocess.run(["./trim_to_mp4", gif_path],
@@ -34,9 +33,6 @@ def convert_gif_to_mp4(gif_path):
     if CompProc.returncode == 0:
         converted_filename = os.path.splitext(gif_path)[0] + ".mp4"
         converted_filepath = os.path.join(dir_name, converted_filename)
-
-        # Transcribe any comment/caption in original GIF.
-        transfer_exif_comment(gif_path, converted_filepath)
 
         gif_size = os.path.getsize(gif_path)
         mp4_size = os.path.getsize(converted_filepath)
