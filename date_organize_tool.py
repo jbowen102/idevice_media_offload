@@ -3,6 +3,7 @@ import time
 from tqdm import tqdm
 
 import date_compare
+import format_convert
 from pic_categorize_tool import copy_to_target
 from pic_offload_tool import RawOffloadGroup
 
@@ -83,6 +84,7 @@ class OrganizedGroup(object):
                 for img_name in mo_obj.get_img_list():
                     # If number that follows the "IMG_" or "IMG_E" matches,
                     # store then return this datestamp.
+                    # Extension not included in string match.
                     if os.path.splitext(img_name)[0][-4:] == target_img_num:
                         img_path_found = os.path.join(mo_obj.get_mo_path(),
                                                                     img_name)
@@ -99,6 +101,21 @@ class OrganizedGroup(object):
         if man_img_date:
             img_time = man_img_date
             bypass_age_warn = True
+            img_path = img_orig_path
+        elif img_orig_path.splitext()[-1].upper() == ".WEBP":
+            # Don't think iDevice will ever save WEBP w/ IMG_E prefix. Editing
+            # WEBP yields IMG_Exxxx.JPG file.
+            # Show file mod date for WEBP to help user select proper date.
+            date_compare.list_all_img_dates(img_orig_path)
+            # Convert to JPG or GIF before moving on. Returns None if unsuccessful.
+            converted_img_path = format_convert.convert_webp(img_orig_path)
+            if converted_img_path:
+                img_path = converted_img_path
+            else:
+                # If conversion failed, continue with WEBP file as-is.
+                img_path = img_orig_path
+            (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
+                                                img_path, skip_unknown=False)
         elif os.path.basename(img_orig_path)[:5] == "IMG_E":
             # Don't need to search or prompt for date if original pic is in
             # org group. Get its datestamp.
@@ -108,13 +125,16 @@ class OrganizedGroup(object):
             # runs a second time in YearDir when original gets removed.
             # Needs to be run first here in case edited photo doesn't have
             # good EXIF datestamp. That way program only prompts once (og pic).
+            img_path = img_orig_path
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
             bypass_age_warn = True
         else:
+            img_path = img_orig_path
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
-                                            img_orig_path, skip_unknown=False)
+                                                img_path, skip_unknown=False)
+
         if not img_time:
             # If user said to skip file when asked to spec time.
             return
@@ -125,19 +145,19 @@ class OrganizedGroup(object):
 
         if yr_str in self.get_latest_yrs():
             # Proceed as normal for this year and last
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+            self.yr_objs[yr_str].insert_img(img_path, img_time,
                                                                 bypass_age_warn)
         elif yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
             self.make_year(yr_str)
             NewYr = self.yr_objs[yr_str]
-            NewYr.insert_img(img_orig_path, img_time, bypass_age_warn)
+            NewYr.insert_img(img_path, img_time, bypass_age_warn)
         elif man_img_date:
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in yr_objs dir.
-            self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+            self.yr_objs[yr_str].insert_img(img_path, img_time,
                                                                 bypass_age_warn)
         else:
             print("Attempted to pull image into %s-%s dir, "
@@ -146,11 +166,11 @@ class OrganizedGroup(object):
                                 "warning and copies into older dir anyway."
                                                         % (yr_str, mo_str))
 
-            man_date_output = date_compare.spec_manual_date(img_orig_path)
+            man_date_output = date_compare.spec_manual_date(img_path)
             # will be a time_struct object if a date entered.
             if isinstance(man_date_output, time.struct_time):
                 # If user entered a date:
-                self.insert_img(img_orig_path, man_date_output)
+                self.insert_img(img_path, man_date_output)
                 # bypass_age_warn will be set True within function.
             elif man_date_output=="s":
                 # Skip
@@ -158,12 +178,12 @@ class OrganizedGroup(object):
             elif yr_str in self.get_yr_list():
                 # If user chose fallback but still in valid years, continue
                 # with operation anyway
-                self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                self.yr_objs[yr_str].insert_img(img_path, img_time,
                                                         bypass_age_warn=True)
             else:
                 # year directory doesn't exist yet, so have make it.
                 self.make_year(yr_str)
-                self.yr_objs[yr_str].insert_img(img_orig_path, img_time,
+                self.yr_objs[yr_str].insert_img(img_path, img_time,
                                                         bypass_age_warn=True)
 
     def run_org(self):
@@ -261,6 +281,8 @@ class YearDir(object):
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.
             # Can't assume datestamp is the same. Could have edited later.
+            # Extension not included in string match.
+            # Edited WEBP files yield separate IMG_Exxxx.JPG.
             img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
             # If image found, retrieve its name and delete it (remains in
             # raw_offload folder).
@@ -269,7 +291,7 @@ class YearDir(object):
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 print("Keeping edited file %s and removing original "
-                   "%s.\n" % (os.path.basename(img_orig_path), img_name))
+                       "%s.\n" % (os.path.basename(img_orig_path), img_name))
 
                 # Remove from cat buffer (already removed from date-org dir).
                 img_buffer_path = os.path.join(
@@ -394,13 +416,20 @@ class MoDir(object):
                         + formatted_comment + os.path.splitext(stamped_name)[1])
 
         # Copy into the dated directory
-        copy_to_target(img_orig_path, self.yrmonth_path,
-                                                    new_name=stamped_name)
+        copy_to_target(img_orig_path, self.yrmonth_path, new_name=stamped_name)
 
         # Also copy the img into the cat buffer for next step in prog.
+        # If file is a converted version of a WEBP file, move instead of copy
+        img_ext = os.path.splitext(img_orig_path)[-1]
+        webp_version = os.path.splitext(img_orig_path)[0] + ".WEBP"
+        if (img_ext.upper() != ".WEBP") and os.path.exists(webp_version):
+            move_file = True
+        else:
+            move_file = False
+
         copy_to_target(img_orig_path,
-                            self.YrDir.OrgGroup.get_buffer_root_path(),
-                            new_name=stamped_name)
+                                    self.YrDir.OrgGroup.get_buffer_root_path(),
+                                       new_name=stamped_name, move_op=move_file)
 
     def get_yrmon_name(self):
         return self.dir_name
