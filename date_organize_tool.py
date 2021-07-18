@@ -134,7 +134,7 @@ class OrganizedGroup(object):
                 # If image can't be found in org structure for whatever reason,
                 # treat it like any other image.
                 (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
-                                            img_orig_path, skip_unknown=False)
+                                                img_path, skip_unknown=False)
         else:
             img_path = img_orig_path
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
