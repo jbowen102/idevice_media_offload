@@ -2,7 +2,7 @@
 
 
 # Read in WEBP2GIF_DIR variable
-source "$(realpath "$(dirname "${0}")")/dir_names.sh"
+source "$(realpath "$(dirname "${0}")")/dir_names.sh" # brings in WEBP2GIF_DIR
 # https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
 
 STARTING_DIR="${PWD}"
