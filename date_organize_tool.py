@@ -102,7 +102,7 @@ class OrganizedGroup(object):
             img_time = man_img_date
             bypass_age_warn = True
             img_path = img_orig_path
-        elif img_orig_path.splitext()[-1].upper() == ".WEBP":
+        elif os.path.splitext(img_orig_path)[-1].upper() == ".WEBP":
             # Don't think iDevice will ever save WEBP w/ IMG_E prefix. Editing
             # WEBP yields IMG_Exxxx.JPG file.
             # Show file mod date for WEBP to help user select proper date.
