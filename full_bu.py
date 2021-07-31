@@ -2,13 +2,13 @@ import subprocess
 import os
 import time
 
-import iphone_pic_backup.pic_offload_tool as offload_tool
-import iphone_pic_backup.date_organize_tool as org_tool
-import iphone_pic_backup.pic_categorize_tool as cat_tool
+import idevice_media_offload.pic_offload_tool as offload_tool
+import idevice_media_offload.date_organize_tool as org_tool
+import idevice_media_offload.pic_categorize_tool as cat_tool
 
-from iphone_pic_backup.dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT, ST_VID_ROOT
-from iphone_pic_backup.dir_names import NAS_BU_ROOT, NAS_ST_DIR
-from iphone_pic_backup.dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH_PORT
+from idevice_media_offload.dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT, ST_VID_ROOT
+from idevice_media_offload.dir_names import NAS_BU_ROOT, NAS_ST_DIR
+from idevice_media_offload.dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH_PORT
 
 
 # dir path where this script is stored

@@ -5,7 +5,7 @@ import time
 from tqdm import tqdm, trange
 import subprocess
 
-from iphone_pic_backup.dir_names import IPHONE_DCIM_PREFIX
+from idevice_media_offload.dir_names import IPHONE_DCIM_PREFIX
 
 
 class iPhoneLocError(Exception):

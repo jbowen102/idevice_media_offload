@@ -5,3 +5,4 @@ __pycache__/
 timestamp_compare.py
 dir_names.py
 dir_names.sh
+TEST/

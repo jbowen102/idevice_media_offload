@@ -4,9 +4,9 @@ from tqdm import tqdm
 
 from mediadapt import format_convert
 
-from iphone_pic_backup import date_compare
-from iphone_pic_backup.pic_categorize_tool import copy_to_target
-from iphone_pic_backup.pic_offload_tool import RawOffloadGroup
+from idevice_media_offload import date_compare
+from idevice_media_offload.pic_categorize_tool import copy_to_target
+from idevice_media_offload.pic_offload_tool import RawOffloadGroup
 
 
 

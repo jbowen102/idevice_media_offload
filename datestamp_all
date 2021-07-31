@@ -5,7 +5,7 @@ FIXED_PATH="$(./wpfix "$1")" # only used w/ WSL
 DEFAULT=False
 LONGSTAMP=${2:-$DEFAULT}
 
-printf "import date_compare as dc ; dc.datestamp_all('%s', $LONGSTAMP)", "$FIXED_PATH" | python
+printf "import idevice_media_offload.date_compare as dc ; dc.datestamp_all('%s', $LONGSTAMP)", "$FIXED_PATH" | python
 
 
 
