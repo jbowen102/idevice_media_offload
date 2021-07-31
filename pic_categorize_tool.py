@@ -5,7 +5,7 @@ from tqdm import tqdm
 import subprocess
 import hashlib
 
-from dir_names import CAT_DIRS
+from iphone_pic_backup.dir_names import CAT_DIRS
 
 
 
