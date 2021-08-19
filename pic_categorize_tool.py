@@ -29,11 +29,16 @@ class Categorizer(object):
     def find_stored_dir(self, keyword, silent=False):
         """Retrieve directory path from preloaded list or from previously-used
         manual paths entered in this session."""
-        # First look in preloaded list.
+        # First see if keyword is itself a path to prevent finding a "match"
+        # in the form of a longer path containing this path as a substring.
+        if os.path.isdir(keyword):
+            return None
+
+        # Then look for keyword match in preloaded list.
         if CAT_DIRS.get(keyword):
             return CAT_DIRS[keyword]
 
-        # Look for previously-entered manual dir
+        # Then see if keyword is a substring of a previously-entered manual dir.
         # Keyword referencing manually-entered path must be at least three
         # characters long
         if len(keyword) < 3:
