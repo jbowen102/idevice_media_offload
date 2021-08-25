@@ -503,14 +503,16 @@ def get_comment(img_path, print_type=False):
         exif_img_desc = metadata.get("EXIF:ImageDescription")
         caption_abst = metadata.get("IPTC:Caption-Abstract")
         qt_comment = metadata.get("QuickTime:Comment")
+        xmp_desc = metadata.get("XMP:Description")
         basic_comment = metadata.get("File:Comment")
         # File:Comment is tag used by ''$ exiftool -Comment=...'
 
         # Count non-empty comment/caption values
-        if sum(x is not None for x in
-                  [exif_img_desc, caption_abst, qt_comment, basic_comment]) > 1:
+        if sum(x is not None for x in [exif_img_desc, caption_abst, qt_comment,
+                                                 xmp_desc, basic_comment]) > 1:
             input("Found caption in multiple EXIF tags for %s. Unhandled case."
                                                 % os.path.basename(img_path))
+            # fall through
         elif exif_img_desc:
             if print_type:
                 print("%s: %s" % ("EXIF:ImageDescription", exif_img_desc))
@@ -523,12 +525,16 @@ def get_comment(img_path, print_type=False):
             if print_type:
                 print("%s: %s" % ("QuickTime:Comment", qt_comment))
             return qt_comment
+        elif xmp_desc:
+            if print_type:
+                print("%s: %s" % ("XMP:Description", xmp_desc))
+            return xmp_desc
         elif basic_comment:
             if print_type:
                 print("%s: %s" % ("File:Comment", basic_comment))
             return basic_comment
-        else:
-            return None
+
+        return None
 
 
 def meta_dump(img_path):
