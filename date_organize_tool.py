@@ -104,7 +104,7 @@ class OrganizedGroup(object):
             bypass_age_warn = True
             img_path = img_orig_path
         elif os.path.splitext(img_orig_path)[-1].upper() == ".WEBP":
-            # Don't think iDevice will ever save WEBP w/ IMG_E prefix. Editing
+            # Don't think iOS will ever save WEBP w/ IMG_E prefix. Editing
             # WEBP yields IMG_Exxxx.JPG file.
             # Show file mod date for WEBP to help user select proper date.
             date_compare.list_all_img_dates(img_orig_path)
@@ -286,7 +286,7 @@ class YearDir(object):
             return
 
         elif os.path.basename(img_orig_path)[:5] == "IMG_E":
-            # Look for any original/edited pairs in all org dirs used so far.
+            # Look for any original/edited pairs in all org dirs.
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.
             # Can't assume datestamp is the same. Could have edited later.
@@ -295,23 +295,34 @@ class YearDir(object):
             img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
             # If image found, retrieve its name and delete it (remains in
             # raw_offload folder).
-            img_path_found = self.OrgGroup.search_img(img_num, remove=True)
+            img_ext = os.path.splitext(img_orig_path)[-1]
+            if img_ext.upper() == ".HEIC":
+                # Keeping IMG_Exxxx.HEIC originals since heif-convert fails
+                # to convert IMG_E version for some reason.
+                remove_og_img = False
+            else:
+                remove_og_img = True
+
+            img_path_found = self.OrgGroup.search_img(img_num, remove=remove_og_img)
 
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
-                print("Keeping edited file %s and removing original "
-                       "%s.\n" % (os.path.basename(img_orig_path), img_name))
-
-                # Remove from cat buffer (already removed from date-org dir).
-                img_buffer_path = os.path.join(
-                                self.OrgGroup.get_buffer_root_path(), img_name)
-                if os.path.exists(img_buffer_path):
-                    # Might not exist if the newly-edited pic had its
-                    # original offloaded and categorized previously.
-                    os.remove(img_buffer_path)
-
                 # Replace "IMG_E" img_time with original's datestamp.
-                img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
+                # This applies to IMG_Exxx.HEIC files too, though their EXIF
+                # data seems to reflect correct original capture time.
+                if remove_og_img:
+                    # Keeping IMG_Exxxx.HEIC originals since heif-convert fails
+                    # to convert IMG_E version for some reason.
+                    print("Keeping edited file %s and removing original "
+                          "%s.\n" % (os.path.basename(img_orig_path), img_name))
+
+                    # Remove from cat buffer (already removed from date-org dir).
+                    img_buffer_path = os.path.join(
+                                 self.OrgGroup.get_buffer_root_path(), img_name)
+                    if os.path.exists(img_buffer_path):
+                        # Might not exist if the newly-edited pic had its
+                        # original offloaded and categorized previously.
+                        os.remove(img_buffer_path)
 
             # Continue to next conditional. Edited ("IMG_E") file is xfered.
             # If original version of IMG_E not found, treated as standard img.
@@ -392,9 +403,11 @@ class MoDir(object):
         self.img_list.sort()
         return self.img_list
 
-    def insert_img(self, img_orig_path, img_time):
-        """Prepends timestamp and appends caption (if present in metadata)."""
-        # make sure image not already here
+    def insert_img(self, img_orig_path, img_time, move_file=False,
+                                                          comment_prompt=True):
+        """Prepends timestamp and optionally appends caption (if present in
+        metadata)."""
+
         img_name = os.path.basename(img_orig_path)   # no trailing slash
         stamped_name = time.strftime("%Y-%m-%d", img_time) + "_" + img_name
 
@@ -405,7 +418,7 @@ class MoDir(object):
         # to be prepended to comment below. Subtract 2 to account for potential
         # collision-resolving underscore+digit applied in copy_to_target()
 
-        if not img_comment:
+        if (not img_comment) or (not comment_prompt):
             pass # do nothing
         elif len(img_comment) > max_comment_len:
             print("Comment found in %s EXIF data: '%s'\n"
@@ -430,16 +443,27 @@ class MoDir(object):
 
         # Also copy the img into the cat buffer for next step in prog.
         # If file is a converted version of a WEBP file, move instead of copy
+        # Converted version of HEIC (JPG) also gets moved (recursive call below).
         img_ext = os.path.splitext(img_orig_path)[-1]
         webp_version = os.path.splitext(img_orig_path)[0] + ".WEBP"
         if (img_ext.upper() != ".WEBP") and os.path.exists(webp_version):
             move_file = True
-        else:
-            move_file = False
 
-        copy_to_target(img_orig_path,
-                                    self.YrDir.OrgGroup.get_buffer_root_path(),
+        # Copy or move to cat buffer
+        copy_to_target(img_orig_path, self.YrDir.OrgGroup.get_buffer_root_path(),
                                        new_name=stamped_name, move_op=move_file)
+
+        # For an HEIF file, convert then copy/move converted version to both destinations.
+        if img_ext.upper() == ".HEIC":
+            converted_img_path = format_convert.convert_heif(img_orig_path)
+            if converted_img_path:
+                # Recursive call will transfer jpg to both destinations.
+                self.insert_img(converted_img_path, img_time, move_file=True,
+                                                          comment_prompt=False)
+            else:
+                # Conversion failed (have seen it happen on IMG_Exxx.HEIC files)
+                # No converted file to transfer. Original HEIF will still be transferred.
+                pass
 
     def get_yrmon_name(self):
         return self.dir_name
