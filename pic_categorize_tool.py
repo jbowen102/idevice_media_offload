@@ -156,10 +156,36 @@ class Categorizer(object):
                 # Ignore any manual sort folder left over from previous offload.
                 continue
             elif not os.path.exists(img_path):
-                # Handle case where user manual deletes img in buffer outside
+                # Handle case where user manually deletes img in buffer outside
                 # of program.
                 print("%s skipped - not found in Cat buffer." % img)
                 continue
+
+            if os.path.splitext(img)[-1].upper() == ".HEIC":
+                # Can't display these, but they should have already been
+                # converted during org step.
+                # Look for JPG version.
+                jpg_path = os.path.splitext(img_path)[0] + ".jpg"
+                if os.path.exists(jpg_path):
+                    dup_heif_path = img_path
+                    img_path = jpg_path
+                    # Will sub in jpg file to use for determining where to
+                    # transfer. Then apply the transfer to both.
+                    mod_heif_path = dup_heif_path.replace("IMG_", "IMG_E")
+                    if not os.path.exists(mod_heif_path):
+                        mod_heif_path = None
+                else:
+                    dup_heif_path = None
+                    print("Cannot find associated JPG for %s. Storing in "
+                                                 "manual-sort buffer '%s'"
+                                       % (img, os.path.basename(CAT_DIRS['u'])))
+                    # Automatically move to manual-sort dir. May change this
+                    # to fall through to prompt (w/o img display) and allow user
+                    # to decide.
+                    copy_to_target(img_path, CAT_DIRS['u'])
+                    continue
+            else:
+                dup_heif_path = None
 
             # Show image and prompt for location.
             target_dir = self.get_target_dir(img_path)
@@ -172,6 +198,10 @@ class Categorizer(object):
                 # If user chooses to discard img, None is returned by
                 # get_target_dir. Delete image from buffer.
                 os.remove(img_path)
+                if dup_heif_path:
+                    os.remove(dup_heif_path)
+                    if mod_heif_path:
+                        os.remove(mod_heif_path)
                 continue
 
             elif target_dir[0] == '*' and os.path.isdir(target_dir[1:]):
@@ -179,11 +209,19 @@ class Categorizer(object):
                 # then after copying image into one place, the user should be
                 # prompted again w/ same photo to put somewhere else.
                 copy_to_target(img_path, target_dir[1:])
+                if dup_heif_path:
+                    copy_to_target(dup_heif_path, target_dir[1:])
+                    if mod_heif_path:
+                        copy_to_target(mod_heif_path, target_dir[1:])
                 self.photo_transfer(start_point=img)
                 return
 
             elif target_dir[0] == '!' and os.path.isdir(target_dir[3:]):
                 copy_to_target(img_path, target_dir[3:], move_op=True)
+                if dup_heif_path:
+                    copy_to_target(dup_heif_path, target_dir[3:], move_op=True)
+                    if mod_heif_path:
+                        copy_to_target(mod_heif_path, target_dir[3:], move_op=True)
 
                 # If get_target_dir detected the trailing special character '+' and
                 # a two-digit number, copy multiple successive images to same place.
@@ -198,9 +236,12 @@ class Categorizer(object):
                 return
 
             elif os.path.isdir(target_dir):
-                # Execute the move from buffer to appropriate dir. End loop if user
-                # returns an abort command due to collision prompt.
+                # Execute the move from buffer to appropriate dir.
                 copy_to_target(img_path, target_dir, move_op=True)
+                if dup_heif_path:
+                    copy_to_target(dup_heif_path, target_dir, move_op=True)
+                    if mod_heif_path:
+                        copy_to_target(mod_heif_path, target_dir, move_op=True)
 
             else:
                 # Path returned by get_target_dir isn't a valid directory.
@@ -394,8 +435,11 @@ def same_hash(img1_path, img2_path):
 
 
 def os_open(input_path):
-    subprocess.run(['xdg-open', input_path],
+    CompProc = subprocess.run(['xdg-open', input_path],
                         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    # Check for success. Some img formats like HEIC can't be displayed.
+    if CompProc.returncode != 0:
+        print("Unable to display %s" % os.path.basename(input_path))
 
 
 def display_dir(dir_path):
