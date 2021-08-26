@@ -136,10 +136,12 @@ class OrganizedGroup(object):
                 # treat it like any other image.
                 (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                                 img_path, skip_unknown=False)
+                man_img_date = bypass_age_warn
         else:
             img_path = img_orig_path
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
                                                 img_path, skip_unknown=False)
+            man_img_date = bypass_age_warn
 
         if not img_time:
             # If user said to skip file when asked to spec time.
@@ -163,6 +165,8 @@ class OrganizedGroup(object):
             # This is the same as a condition above, but the intervening elif
             # should instead run if it evaluates true. A new manually-specified
             # date might not be present in yr_objs dir.
+            if yr_str not in self.get_yr_list():
+                self.make_year(yr_str)
             self.yr_objs[yr_str].insert_img(img_path, img_time,
                                                                 bypass_age_warn)
         else:
