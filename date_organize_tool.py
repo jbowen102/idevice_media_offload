@@ -106,8 +106,7 @@ class OrganizedGroup(object):
         elif os.path.splitext(img_orig_path)[-1].upper() == ".WEBP":
             # Don't think iOS will ever save WEBP w/ IMG_E prefix. Editing
             # WEBP yields IMG_Exxxx.JPG file.
-            # Show file mod date for WEBP to help user select proper date.
-            date_compare.list_all_img_dates(img_orig_path)
+
             # Convert to JPG or GIF before moving on. Returns None if unsuccessful.
             converted_img_path = format_convert.convert_webp(img_orig_path)
             if converted_img_path:
@@ -115,8 +114,15 @@ class OrganizedGroup(object):
             else:
                 # If conversion failed, continue with WEBP file as-is.
                 img_path = img_orig_path
-            (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
-                                                img_path, skip_unknown=False)
+
+            # Use WEBP file's mod time since that is the only relevant metadata
+            # available. JPG version's mod time will be wrong since it was
+            # just created.
+            img_time = time.localtime(os.path.getmtime(img_orig_path)))
+            bypass_age_warn = False
+            print("Using file mod time %s for %s."
+                    % (time.strftime(date_compare.DATE_FORMAT, img_time),
+                       os.path.basename(img_orig_path)))
         elif os.path.basename(img_orig_path)[:5] == "IMG_E":
             # Don't need to search or prompt for date if original pic is in
             # org group. Get its datestamp.
@@ -153,8 +159,7 @@ class OrganizedGroup(object):
 
         if yr_str in self.get_latest_yrs():
             # Proceed as normal for this year and last
-            self.yr_objs[yr_str].insert_img(img_path, img_time,
-                                                                bypass_age_warn)
+            self.yr_objs[yr_str].insert_img(img_path, img_time, bypass_age_warn)
         elif yr_str > self.get_latest_yrs()[-1]:
             # If the image is from a later year than the existing folders,
             # make new year object.
@@ -167,8 +172,7 @@ class OrganizedGroup(object):
             # date might not be present in yr_objs dir.
             if yr_str not in self.get_yr_list():
                 self.make_year(yr_str)
-            self.yr_objs[yr_str].insert_img(img_path, img_time,
-                                                                bypass_age_warn)
+            self.yr_objs[yr_str].insert_img(img_path, img_time, bypass_age_warn)
         else:
             print("Attempted to pull image into %s-%s dir, "
                                 "but a more recent year dir exists, so "
