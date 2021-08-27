@@ -118,7 +118,7 @@ class OrganizedGroup(object):
             # Use WEBP file's mod time since that is the only relevant metadata
             # available. JPG version's mod time will be wrong since it was
             # just created.
-            img_time = time.localtime(os.path.getmtime(img_orig_path)))
+            img_time = time.localtime(os.path.getmtime(img_orig_path))
             bypass_age_warn = False
             print("Using file mod time %s for %s."
                     % (time.strftime(date_compare.DATE_FORMAT, img_time),

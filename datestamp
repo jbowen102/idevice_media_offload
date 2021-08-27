@@ -1,11 +1,11 @@
 #!/bin/bash
 
-FIXED_PATH="$(./wpfix "$1")" # only used w/ WSL
+FILE_PATH="$(realpath "${1}")"
 
 DEFAULT=False
 LONGSTAMP=${2:-$DEFAULT}
 
-printf "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('%s', $LONGSTAMP)", "$FIXED_PATH" | python
+printf "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('%s', $LONGSTAMP)", "$FILE_PATH" | python
 
 
 # LONG DATESTAMP:
