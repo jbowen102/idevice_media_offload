@@ -507,34 +507,34 @@ def get_comment(img_path, print_type=False):
         basic_comment = metadata.get("File:Comment")
         # File:Comment is tag used by ''$ exiftool -Comment=...'
 
-        # Count non-empty comment/caption values
-        if sum(x is not None for x in [exif_img_desc, caption_abst, qt_comment,
-                                                 xmp_desc, basic_comment]) > 1:
-            input("Found caption in multiple EXIF tags for %s. Unhandled case."
-                                                % os.path.basename(img_path))
-            # fall through
-        elif exif_img_desc:
-            if print_type:
+        if print_type:
+            if exif_img_desc:
                 print("%s: %s" % ("EXIF:ImageDescription", exif_img_desc))
-            return exif_img_desc
-        elif caption_abst:
-            if print_type:
+            if caption_abst:
                 print("%s: %s" % ("IPTC:Caption-Abstract", caption_abst))
-            return caption_abst
-        elif qt_comment:
-            if print_type:
+            if qt_comment:
                 print("%s: %s" % ("QuickTime:Comment", qt_comment))
-            return qt_comment
-        elif xmp_desc:
-            if print_type:
+            if xmp_desc:
                 print("%s: %s" % ("XMP:Description", xmp_desc))
-            return xmp_desc
-        elif basic_comment:
-            if print_type:
+            if basic_comment:
                 print("%s: %s" % ("File:Comment", basic_comment))
-            return basic_comment
 
-        return None
+        # Gather all caption candidates into a set and eliminate missing ones.
+        # Putting into a set handles duplicate entries
+        caption_set = set([exif_img_desc, caption_abst, qt_comment, xmp_desc,
+                                                                 basic_comment])
+        caption_set.discard(None)
+
+        if len(caption_set) == 1:
+            return caption_set.pop()
+        if len(caption_set) > 1:
+            input("Found unique captions in multiple EXIF tags for %s. "
+                                    "Unhandled case. Press enter to continue"
+                                                % os.path.basename(img_path))
+            return None
+        else:
+            # No comment found
+            return None
 
 
 def meta_dump(img_path):
