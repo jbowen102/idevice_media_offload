@@ -27,6 +27,7 @@ class Categorizer(object):
         # If it's already been added, don't add duplicate.
         if dir_path not in self.manual_dir_list:
             self.manual_dir_list.append(dir_path)
+            self.manual_dir_list.sort()
 
     def find_stored_dir(self, keyword, silent=False):
         """Retrieve directory path from preloaded list or from previously-used
@@ -326,8 +327,7 @@ class Categorizer(object):
                 self.add_manual_dir(target_input)
                 return target_input
             else:
-                # Recurse function call until valid input is provided.
-                print("Unrecognized input.\n")
+                print("Invalid input. Try again.")
                 target_input = "" # reset
                 continue
 
