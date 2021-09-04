@@ -6,7 +6,7 @@ from tqdm import tqdm, trange
 import subprocess
 
 from idevice_media_offload.dir_names import IPHONE_DCIM_PREFIX
-
+from idevice_media_offload.pic_categorize_tool import os_open
 
 class iPhoneLocError(Exception):
     pass
@@ -193,7 +193,7 @@ class RawOffloadGroup(object):
         # folder (the overlap folder)
 
         self.bu_root_path = bu_root_path
-        self.RO_root_path = self.bu_root_path + "Raw_Offload/"
+        self.RO_root_path = os.path.join(self.bu_root_path, "Raw_Offload/")
 
         # Double-check Raw_Offload folder is there.
         if not os.path.exists(self.RO_root_path):
@@ -201,15 +201,19 @@ class RawOffloadGroup(object):
                         "Pics not offloaded. Terminating" % self.RO_root_path)
 
         self.generate_offload_list()
-        # Remove extraneous things from raw-offload root, like files or empty folders.
-        self.remove_bad_dir_items()
 
-        # create latest offload object (self.LatestOffload)
-        self.find_latest_offload()
+        # Test if raw-offload dir is populated or if its a newly-created structure.
+        if self.offload_list:
+            # create latest offload object (self.LatestOffload)
+            self.find_latest_offload()
 
-        # Find all folders that contain the newest APPLE folder (the "overlap" folder)
-        # and create RawOffload objects for them. Put into a list.
-        self.find_overlap_offloads()
+            # Find all folders that contain the newest APPLE folder (the "overlap" folder)
+            # and create RawOffload objects for them. Put into a list.
+            self.find_overlap_offloads() # FAILS
+
+        else:
+            # If this device has never been offloaded before
+            pass
 
     def get_BU_root(self):
         return self.bu_root_path
@@ -222,6 +226,7 @@ class RawOffloadGroup(object):
         RO_root_contents = os.listdir(self.RO_root_path)
         RO_root_contents.sort()
         self.offload_list = RO_root_contents
+        self.remove_bad_dir_items()
 
     def get_offload_list(self):
         # List of names
@@ -229,28 +234,48 @@ class RawOffloadGroup(object):
 
     def get_last_offload_name(self):
         # returns name only
-        return self.get_offload_list()[-1]
+        if self.offload_list:
+            return self.get_offload_list()[-1]
+        else:
+            return None
 
     def find_latest_offload(self):
-        self.LatestOffload = RawOffload(self.get_last_offload_name(), self)
+        if self.offload_list:
+            self.LatestOffload = RawOffload(self.get_last_offload_name(), self)
+            return self.LatestOffload
+        else:
+            return None
 
     def get_latest_offload_obj(self):
         # Returns RawOffload object
-        return self.LatestOffload
+        if self.offload_list:
+            return self.LatestOffload
+        else:
+            return None
 
     def get_overlap_offload_list(self):
-        return self.overlap_offload_list.copy()
+        if self.offload_list:
+            return self.overlap_offload_list.copy()
+        else:
+            return None
 
-    def newest_APPLE_folder(self):
+    def get_newest_APPLE_folder(self):
         # needs object
-        return self.get_latest_offload_obj().list_APPLE_folders()[-1]
+        if self.get_latest_offload_obj():
+            return self.get_latest_offload_obj().get_newest_APPLE_folder()
+        else:
+            return None
 
     def remove_bad_dir_items(self):
-        if os.path.isfile(self.get_RO_root() + self.get_last_offload_name()):
+        if not self.offload_list:
+            # If the Raw_Offload folder is empty, no action needed.
+            return
+        elif os.path.isfile(self.get_RO_root() + self.get_last_offload_name()):
             input("File found where only offload folders should be in RO root.\n"
-            "Press Enter to try again.\n> ")
-            # try again
-            self.remove_bad_dir_items()
+            "Manually remove and press Enter to try again.\n> ")
+            os_open(self.get_RO_root())
+            # Regenerate list and repeat this function call
+            self.generate_offload_list()
         elif not os.listdir(self.get_RO_root() + self.get_last_offload_name()):
             delete_empty_ro = input("Folder %s in raw_offload directory is empty, "
             "probably from previous aborted offload.\n"
@@ -258,27 +283,19 @@ class RawOffloadGroup(object):
             "Or press 'q' to quit.\n> " % self.get_last_offload_name())
 
             if delete_empty_ro == 'd':
-                # Delete that folder name from list attribute
                 os.rmdir(self.get_RO_root() + self.get_last_offload_name())
-
-                # re-generate offload list after deleting an element
-                self.generate_offload_list()
-                # Start over to check for any other invalid items
-                self.remove_bad_dir_items()
             elif delete_empty_ro == 'q':
                 raise RawOffloadError("Remove empty folder from raw-offload directory.")
-            else:
-                # Repeat prompt if input not recognized
-                self.remove_bad_dir_items()
-        else:
-            pass
+
+            # Regenerate list and repeat this function call
+            self.generate_offload_list()
 
     def find_overlap_offloads(self):
         """Create a RawOffload instance representing most recent offload."""
 
         # Find every offload that shares the overlap folder (latest APPLE).
         self.overlap_offload_list = [self.get_latest_offload_obj()]
-        overlap_folder = self.get_latest_offload_obj().newest_APPLE_folder()
+        overlap_folder = self.get_latest_offload_obj().get_newest_APPLE_folder()
 
         # Check all other offload folders for the overlap folder
         for offload in self.offload_list[:-1]:
@@ -379,8 +396,10 @@ class RawOffload(object):
         APPLE_folders.sort()
         return APPLE_folders
 
-    def newest_APPLE_folder(self):
-        if os.path.isfile(self.list_APPLE_folders()[-1]):
+    def get_newest_APPLE_folder(self):
+        if not self.list_APPLE_folders():
+            return None
+        elif os.path.isfile(self.list_APPLE_folders()[-1]):
             raise DirectoryNameError("File found where only APPLE folders should "
             "be in %s. Cannot determine newest APPLE folder." % self.full_path)
         else:
@@ -441,8 +460,13 @@ class NewRawOffload(RawOffload):
 
     def run_overlap_offload(self):
         # Find the last (newest) APPLE dir in the most recent offload.
-        self.overlap_folder = self.Parent.newest_APPLE_folder()
-        print("Overlap folder: %s" % self.overlap_folder)
+        self.overlap_folder = self.Parent.get_newest_APPLE_folder()
+        if not self.overlap_folder:
+            print("No overlap folder present. Proceeding to new offload.")
+            return
+        else:
+            print("Overlap folder: %s" % self.overlap_folder)
+
 
         # See if the newest APPLE folder in the offload dir is found on the phone
         # as well. Example when it won't be: new phone.
