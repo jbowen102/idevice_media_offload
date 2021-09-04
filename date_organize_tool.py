@@ -61,9 +61,11 @@ class OrganizedGroup(object):
             latest_yr_names = self.get_yr_list()[-2:]
             return [str(self.yr_objs.get(latest_yr_names[0])),
                     str(self.yr_objs.get(latest_yr_names[1]))]
-        else:
+        elif self.get_yr_list():
             latest_yr_name = self.get_yr_list()[-1]
             return [str(self.yr_objs.get(latest_yr_name))]
+        else:
+            return []
 
     def make_year(self, year):
         # check that year doesn't already exist in list
@@ -157,7 +159,12 @@ class OrganizedGroup(object):
         # Have to zero-pad single-digit months pulled from struct_time
         mo_str = str(img_time.tm_mon).zfill(2)
 
-        if yr_str in self.get_latest_yrs():
+        if not self.get_yr_list():
+            # Used for empty Organized directory.
+            self.make_year(yr_str)
+            NewYr = self.yr_objs[yr_str]
+            NewYr.insert_img(img_path, img_time, bypass_age_warn)
+        elif yr_str in self.get_latest_yrs():
             # Proceed as normal for this year and last
             self.yr_objs[yr_str].insert_img(img_path, img_time, bypass_age_warn)
         elif yr_str > self.get_latest_yrs()[-1]:
@@ -167,9 +174,7 @@ class OrganizedGroup(object):
             NewYr = self.yr_objs[yr_str]
             NewYr.insert_img(img_path, img_time, bypass_age_warn)
         elif man_img_date:
-            # This is the same as a condition above, but the intervening elif
-            # should instead run if it evaluates true. A new manually-specified
-            # date might not be present in yr_objs dir.
+            # A new manually-specified date might not be present in yr_objs dir.
             if yr_str not in self.get_yr_list():
                 self.make_year(yr_str)
             self.yr_objs[yr_str].insert_img(img_path, img_time, bypass_age_warn)
