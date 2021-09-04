@@ -6,7 +6,7 @@ import idevice_media_offload.pic_offload_tool as offload_tool
 import idevice_media_offload.date_organize_tool as org_tool
 import idevice_media_offload.pic_categorize_tool as cat_tool
 
-from idevice_media_offload.dir_names import IPHONE_BU_ROOT, IPAD_BU_ROOT, ST_VID_ROOT
+from idevice_media_offload.dir_names import IPHONE_BU_ROOT_J, IPHONE_BU_ROOT_M, IPAD_BU_ROOT, ST_VID_ROOT
 from idevice_media_offload.dir_names import NAS_BU_ROOT, NAS_ST_DIR
 from idevice_media_offload.dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH_PORT
 
@@ -87,9 +87,12 @@ def call_rs_script(script, src_dir, dest_dir, dest_dir_ssh):
 
 
 while True:
-    device_type = input("Backing up iPhone or iPad? ['o' for iPhone, 'a' for iPad]\n> ")
-    if device_type.lower() == 'o':
-        bu_root = IPHONE_BU_ROOT
+    device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, 'om' for M iPhone, 'a' for iPad]\n> ")
+    if device_type.lower() == 'oj':
+        bu_root = IPHONE_BU_ROOT_J
+        break
+    if device_type.lower() == 'om':
+        bu_root = IPHONE_BU_ROOT_M
         break
     elif device_type.lower() == 'a':
         bu_root = IPAD_BU_ROOT
