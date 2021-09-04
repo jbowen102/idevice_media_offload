@@ -490,39 +490,43 @@ class NewRawOffload(RawOffload):
 
         # Run througha all photos, only copying ones which are new (not contained
         # in overlap folders):
-        print("Overlap-transfer progress:")
-        # tqdm provides the terminal status bar
-        for img_name in tqdm(src_APPLE_pics):
-
+        APPLE_pics_to_copy = []
+        for img_name in src_APPLE_pics:
             if img_name not in prev_APPLE_pics:
-                src_img_path = src_APPLE_path + img_name
-
-                # iOS has bug that can terminate PC connection.
-                # Requires iOS restart to fix.
-                while True:
-                    try:
-                        shutil.copy2(src_img_path, self.new_overlap_path)
-                        break
-                    except OSError:
-                        os_error_response = input("\nEncountered device I/O error during overlap "
-                        "offload. iPhone/iPad may need to be restarted to fix.\n"
-                        "Press Enter to attempt to continue offload.\n"
-                        "Or press 'q' to quit.\n> ")
-                        if os_error_response.lower() == 'q':
-                            raise iPhoneIOError("Cannot access files on source device. "
-                            "for overlap offload. Restart device to fix then run program again.")
-                        else:
-                            # tell iPhoneDCIM object to re-find its gvfs root
-                            # ("gphoto" handle likely changed)
-                            self.src_iPhone_dir.find_root()
-                            # update local variable that has gvfs root path embedded
-                            src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
-                            # retry
-                            continue
-            else:
+                APPLE_pics_to_copy.append(img_name)
                 # If a picture of the same name is found in an overlap folder,
                 # ignore new one. Leave old one in place.
-                pass
+        APPLE_pics_to_copy.sort()
+
+        print("Overlap-transfer progress:")
+        # tqdm provides the terminal status bar
+        for img_name in tqdm(APPLE_pics_to_copy):
+            src_img_path = src_APPLE_path + img_name
+
+            # iOS has bug that can terminate PC connection.
+            # Requires iOS restart to fix.
+            while True:
+                try:
+                    shutil.copy2(src_img_path, self.new_overlap_path)
+                    break
+                except OSError:
+                    os_error_response = input("\nEncountered device I/O error "
+                    "during overlap offload. iPhone/iPad may need to be "
+                    "restarted to fix.\n"
+                    "Press Enter to attempt to continue offload.\n"
+                    "Or press 'q' to quit.\n> ")
+                    if os_error_response.lower() == 'q':
+                        raise iPhoneIOError("Cannot access files on source "
+                                "device for overlap offload. Restart device to "
+                                "fix then run program again.")
+                    else:
+                        # tell iPhoneDCIM object to re-find its gvfs root
+                        # ("gphoto" handle likely changed)
+                        self.src_iPhone_dir.find_root()
+                        # update local variable that has gvfs root path embedded
+                        src_APPLE_path = self.src_iPhone_dir.APPLE_folder_path(self.overlap_folder)
+                        # retry
+                        continue
 
         # If the target overlap APPLE folder ends up being empty, delete it.
         # This would happen in the rare case of the previous offload happening
