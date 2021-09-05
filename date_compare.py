@@ -425,23 +425,31 @@ def get_img_date_plus(img_path, skip_unknown=True):
                 create_time = None
 
         if create_time:
-            create_time_obj = time.strptime(create_time, format)
-            return (create_time_obj, False)
-        else:
-            # Fall back on fs mod time if more precise metadata unavailable.
-            print("\nNo valid EXIF timestamp found. Enter new timestamp or "
-                                                "fall back on fs mod time.")
-            man_date_output = spec_manual_date(img_path)
-            # will be a time_struct object if a date entered.
-            if isinstance(man_date_output, time.struct_time):
-                # If user entered a date:
-                return (man_date_output, True)
-            elif man_date_output=="s":
-                # Skip
-                return (None, False)
+            try:
+                create_time_obj = time.strptime(create_time, format)
+            except ValueError:
+                # Sometimes EXIF tag for date doesn't match proper format
+                # e.g. have seen one w/ 19 spaces in place of date+time.
+                create_time = None
             else:
-                # Go ahead w/ fs mod time if user accepts fallback.
-                return (time.localtime(os.path.getmtime(img_path)), True)
+                # This only runs if strptime executes successfully.
+                return (create_time_obj, False)
+
+        # Fall back on fs mod time if more precise metadata unavailable.
+        # This only executes if properly-formatted create_time not found.
+        print("\nNo valid EXIF timestamp found. Enter new timestamp or "
+                                            "fall back on fs mod time.")
+        man_date_output = spec_manual_date(img_path)
+        # will be a time_struct object if a date entered.
+        if isinstance(man_date_output, time.struct_time):
+            # If user entered a date:
+            return (man_date_output, True)
+        elif man_date_output=="s":
+            # Skip
+            return (None, False)
+        else:
+            # Go ahead w/ fs mod time if user accepts fallback.
+            return (time.localtime(os.path.getmtime(img_path)), True)
 
 
 def get_img_date(img_path, skip_unknown=True):
