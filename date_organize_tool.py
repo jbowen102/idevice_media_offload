@@ -105,6 +105,13 @@ class OrganizedGroup(object):
             img_time = man_img_date
             bypass_age_warn = True
             img_path = img_orig_path
+        elif os.path.splitext(img_orig_path)[-1].upper() == ".AAE":
+            # Don't copy AAE files into date-organized folders or cat buffer.
+            # They will still exist in raw, but it doesn't add any value to copy
+            # them elsewhere. They can also have dates that don't match the
+            # corresponding img/vid, causing confusion.
+            return
+
         elif os.path.splitext(img_orig_path)[-1].upper() == ".WEBP":
             # Don't think iOS will ever save WEBP w/ IMG_E prefix. Editing
             # WEBP yields IMG_Exxxx.JPG file.
@@ -291,14 +298,7 @@ class YearDir(object):
             self.mo_objs[yrmonth] = MoDir(yrmonth, self)
 
     def insert_img(self, img_orig_path, img_time, bypass_age_warn=False):
-        if ".AAE" in os.path.basename(img_orig_path):
-            # Don't copy AAE files into date-organized folders or cat buffer.
-            # They will still exist in raw, but it doesn't add any value to copy
-            # them elsewhere. They can also have dates that don't match the
-            # corresponding img/vid, causing confusion.
-            return
-
-        elif os.path.basename(img_orig_path)[:5] == "IMG_E":
+        if os.path.basename(img_orig_path)[:5] == "IMG_E":
             # Look for any original/edited pairs in all org dirs.
             # "IMG_E" files appear later in sorted order than originals, so
             # the originals are transferred first.

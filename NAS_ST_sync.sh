@@ -16,7 +16,8 @@ LOG_FILENAME=${ST_LOCAL_ROOT}/rsync_logs/${TIMESTAMP}_${JOB_NAME};
 SRC_PATH="${1}"
 DEST_PATH="${NAS_ST_DIR}"
 
-printf "\n------------------------------------\n"
+printf "\n${TIMESTAMP}\n"
+printf "------------------------------------\n"
 printf "\t-%s-\n\n" $JOB_NAME
 printf "\t SRC: %s\n" ${SRC_PATH}
 printf "\tDEST: %s\n\n" ${DEST_PATH}
