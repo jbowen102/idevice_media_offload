@@ -87,7 +87,8 @@ def call_rs_script(script, src_dir, dest_dir, dest_dir_ssh):
 
 
 while True:
-    device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, 'om' for M iPhone, 'a' for iPad]\n> ")
+    device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, 'om' "
+                                            "for M iPhone, 'a' for iPad]\n> ")
     if device_type.lower() == 'oj':
         bu_root = IPHONE_BU_ROOT_J
         break
@@ -102,7 +103,7 @@ while True:
     else:
         print("Input not recognized.")
 
-buffer_root = bu_root + "Cat_Buffer/"
+buffer_root = os.path.join(bu_root, "Cat_Buffer/")
 
 # Main loop
 while True:

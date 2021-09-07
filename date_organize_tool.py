@@ -26,7 +26,7 @@ class OrganizedGroup(object):
     which in turn contain MoDir objects."""
     def __init__(self, bu_root_path, buffer_root):
         self.bu_root_path = bu_root_path
-        self.date_root_path = self.bu_root_path + "Organized/"
+        self.date_root_path = os.path.join(self.bu_root_path, "Organized/")
         self.buffer_root_path = buffer_root
         # Double-check Organized folder is there.
         if not os.path.exists(self.date_root_path):
@@ -220,17 +220,18 @@ class OrganizedGroup(object):
 
         for n, folder in enumerate(src_APPLE_folders):
             print("Organizing from raw offload folder %s/%s (%s of %s)" %
-            (LastRawOffload.get_dir_name(), folder,
-                                str(n+1), len(src_APPLE_folders)))
+                                        (LastRawOffload.get_dir_name(), folder,
+                                            str(n+1), len(src_APPLE_folders)))
 
             for img in tqdm(LastRawOffload.APPLE_contents(folder)):
-                full_img_path = LastRawOffload.APPLE_folder_path(folder) + img
+                full_img_path = os.path.join(
+                                  LastRawOffload.APPLE_folder_path(folder), img)
                 self.insert_img(full_img_path)
 
         print("\nCategorization buffer populated.")
 
     def __repr__(self):
-        return "OrganizedGroup object with path:\n\t" + self.get_root_path()
+        return "OrganizedGroup object with path:\n\t%s" % self.get_root_path()
 
 
 class YearDir(object):
@@ -238,7 +239,8 @@ class YearDir(object):
         """Represents directory w/ year label that exists inside date-organized
         directory structure. Contains MoDir objects."""
         self.year_name = year_name
-        self.year_path = OrgGroup.get_root_path() + self.year_name + '/'
+        self.year_path = os.path.join(OrgGroup.get_root_path(),
+                                                        self.year_name + '/')
         self.OrgGroup = OrgGroup
 
         if not self.year_name in self.OrgGroup.get_yr_list():
@@ -394,7 +396,7 @@ class YearDir(object):
         return self.year_name
 
     def __repr__(self):
-        return "YearDir object with path:\n\t" + self.get_yr_path()
+        return "YearDir object with path:\n\t%s" % self.get_yr_path()
 
 
 class MoDir(object):
@@ -402,7 +404,8 @@ class MoDir(object):
     within the date-organized directory structure. Contains images."""
     def __init__(self, yrmonth_name, YrDir):
         self.dir_name = yrmonth_name
-        self.yrmonth_path = YrDir.get_yr_path() + self.dir_name + '/'
+        self.yrmonth_path = os.path.join(YrDir.get_yr_path(),
+                                                            self.dir_name + '/')
         self.YrDir = YrDir
 
         if not self.dir_name in YrDir.get_mo_list():
@@ -485,7 +488,7 @@ class MoDir(object):
         return self.dir_name
 
     def __repr__(self):
-        return "MoDir object with path:\n\t" + self.get_mo_path()
+        return "MoDir object with path:\n\t%s" % self.get_mo_path()
 
 
 # TEST

@@ -45,12 +45,13 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
         image_list = [single_image]
 
     for img in image_list:
+        img_path = os.path.join(path, img)
         img_ext = os.path.splitext(img)[-1].upper()
         file_mod_time = time.strftime(DATETIME_FORMAT,
-                                time.localtime(os.path.getmtime(path + img)))
+                                time.localtime(os.path.getmtime(img_path)))
 
         if img_ext in [".JPG", ".JPEG"]:
-            img_obj = PIL.Image.open(path + img)
+            img_obj = PIL.Image.open(img_path)
 
             encoded_exif = img_obj._getexif()
             pil_metadata = {}
@@ -63,7 +64,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                 pil_metadata = dict()
 
             with exiftool.ExifTool() as et:
-                exiftool_metadata = et.get_metadata(path + img)
+                exiftool_metadata = et.get_metadata(img_path)
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -88,7 +89,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
         elif img_ext == ".HEIC":
             with exiftool.ExifTool() as et:
-                exiftool_metadata = et.get_metadata(path + img)
+                exiftool_metadata = et.get_metadata(img_path)
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -108,7 +109,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
         elif img_ext in [".GIF", ".WEBP"]:
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(path + img)
+                metadata = et.get_metadata(img_path)
                 fmod_date = metadata.get("File:FileModifyDate")
 
             # "*" indicates metadata most likely to be actual creation time.
@@ -119,7 +120,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(path + img)
+                metadata = et.get_metadata(img_path)
                 qt_create_date = metadata.get("QuickTime:CreateDate")
                 qt_mod_date = metadata.get("QuickTime:ModifyDate")
                 qt_trk_create_date = metadata.get("QuickTime:TrackCreateDate")
@@ -146,7 +147,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
         elif img_ext == ".MP4":
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(path + img)
+                metadata = et.get_metadata(img_path)
                 qt_create_date = metadata.get("QuickTime:CreateDate")
                 qt_mod_date = metadata.get("QuickTime:ModifyDate")
                 qt_trk_create_date = metadata.get("QuickTime:TrackCreateDate")
@@ -170,7 +171,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                         qt_med_create_date, qt_med_mod_date)).expandtabs(28))
 
         elif img_ext == ".PNG":
-            img_obj = PIL.Image.open(path + img)
+            img_obj = PIL.Image.open(img_path)
 
             pil_metadata = img_obj.info.get('XML:com.adobe.xmp')
             if pil_metadata and "<photoshop:DateCreated>" in pil_metadata:
@@ -181,7 +182,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                 pil_date_created = None
 
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(path + img)
+                metadata = et.get_metadata(img_path)
                 xmp_date_created = metadata.get("XMP:DateCreated")
 
             # "*" indicates metadata most likely to be actual creation time.
@@ -193,7 +194,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                                             xmp_date_created)).expandtabs(28))
 
         elif img_ext == ".AAE":
-            img_obj = open(path + img, 'r')
+            img_obj = open(img_path, 'r')
 
             for line in img_obj:
                 if '<date>' in line:
@@ -203,7 +204,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                     adjustmentTimestamp = None
 
             with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(path + img)
+                metadata = et.get_metadata(img_path)
                 adj_time = metadata.get("PLIST:AdjustmentTimestamp")
 
             # "*" indicates metadata most likely to be actual creation time.
@@ -227,7 +228,7 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
         if rename_with_datestamp:
             # This requires redundant use of exiftool, but not a big deal
             # if runtime isn't bad.
-            add_datestamp(path + img)
+            add_datestamp(img_path)
 
 
 def datestamp_all(dir_path, longstamp=False):
@@ -246,7 +247,7 @@ def datestamp_all(dir_path, longstamp=False):
     image_list.sort()
 
     for img in image_list:
-        add_datestamp(dir_path + img, longstamp)
+        add_datestamp(os.path.join(dir_path, img), longstamp)
 
 
 def add_datestamp(img_path, long_stamp=False):
@@ -344,7 +345,7 @@ def safe_rename(img_path, new_img_name):
 
         new_img_name = new_img_name_noext + img_ext
 
-    os.rename(img_path, target_dir + "/" + new_img_name)
+    os.rename(img_path, os.path.join(target_dir, new_img_name))
 
 
 def get_img_date_plus(img_path, skip_unknown=True):
@@ -411,7 +412,7 @@ def get_img_date_plus(img_path, skip_unknown=True):
                 create_time = tz_adjust(create_time, format, 4)
                 if not create_time:
                     print("Changing time stamp would require date change: %s"
-                                                                % img_name)
+                                                                    % img_name)
         elif img_ext == ".AAE":
             create_time = metadata.get("PLIST:AdjustmentTimestamp")
             # ex. 2019:07:05 12:46:46Z
@@ -469,9 +470,9 @@ def spec_manual_date(img_path):
 
     list_all_img_dates(img_path, skip_unknown=False)
     display_photo(img_path)
-    man_date_response = input("Manually specify datestamp in YYYY-MM-DD format, "
-                                        "enter nothing to accept fallback, "
-                            "or enter 's' to skip organizing this file.\n> ")
+    man_date_response = input("Manually specify datestamp in YYYY-MM-DD "
+                                    "format, enter nothing to accept fallback, "
+                               "or enter 's' to skip organizing this file.\n> ")
     if man_date_response in ["s", "S"]:
         return "s"
     elif man_date_response:

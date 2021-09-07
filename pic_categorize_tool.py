@@ -80,7 +80,7 @@ class Categorizer(object):
 
         # Initialize st buffer directory to automatically categorize from.
         # Program will automatically categorize by date and move to st root.
-        st_buffer_path = self.buffer_root + "st_buffer/"
+        st_buffer_path = os.path.join(self.buffer_root, "st_buffer/")
         if not os.path.exists(st_buffer_path):
             os.mkdir(st_buffer_path)
 
@@ -123,7 +123,8 @@ class Categorizer(object):
         (as img name) to skip processing earlier imgs."""
 
         # local buffer to be categorized manually
-        CAT_DIRS['u'] = self.buffer_root + "manual_" + time.strftime('%Y-%m-%d') + '/'
+        CAT_DIRS['u'] = os.path.join(self.buffer_root, "manual_" +
+                                                time.strftime('%Y-%m-%d') + '/')
 
         print("\nCategorizing images from buffer:\n\t%s\n" % self.buffer_root)
         # Print dict of directory mappings
@@ -151,7 +152,7 @@ class Categorizer(object):
             buffered_imgs = buffered_imgs[start_index:]
 
         for img in buffered_imgs:
-            img_path = self.buffer_root + img
+            img_path = os.path.join(self.buffer_root, img)
 
             if os.path.isdir(img_path):
                 # Ignore any manual sort folder left over from previous offload.
@@ -230,7 +231,7 @@ class Categorizer(object):
                 re_buffered_imgs = os.listdir(self.buffer_root)
                 re_buffered_imgs.sort()
                 for extra_img in re_buffered_imgs[:additional_copies]:
-                    extra_img_path = self.buffer_root + extra_img
+                    extra_img_path = os.path.join(self.buffer_root, extra_img)
                     copy_to_target(extra_img_path, target_dir[3:], move_op=True)
 
                 self.photo_transfer()
@@ -253,10 +254,10 @@ class Categorizer(object):
 
 
         while os.listdir(CAT_DIRS['u']):
-            sort_folder_response = input("\nToday's manual-sort folder populated.\n"
-                        "Check folder(s) for any uncategorized pictures and "
-                        "categorize them manually.\nPress Enter to continue or 'q' "
-                                                                    "to quit.\n> ")
+            sort_folder_response = input("\nToday's manual-sort folder "
+                "populated.\nCheck folder(s) for any uncategorized pictures "
+                    "and categorize them manually.\nPress Enter to continue "
+                                                        "or 'q' to quit.\n> ")
             if sort_folder_response.lower() == 'q':
                 return
             else:
@@ -267,7 +268,8 @@ class Categorizer(object):
         # Also remove any other manual sort folders from other days if they're empty.
         for other_folder in os.listdir(self.buffer_root):
             if "manual_" in other_folder:
-                while os.listdir(self.buffer_root + other_folder):
+                other_folder_path = os.path.join(self.buffer_root, other_folder)
+                while os.listdir(other_folder_path):
                     other_folder_response = input("\nAt least one manual-sort "
                         "folder in the buffer is populated.\nCategorize content "
                         "then press Enter to continue or 'q' to quit.\n> ")
@@ -275,8 +277,8 @@ class Categorizer(object):
                         return
                     else:
                         continue
-                if not os.listdir(self.buffer_root + other_folder):
-                    os.rmdir(self.buffer_root + other_folder)
+                if not os.listdir(other_folder_path):
+                    os.rmdir(other_folder_path)
 
 
     def get_target_dir(self, img_path, target_input=""):
@@ -391,7 +393,7 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
                     shutil.move(img_path, target_dir)
                     return
                 elif action.lower() == "k":
-                    # repeatedly check for existence of duplicates until a free
+                    # Repeatedly check for existence of duplicates until a free
                     # name appears. Assume there will never be more than 9.
                     # Prefer shorter file name to spare leading zeros.
                     img_noext = os.path.splitext(new_name)[0]
