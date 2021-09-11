@@ -78,14 +78,14 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                     "        Exiftool Composite:SubSecCreateDate:\t%s\n"
                     "        Exiftool Composite:SubSecDateTimeOriginal:\t%s\n"
                     % (file_mod_time, pil_metadata.get('DateTimeOriginal'),
-                      pil_metadata.get('DateTimeDigitized'),
-                      pil_metadata.get('DateTime'),
-                      exiftool_metadata.get('EXIF:ModifyDate'),
-                      exiftool_metadata.get('EXIF:DateTimeOriginal'),
-                      exiftool_metadata.get('EXIF:CreateDate'),
-                      exiftool_metadata.get('Composite:SubSecCreateDate'),
-                      exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
-                      )).expandtabs(28))
+                       pil_metadata.get('DateTimeDigitized'),
+                       pil_metadata.get('DateTime'),
+                       exiftool_metadata.get('EXIF:ModifyDate'),
+                       exiftool_metadata.get('EXIF:DateTimeOriginal'),
+                       exiftool_metadata.get('EXIF:CreateDate'),
+                       exiftool_metadata.get('Composite:SubSecCreateDate'),
+                       exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
+                       )).expandtabs(28))
 
         elif img_ext == ".HEIC":
             with exiftool.ExifTool() as et:
@@ -100,34 +100,28 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                     "        Exiftool Composite:SubSecCreateDate:\t%s\n"
                     "        Exiftool Composite:SubSecDateTimeOriginal:\t%s\n"
                     % (file_mod_time,
-                      exiftool_metadata.get('EXIF:ModifyDate'),
-                      exiftool_metadata.get('EXIF:DateTimeOriginal'),
-                      exiftool_metadata.get('EXIF:CreateDate'),
-                      exiftool_metadata.get('Composite:SubSecCreateDate'),
-                      exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
-                      )).expandtabs(28))
+                       exiftool_metadata.get('EXIF:ModifyDate'),
+                       exiftool_metadata.get('EXIF:DateTimeOriginal'),
+                       exiftool_metadata.get('EXIF:CreateDate'),
+                       exiftool_metadata.get('Composite:SubSecCreateDate'),
+                       exiftool_metadata.get('Composite:SubSecDateTimeOriginal')
+                       )).expandtabs(28))
 
         elif img_ext in [".GIF", ".WEBP"]:
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(img_path)
-                fmod_date = metadata.get("File:FileModifyDate")
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
                         "        file_mod_time:\t\t%s\n"
                         "        EXIFtool File:FileModifyDate*:\t%s\n"
-                        % (file_mod_time, fmod_date)).expandtabs(28))
+                        % (file_mod_time,
+                           metadata.get("File:FileModifyDate")
+                           )).expandtabs(28))
 
         elif img_ext == ".MOV":
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(img_path)
-                qt_create_date = metadata.get("QuickTime:CreateDate")
-                qt_mod_date = metadata.get("QuickTime:ModifyDate")
-                qt_trk_create_date = metadata.get("QuickTime:TrackCreateDate")
-                qt_trk_mod_date = metadata.get("QuickTime:TrackModifyDate")
-                qt_med_create_date = metadata.get("QuickTime:MediaCreateDate")
-                qt_med_mod_date = metadata.get("QuickTime:MediaModifyDate")
-                qt_creation_date = metadata.get("QuickTime:CreationDate")
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -140,20 +134,42 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                         "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
                         "        EXIFtool QuickTime:CreationDate*:\t%s\n"
                         % (file_mod_time,
-                        qt_create_date, qt_mod_date,
-                        qt_trk_create_date, qt_trk_mod_date,
-                        qt_med_create_date, qt_med_mod_date,
-                        qt_creation_date)).expandtabs(28))
+                           metadata.get("QuickTime:CreateDate"),
+                           metadata.get("QuickTime:ModifyDate"),
+                           metadata.get("QuickTime:TrackCreateDate"),
+                           metadata.get("QuickTime:TrackModifyDate"),
+                           metadata.get("QuickTime:MediaCreateDate"),
+                           metadata.get("QuickTime:MediaModifyDate"),
+                           metadata.get("QuickTime:CreationDate")
+                           )).expandtabs(28))
+
+        elif img_ext == ".3GP":
+            with exiftool.ExifTool() as et:
+                metadata = et.get_metadata(img_path)
+
+            # "*" indicates metadata most likely to be actual creation time.
+            print((img + ":\n"
+                        "        file_mod_time:\t\t%s\n"
+                        "        EXIFtool QuickTime:CreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:ModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:TrackModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaCreateDate:\t%s\n"
+                        "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
+                        "        EXIFtool QuickTime:DateTimeOriginal*:\t%s\n"
+                        % (file_mod_time,
+                           metadata.get("QuickTime:CreateDate"),
+                           metadata.get("QuickTime:ModifyDate"),
+                           metadata.get("QuickTime:TrackCreateDate"),
+                           metadata.get("QuickTime:TrackModifyDate"),
+                           metadata.get("QuickTime:MediaCreateDate"),
+                           metadata.get("QuickTime:MediaModifyDate"),
+                           metadata.get("QuickTime:DateTimeOriginal")
+                           )).expandtabs(28))
 
         elif img_ext == ".MP4":
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(img_path)
-                qt_create_date = metadata.get("QuickTime:CreateDate")
-                qt_mod_date = metadata.get("QuickTime:ModifyDate")
-                qt_trk_create_date = metadata.get("QuickTime:TrackCreateDate")
-                qt_trk_mod_date = metadata.get("QuickTime:TrackModifyDate")
-                qt_med_create_date = metadata.get("QuickTime:MediaCreateDate")
-                qt_med_mod_date = metadata.get("QuickTime:MediaModifyDate")
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -166,9 +182,13 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                         "        EXIFtool QuickTime:MediaModifyDate:\t%s\n"
                         "\tDates 4 hrs ahead because no time zone adjustment.\n"
                         % (file_mod_time,
-                        qt_create_date, qt_mod_date,
-                        qt_trk_create_date, qt_trk_mod_date,
-                        qt_med_create_date, qt_med_mod_date)).expandtabs(28))
+                           metadata.get("QuickTime:CreateDate"),
+                           metadata.get("QuickTime:ModifyDate"),
+                           metadata.get("QuickTime:TrackCreateDate"),
+                           metadata.get("QuickTime:TrackModifyDate"),
+                           metadata.get("QuickTime:MediaCreateDate"),
+                           metadata.get("QuickTime:MediaModifyDate")
+                           )).expandtabs(28))
 
         elif img_ext == ".PNG":
             img_obj = PIL.Image.open(img_path)
@@ -183,15 +203,16 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(img_path)
-                xmp_date_created = metadata.get("XMP:DateCreated")
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
                         "        file_mod_time:\t\t%s\n"
                         "        PIL-info date_created:\t%s\n"
                         "        EXIFtool XMP:DateCreated*:\t%s\n"
-                        % (file_mod_time, pil_date_created,
-                                            xmp_date_created)).expandtabs(28))
+                        % (file_mod_time,
+                           pil_date_created,
+                           metadata.get("XMP:DateCreated")
+                           )).expandtabs(28))
 
         elif img_ext == ".AAE":
             img_obj = open(img_path, 'r')
@@ -205,15 +226,16 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
 
             with exiftool.ExifTool() as et:
                 metadata = et.get_metadata(img_path)
-                adj_time = metadata.get("PLIST:AdjustmentTimestamp")
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + "\n"
                         "        file_mod_time:\t\t%s\n"
                         "        AAEparse adjustmentTimestamp:\t%s\n"
                         "        EXIFtool PLIST:AdjustmentTimestamp*:\t%s\n"
-                        % (file_mod_time, adjustmentTimestamp,
-                                                    adj_time)).expandtabs(28))
+                        % (file_mod_time,
+                           adjustmentTimestamp,
+                           metadata.get("PLIST:AdjustmentTimestamp")
+                           )).expandtabs(28))
         elif skip_unknown:
             print("%s\n"
             "        Cannot get EXIF data for this file type. Skipping\n" % img)
@@ -393,6 +415,14 @@ def get_img_date_plus(img_path, skip_unknown=True):
             create_time = None
         elif img_ext == ".MOV":
             create_time = metadata.get("QuickTime:CreationDate")
+            # ex. 2019:08:26 19:22:27-04:00
+            # non-standard format - adjust manually before passing to strftime
+            if create_time:
+                create_time = create_time[0:22] + create_time[23:]
+                # Now formatted this way: 2019:08:26 19:22:27-0400
+                format = "%Y:%m:%d %H:%M:%S%z"
+        elif img_ext == ".3GP":
+            create_time = metadata.get("QuickTime:DateTimeOriginal")
             # ex. 2019:08:26 19:22:27-04:00
             # non-standard format - adjust manually before passing to strftime
             if create_time:
