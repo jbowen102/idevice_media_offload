@@ -107,9 +107,9 @@ class iDeviceDCIM(object):
                         self.find_root()
                         return
 
-        iDevice_root_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
-        if count == 1 and os.listdir(iDevice_root_path):
+        if count == 1 and os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)):
             # Found exactly one "gphoto" folder
+            iDevice_root_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
             self.DCIM_path = os.path.join(iDevice_root_path, "DCIM/")
             self.APPLE_folders = os.listdir(self.DCIM_path)
             if not self.APPLE_folders:
