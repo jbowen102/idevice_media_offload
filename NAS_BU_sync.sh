@@ -5,6 +5,12 @@
 # param 2 = NAS BU root
 # param 3 = SSH port
 
+if [[ $# -lt 3 ]];
+then
+  printf "\nExpected three arguments - source path, destination path, and SSH port.\n"
+  exit 0
+fi
+
 JOB_NAME="$(basename "$1")" # Raw_Offload or Organized
 SRC_BU_ROOT="$(dirname "$1")"
 DEV="$(basename "$SRC_BU_ROOT")" # iPhone_Pictures or iPad_Pictures
@@ -17,7 +23,7 @@ SRC_PATH="${1}"
 DEST_PATH="${NAS_BU_DATA}/${DEV}/${JOB_NAME}"
 
 printf "\n${TIMESTAMP}\n"
-printf "------------------------------------\n"
+printf -- "------------------------------------\n"
 printf "\t-%s-\n\n" $JOB_NAME
 printf "\t SRC: %s\n" ${SRC_PATH}
 printf "\tDEST: %s\n\n" ${DEST_PATH}

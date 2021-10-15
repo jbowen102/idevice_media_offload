@@ -5,6 +5,12 @@
 # param 2 = NAS st vid root
 # param 3 = SSH port
 
+if [[ $# -lt 3 ]];
+then
+  printf "\nExpected three arguments - source path, destination path, and SSH port.\n"
+  exit 0
+fi
+
 JOB_NAME="$(basename "$1")" # Training Videos
 ST_LOCAL_ROOT="$(dirname "$1")"
 
@@ -17,7 +23,7 @@ SRC_PATH="${1}"
 DEST_PATH="${NAS_ST_DIR}"
 
 printf "\n${TIMESTAMP}\n"
-printf "------------------------------------\n"
+printf -- "------------------------------------\n"
 printf "\t-%s-\n\n" $JOB_NAME
 printf "\t SRC: %s\n" ${SRC_PATH}
 printf "\tDEST: %s\n\n" ${DEST_PATH}
