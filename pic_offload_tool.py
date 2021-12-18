@@ -129,7 +129,7 @@ class iDeviceDCIM(object):
                     self.find_root()
                     return
             else:
-                print("Successfully accessed %s DCIM mount point." % dir_type)
+                print("\nSuccessfully accessed %s DCIM mount point." % dir_type)
             self.APPLE_folders.sort()
 
         elif count == 1:
@@ -450,16 +450,22 @@ class NewRawOffload(RawOffload):
     def __init__(self, offload_name, Parent):
         self.Parent = Parent
         self.src_iDevice_dir = iDeviceDCIM()
-
-        self.create_target_folder(offload_name)
-        self.run_overlap_offload()
-        self.run_new_offload()
-
-    def create_target_folder(self, offload_name):
-        # Create new directory w/ today's date/time stamp in Raw_Offload.
         self.offload_dir_name = offload_name
         self.full_path = os.path.join(self.Parent.get_RO_root(),
                                                     self.offload_dir_name + '/')
+        self.create_target_folder()
+        self.run_overlap_offload()
+        self.run_new_offload()
+
+        os_open(self.full_path)
+        input("\nManually transfer any images with captions into latest "
+            "Raw_Offload directory (using NAS transfer) since captions aren't "
+            "included in EXIF data when offloaded over USB.\nPress Enter when "
+            "finished.")
+
+    def create_target_folder(self):
+        # Create new directory w/ today's date/time stamp in Raw_Offload.
+
         if os.path.exists(self.full_path):
             # Make sure folder w/ this name (current date/time stamp) doesn't already exist.
             raise RawOffloadError("Tried to create directory at\n%s\nbut that "
