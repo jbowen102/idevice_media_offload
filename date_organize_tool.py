@@ -424,36 +424,15 @@ class MoDir(object):
         """Prepends timestamp and optionally appends caption (if present in
         metadata)."""
 
-        img_name = os.path.basename(img_orig_path)   # no trailing slash
-        stamped_name = time.strftime("%Y-%m-%d", img_time) + "_" + img_name
+        datestamp_prefix = len(time.strftime("%Y-%m-%d", img_time) + "_")
+        # Reserve 2 extra characters to account for potential collision-resolving
+        # underscore + digit applied in copy_to_target()
+        captioned_name = date_compare.append_img_comment(img_orig_path,
+                                            extra_chars=len(datestamp_prefix)+2,
+                                            comment_prompt=comment_prompt,
+                                            rename_in_place=False)
 
-        img_comment = date_compare.get_comment(img_orig_path)
-        max_comment_len = 255-len(stamped_name)-1-2
-        # Ensure not longer than ext4 fs allows. Ignore URLs too.
-        # 255 is max ext4 char count. Subtract one to account for underscore
-        # to be prepended to comment below. Subtract 2 to account for potential
-        # collision-resolving underscore+digit applied in copy_to_target()
-
-        if (not img_comment) or (not comment_prompt):
-            pass # do nothing
-        elif len(img_comment) > max_comment_len:
-            print("Comment found in %s EXIF data: '%s'\n"
-                "Too long to append to filename.\n" % (img_name, img_comment))
-        elif "http" in img_comment.lower():
-            print("Comment found in %s EXIF data: '%s'\n"
-                    "Can't add URL to filename.\n" % (img_name, img_comment))
-        else:
-            add_comment = input("Comment found in %s EXIF data: '%s'\n"
-                    "Append to filename? [Y/N]\n> " % (img_name, img_comment))
-            if add_comment in ["y", "Y"]:
-                # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
-                # Only character not allowed in UNIX filename is the forward slash.
-                # But I also don't like spaces.
-                formatted_comment = img_comment.replace("/", "_")
-                formatted_comment = img_comment.replace(" ", "_")
-                stamped_name = (os.path.splitext(stamped_name)[0] + "_"
-                        + formatted_comment + os.path.splitext(stamped_name)[1])
-
+        stamped_name = datestamp_prefix + captioned_name
         # Copy into the dated directory
         copy_to_target(img_orig_path, self.yrmonth_path, new_name=stamped_name)
 
