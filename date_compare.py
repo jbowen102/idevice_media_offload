@@ -5,7 +5,7 @@ import os
 import time
 import exiftool
 
-from idevice_media_offload.pic_categorize_tool import copy_to_target, display_photo
+from pic_categorize_tool import copy_to_target, display_photo
 
 
 # class ImgTypeError(Exception):

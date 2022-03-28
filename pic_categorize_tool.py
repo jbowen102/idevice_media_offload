@@ -5,7 +5,7 @@ from tqdm import tqdm
 import subprocess
 import hashlib
 
-from idevice_media_offload.dir_names import CAT_DIRS
+#from dir_names import CAT_DIRS
 
 
 
