@@ -437,6 +437,8 @@ def same_hash(img1_path, img2_path):
 
 
 def os_open(input_path):
+    """Passes input to xdg-open. Can pass in file paths or URLs.
+    """
     CompProc = subprocess.run(['xdg-open', input_path],
                         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     # Check for success. Some img formats like HEIC can't be displayed.

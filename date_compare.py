@@ -346,6 +346,8 @@ def safe_rename(img_path, new_img_name):
     if not os.path.exists(img_path):
         raise DirectoryNameError("Invalid path passed to safe_rename() "
                                                                     "function.")
+    # Prevent issue caused by passing in file path rather than file name.
+    new_img_name = os.path.basename(new_img_name)
 
     target_dir = os.path.dirname(img_path)
     target_dir_imgs = os.listdir(target_dir)
@@ -368,6 +370,7 @@ def safe_rename(img_path, new_img_name):
         new_img_name = new_img_name_noext + img_ext
 
     os.rename(img_path, os.path.join(target_dir, new_img_name))
+    return new_img_name
 
 
 def get_img_date_plus(img_path, skip_unknown=True):
@@ -574,6 +577,47 @@ def get_comment(img_path, print_type=False):
         else:
             # No comment found
             return None
+
+
+def append_img_comment(input_path, extra_chars=0, comment_prompt=True,
+                                                        rename_in_place=True):
+    """Retrieves comment/caption from image EXIF data and either returns the
+    image name with the comment appended or renames the given file in place.
+    Leave room for additional extra_chars if specified
+    """
+    img_path = os.path.realpath(input_path) # handle potential relative-path input
+    img_name = os.path.basename(img_path)   # no trailing slash
+    max_comment_len = 255-len(img_name)-1-extra_chars
+    # Ensure not longer than ext4 fs allows. 255 is max ext4 char count.
+    # Subtract one to account for underscore to be prepended to comment below.
+
+    img_comment = get_comment(img_path)
+
+    img_new_name=img_name # gets overwritten below only if caption valid and accepted.
+
+    if not img_comment:
+        pass # do nothing
+    elif len(img_comment) > max_comment_len:
+        print("Comment found in %s EXIF data: '%s'\n"
+            "Too long to append to filename.\n" % (img_name, img_comment))
+    elif "http" in img_comment.lower():
+        print("Comment found in %s EXIF data: '%s'\n"
+                "Can't add URL to filename.\n" % (img_name, img_comment))
+    else:
+        if comment_prompt:
+            add_comment = input("Comment found in %s EXIF data: \n\t'%s'\n"
+                    "Append to filename? [Y/N]\n> " % (img_name, img_comment))
+        if (not comment_prompt) or add_comment in ["y", "Y"]:
+            # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
+            # Only character not allowed in UNIX filename is the forward slash.
+            # But I also don't like spaces.
+            formatted_comment = img_comment.replace("/", "_").replace(" ", "_")
+            name_w_comment = (os.path.splitext(img_name)[0] + "_"
+                            + formatted_comment + os.path.splitext(img_name)[1])
+            if rename_in_place:
+                img_new_name = safe_rename(img_path, name_w_comment)
+
+    return img_new_name
 
 
 def meta_dump(img_path):
