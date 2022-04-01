@@ -290,20 +290,25 @@ class RawOffloadGroup(object):
 
 
     def find_overlap_offloads(self):
-        """Create a RawOffload instance representing most recent offload."""
+        """Create a RawOffload instance representing each recent offload that
+        contains most recent APPLE folder offloaded.
+        """
 
         # Find every offload that shares the overlap folder (latest APPLE).
         self.overlap_offload_list = [self.get_latest_offload_obj()]
         overlap_folder = self.get_latest_offload_obj().get_newest_APPLE_folder()
 
         # Check all other offload folders for the overlap folder
-        for offload in self.offload_list[:-1]:
+        # Loop through backwards to only look at recent folders
+        for offload in reversed(self.offload_list[:-1]):
             offload_path = os.path.join(self.get_RO_root(), offload)
             if overlap_folder in os.listdir(offload_path):
                 # Make RawOffload object for each offload containing overlap
                 # folder, and add them to the list.
                 PrevOL = RawOffload(offload, self)
-                self.overlap_offload_list += [PrevOL]
+                self.overlap_offload_list.append(PrevOL)
+            else:
+                break
         self.overlap_offload_list.sort()
 
     def create_new_offload(self):
