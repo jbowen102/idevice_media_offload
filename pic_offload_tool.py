@@ -194,7 +194,6 @@ class RawOffloadGroup(object):
 
         self.bu_root_path = bu_root_path
         self.RO_root_path = os.path.join(self.bu_root_path, "Raw_Offload/")
-
         # Double-check Raw_Offload folder is there.
         if not os.path.exists(self.RO_root_path):
             raise RawOffloadError("Raw_Offload dir not found at %s! "
@@ -205,11 +204,11 @@ class RawOffloadGroup(object):
         # Test if raw-offload dir is populated or if its a newly-created structure.
         if self.offload_list:
             # create latest offload object (self.LatestOffload)
-            self.find_latest_offload()
+            self.create_latest_offload()
 
             # Find all folders that contain the newest APPLE folder (the "overlap"
-            # folder)and create RawOffload objects for them. Put into a list.
-            self.find_overlap_offloads() # FAILS
+            # folder) and create RawOffload objects for them. Put into a list.
+            self.find_overlap_offloads()
 
         else:
             # If this device has never been offloaded before
@@ -226,7 +225,7 @@ class RawOffloadGroup(object):
         RO_root_contents = os.listdir(self.RO_root_path)
         RO_root_contents.sort()
         self.offload_list = RO_root_contents
-        self.remove_bad_dir_items()
+        self.filter_offload_list()
 
     def get_offload_list(self):
         # List of names
@@ -239,7 +238,7 @@ class RawOffloadGroup(object):
         else:
             return None
 
-    def find_latest_offload(self):
+    def create_latest_offload(self):
         if self.offload_list:
             self.LatestOffload = RawOffload(self.get_last_offload_name(), self)
             return self.LatestOffload
@@ -266,31 +265,29 @@ class RawOffloadGroup(object):
         else:
             return None
 
-    def remove_bad_dir_items(self):
-        last_offload_path = os.path.join(self.get_RO_root(), self.get_last_offload_name())
+    def filter_offload_list(self):
         if not self.offload_list:
             # If the Raw_Offload folder is empty, no action needed.
             return
-        elif os.path.isfile(last_offload_path):
-            input("File found where only offload folders should be in RO root.\n"
-            "Manually remove and press Enter to try again.\n> ")
-            os_open(self.get_RO_root())
-            # Regenerate list and repeat this function call
-            self.generate_offload_list()
-        elif not os.listdir(last_offload_path):
-            delete_empty_ro = input("Folder %s in raw_offload directory is "
-                            "empty, probably from previous aborted offload.\n"
-                            "Press 'd' to delete folder and retry operation.\n"
-                    "Or press 'q' to quit.\n> " % self.get_last_offload_name())
 
-            if delete_empty_ro == 'd':
-                os.rmdir(last_offload_path)
-            elif delete_empty_ro == 'q':
-                raise RawOffloadError("Remove empty folder from raw-offload "
-                                                                  "directory.")
+        for item_name in self.offload_list:
+            item_path = os.path.join(self.get_RO_root(), item_name)
 
-            # Regenerate list and repeat this function call
-            self.generate_offload_list()
+            if os.path.isfile(item_path):
+                print("Ignoring file %s in RO root.\n" % item_name)
+                self.offload_list.remove(item_name)
+            elif not os.listdir(item_path):
+                delete_empty_ro = input("Folder %s in raw_offload directory is "
+                                "empty, probably from previous aborted offload.\n"
+                                "Press 'd' to delete folder and continue or"
+                                "any other key to skip.\n> " % item_name)
+                if delete_empty_ro == 'd':
+                    os.rmdir(last_offload_path)
+                # Need to ignore it either way.
+                self.offload_list.remove(item_name)
+            elif "ignore" in item_name.lower():
+                self.offload_list.remove(item_name)
+
 
     def find_overlap_offloads(self):
         """Create a RawOffload instance representing most recent offload."""
@@ -385,12 +382,14 @@ class RawOffload(object):
         self.Parent = Parent
         self.full_path = os.path.join(self.Parent.get_RO_root(),
                                                             offload_name + '/')
+        self.offload_dir_name = offload_name
 
-        if len(offload_name) != 17:
+        # Validate proper folder name convention
+        try:
+            self.get_timestamp_struct()
+        except ValueError:
             raise DirectoryNameError("Raw_Offload directory name '%s' not in "
                                             "expected format." % offload_name)
-        else:
-            self.offload_dir_name = offload_name
 
     def get_parent(self):
         return self.Parent
@@ -430,8 +429,11 @@ class RawOffload(object):
     def get_dir_name(self):
         return self.offload_dir_name
 
+    def get_dir_date_str(self):
+        return self.offload_dir_name[:len(DATETIME_FORMAT)]
+
     def get_timestamp_struct(self):
-        return time.strptime(self.offload_dir_name, DATETIME_FORMAT)
+        return time.strptime(self.get_dir_date_str(), DATETIME_FORMAT)
 
     def __str__(self):
         return self.full_path
