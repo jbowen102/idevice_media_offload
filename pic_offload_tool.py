@@ -534,6 +534,18 @@ class NewRawOffload(RawOffload):
         # Make set w/ only pics which are new (not contained in overlap folders)
         APPLE_pics_to_copy = src_APPLE_pics - prev_APPLE_pics
 
+        if APPLE_pics_to_copy:
+            # Create a destination folder in the new Raw Offload directory with the same APPLE name.
+            self.new_overlap_path = os.path.join(self.full_path,
+                                                         self.overlap_folder + '/')
+            os.mkdir(self.new_overlap_path)
+        else:
+            # This would happen in the rare case of the previous offload happening
+            # just before the next photo saved starts a new APPLE photo on the device.
+            print("No new pictures contained in %s (overlap folder) since "
+                                        "last offload." % self.overlap_folder)
+            return
+
         print("Overlap-transfer progress:")
         for img_name in tqdm(sorted(APPLE_pics_to_copy)):
             src_img_path = os.path.join(src_APPLE_path, img_name)
@@ -562,14 +574,6 @@ class NewRawOffload(RawOffload):
                         src_APPLE_path = self.src_iDevice_dir.APPLE_folder_path(self.overlap_folder)
                         # retry
                         continue
-
-        # If the target overlap APPLE folder ends up being empty, delete it.
-        # This would happen in the rare case of the previous offload happening
-        # just before the next photo saved starts a new APPLE photo on the device.
-        if not self.APPLE_contents(self.overlap_folder):
-            os.rmdir(self.new_overlap_path)
-            print("No new pictures contained in %s (overlap folder) since "
-                                    "last offload." % self.overlap_folder)
 
 
     def run_new_offload(self):
