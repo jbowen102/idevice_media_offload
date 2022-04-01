@@ -490,7 +490,6 @@ class NewRawOffload(RawOffload):
         else:
             print("Overlap folder: %s" % self.overlap_folder)
 
-
         # See if the newest APPLE folder in the offload dir is found on the phone
         # as well. Example when it won't be: new phone.
         # Also will not be found if device got locked or something and program can't see photos.
@@ -520,35 +519,23 @@ class NewRawOffload(RawOffload):
 
         # Runs only if there is a match found between overlap folder in offload
         # directory and the source device.
-        src_APPLE_pics = self.src_iDevice_dir.APPLE_contents(self.overlap_folder)
-        src_APPLE_pics.sort()
-
+        src_APPLE_pics = set(self.src_iDevice_dir.APPLE_contents(self.overlap_folder))
         # Create a destination folder in the new Raw Offload directory with the same APPLE name.
         self.new_overlap_path = os.path.join(self.full_path,
                                                      self.overlap_folder + '/')
         os.mkdir(self.new_overlap_path)
 
-        # Iterate through each folder that contains the overlap folder.
-        # store the img names in a set for fast membership testing (order not important).
+        # Look in each folder that contains the overlap folder.
+        # Store the img names in a set for fast membership testing (order not important).
         prev_APPLE_pics = set()
         for PrevOffload in self.Parent.get_overlap_offload_list():
+            prev_APPLE_pics.update(set(PrevOffload.APPLE_contents(self.overlap_folder)))
 
-            for pic in PrevOffload.APPLE_contents(self.overlap_folder):
-                prev_APPLE_pics.add(pic)
-
-        # Run througha all photos, only copying ones which are new (not contained
-        # in overlap folders):
-        APPLE_pics_to_copy = []
-        for img_name in src_APPLE_pics:
-            if img_name not in prev_APPLE_pics:
-                APPLE_pics_to_copy.append(img_name)
-                # If a picture of the same name is found in an overlap folder,
-                # ignore new one. Leave old one in place.
-        APPLE_pics_to_copy.sort()
+        # Make set w/ only pics which are new (not contained in overlap folders)
+        APPLE_pics_to_copy = src_APPLE_pics - prev_APPLE_pics
 
         print("Overlap-transfer progress:")
-        # tqdm provides the terminal status bar
-        for img_name in tqdm(APPLE_pics_to_copy):
+        for img_name in tqdm(sorted(APPLE_pics_to_copy)):
             src_img_path = os.path.join(src_APPLE_path, img_name)
 
             # iOS has bug that can terminate PC connection.
