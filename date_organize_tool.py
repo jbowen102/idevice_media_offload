@@ -214,18 +214,17 @@ class OrganizedGroup(object):
 
     def run_org(self):
         ROG = RawOffloadGroup(self.bu_root_path)
-
         LastRawOffload = ROG.get_latest_offload_obj()
         src_APPLE_folders = LastRawOffload.list_APPLE_folders()
 
-        for n, folder in enumerate(src_APPLE_folders):
+        for n, APPLE_dir in enumerate(src_APPLE_folders):
             print("Organizing from raw offload folder %s/%s (%s of %s)" %
-                                        (LastRawOffload.get_dir_name(), folder,
+                                        (LastRawOffload.get_dir_name(), APPLE_dir,
                                             str(n+1), len(src_APPLE_folders)))
 
-            for img in tqdm(LastRawOffload.APPLE_contents(folder)):
+            for img in tqdm(LastRawOffload.get_APPLE_contents(APPLE_dir)):
                 full_img_path = os.path.join(
-                                  LastRawOffload.APPLE_folder_path(folder), img)
+                                  LastRawOffload.get_APPLE_folder_path(APPLE_dir), img)
                 self.insert_img(full_img_path)
 
         print("\nCategorization buffer populated.")
