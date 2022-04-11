@@ -423,7 +423,7 @@ class MoDir(object):
         """Prepends timestamp and optionally appends caption (if present in
         metadata)."""
 
-        datestamp_prefix = len(time.strftime("%Y-%m-%d", img_time) + "_")
+        datestamp_prefix = time.strftime("%Y-%m-%d", img_time) + "_"
         # Reserve 2 extra characters to account for potential collision-resolving
         # underscore + digit applied in copy_to_target()
         captioned_name = date_compare.append_img_comment(img_orig_path,
