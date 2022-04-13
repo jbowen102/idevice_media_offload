@@ -173,8 +173,11 @@ class Categorizer(object):
                     img_path = jpg_path
                     # Will sub in jpg file to use for determining where to
                     # transfer. Then apply the transfer to both.
+
                     mod_heif_path = dup_heif_path.replace("IMG_", "IMG_E")
-                    if not os.path.exists(mod_heif_path):
+                    if not os.path.exists(mod_heif_path) or mod_heif_path==dup_heif_path:
+                        # IMG_ --> IMG_E sub may do nothing w/ nonstandard
+                        # naming (e.g. YYYY-MM-DD_VNUF5899.HEIC)
                         mod_heif_path = None
                 else:
                     dup_heif_path = None
