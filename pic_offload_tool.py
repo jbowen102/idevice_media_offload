@@ -469,7 +469,7 @@ class NewRawOffload(RawOffload):
         APPLE_folders = self.src_iDevice_DCIM.list_APPLE_folders()
         # Make set of items for each dir in iDevice DCIM.
         # Compare to set of items in corresponding mirror_tree YYYYMM dir.
-        for APPLE_folder in APPLE_folders:
+        for APPLE_folder in tqdm(APPLE_folders, position=0, desc=" DCIM folders"):
             src_APPLE_path = self.src_iDevice_DCIM.get_APPLE_folder_path(
                                                                 APPLE_folder)
             dir_month = APPLE_folder[:6] # ignore chars after YYYYMM
@@ -499,7 +499,8 @@ class NewRawOffload(RawOffload):
                 print("%s-transfer progress:" % transfer_type)
             else:
                 continue # To prevent loop below from printing empty tqdm bar
-            for img_name in tqdm(sorted(new_imgs)):
+            for img_name in tqdm(sorted(new_imgs), position=1, desc=" Images",
+                                                   leave=False, colour="green"):
                 src_img_path = os.path.join(src_APPLE_path, img_name)
                 while True:
                     try:
