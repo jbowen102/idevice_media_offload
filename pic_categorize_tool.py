@@ -129,8 +129,8 @@ class Categorizer(object):
         print("\nCategorizing images from buffer:\n\t%s\n" % self.buffer_root)
         # Print dict of directory mappings
         print("Target directories available (standard):")
-        for key in CAT_DIRS:
-            print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
+        for key, cat_path in CAT_DIRS.items():
+            print(("\t%s:\t%s" % (key, cat_path)).expandtabs(2))
 
         print("\nTarget directories available (manual):")
         for dir in self.manual_dir_list:

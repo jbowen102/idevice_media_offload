@@ -4,7 +4,7 @@ import time
 from tqdm import tqdm, trange
 import subprocess
 
-from idevice_media_offload.dir_names import IDEVICE_MOUNT_POINT
+from idevice_media_offload.dir_names import IDEVICE_MOUNT_POINT, NAS_TRANSFER
 from idevice_media_offload.pic_categorize_tool import os_open
 
 class iDeviceLocError(Exception):
@@ -449,6 +449,7 @@ class NewRawOffload(RawOffload):
         self.run_offload()
 
         os_open(self.full_path)
+        os_open(NAS_TRANSFER)
         input("\nManually transfer any images with captions into latest "
             "Raw_Offload directory (using NAS transfer) since captions aren't "
             "included in EXIF data when offloaded over USB.\nPress Enter when "

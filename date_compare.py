@@ -633,8 +633,8 @@ def meta_dump(img_path):
 
     with exiftool.ExifTool() as et:
         metadata = et.get_metadata(img_path)
-        for key in metadata:
-             print(str(key) + ": " + str(metadata[key]))
+        for key, value in metadata.items():
+             print(str(key) + ": " + str(value))
 
 
 # References:
