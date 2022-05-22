@@ -1,16 +1,41 @@
 #!/bin/bash
 
+if [[ $# -ne 1 ]]; then
+	echo "Expected one argument: img/vid path." >&2
+	exit 2
+  # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script
+fi
+
+# Validate input path
 FILE_PATH="$(realpath "${1}")"
+if [[ -e "${FILE_PATH}" ]]; then
+  if [[ -d "${FILE_PATH}" ]]; then
+    echo "Input path ${1} not valid. Must be file, not directory." >&2
+    exit 2
+  fi
+else
+  echo "Input file ${1} cannot be found." >&2
+  exit 2
+fi
 
 DEFAULT=False
 LONGSTAMP=${2:-$DEFAULT}
 
-printf "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('%s', $LONGSTAMP)", "$FILE_PATH" | python
-
-
+SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
+# Temporarily switch working directory to script location to call python
+cd "${SCRIPT_DIR}"
+python <<< "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('$FILE_PATH', $LONGSTAMP)"
 # LONG DATESTAMP:
 # printf "import date_compare as dc ; dc.add_datestamp('%s', '%d')", "$FIXED_PATH" 1 | python
+# https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
+cd - > /dev/null # suppress outputs
 
+PYTHON_RETURN=$? # gets return value of last command executed.
+# Make sure the program ran correctly
+if [ ${PYTHON_RETURN} -ne 0 ]; then
+	printf "\nSomething went wrong with the Python call. Output file may already exist\n"
+	exit 1
+fi
 
 # https://stackoverflow.com/questions/21934880/run-function-from-the-command-line-and-pass-arguments-to-function
 # https://stackoverflow.com/questions/4139436/how-to-call-python-functions-when-running-from-terminal
