@@ -5,4 +5,11 @@ __pycache__/
 timestamp_compare.py
 dir_names.py
 dir_names.sh
-TEST/
+
+# Ignore experimental TEST scripts
+*_TEST.py
+
+# Ignore any file/dir/symlink starting with TEST:
+TEST*
+
+# case-insensitive
