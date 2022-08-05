@@ -25,9 +25,10 @@ SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 cd "${SCRIPT_DIR}"
 python <<< "import idevice_media_offload.date_compare as dc ; dc.append_img_comment('${FILE_PATH}', comment_prompt=False)"
 # https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
+PYTHON_RETURN=$? # gets return value of last command executed.
+
 cd - > /dev/null # suppress outputs
 
-PYTHON_RETURN=$? # gets return value of last command executed.
 # Make sure the program ran correctly
 if [ ${PYTHON_RETURN} -ne 0 ]; then
 	printf "\nSomething went wrong with the Python call. Output file may already exist.\n"
