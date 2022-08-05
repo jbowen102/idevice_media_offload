@@ -24,7 +24,7 @@ LONGSTAMP=${2:-$DEFAULT}
 SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # Temporarily switch working directory to script location to call python
 cd "${SCRIPT_DIR}"
-python <<< "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('$FILE_PATH', $LONGSTAMP)"
+python3 <<< "import idevice_media_offload.date_compare as dc ; dc.add_datestamp('$FILE_PATH', $LONGSTAMP)"
 # LONG DATESTAMP:
 # printf "import date_compare as dc ; dc.add_datestamp('%s', '%d')", "$FIXED_PATH" 1 | python
 # https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script

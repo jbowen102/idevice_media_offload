@@ -23,7 +23,7 @@ fi
 SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # Temporarily switch working directory to script location to call python
 cd "${SCRIPT_DIR}"
-python <<< "import idevice_media_offload.date_compare as dc ; dc.append_img_comment('${FILE_PATH}', comment_prompt=False)"
+python3 <<< "import idevice_media_offload.date_compare as dc ; dc.append_img_comment('${FILE_PATH}', comment_prompt=False)"
 # https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
 PYTHON_RETURN=$? # gets return value of last command executed.
 

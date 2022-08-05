@@ -26,7 +26,7 @@ LONGSTAMP=${2:-$DEFAULT}
 SCRIPT_DIR="$(realpath "$(dirname "${0}")")"
 # Temporarily switch working directory to script location to call python
 cd "${SCRIPT_DIR}"
-python <<< "import idevice_media_offload.date_compare as dc ; dc.datestamp_all('$FILE_PATH', $LONGSTAMP)"
+python3 <<< "import idevice_media_offload.date_compare as dc ; dc.datestamp_all('$FILE_PATH', $LONGSTAMP)"
 # https://unix.stackexchange.com/questions/533156/using-python-in-a-bash-script
 PYTHON_RETURN=$? # gets return value of last command executed.
 
