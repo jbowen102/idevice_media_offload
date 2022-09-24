@@ -29,6 +29,7 @@ printf "\t SRC: %s\n" ${SRC_PATH}
 printf "\tDEST: %s\n\n" ${DEST_PATH}
 rsync -rltgoD -zivh --log-file=${LOG_FILENAME} \
   --partial-dir=${ST_LOCAL_ROOT}/rsync_partials \
+  --omit-dir-times \
   -e "ssh -p ${SSH_PORT}" \
   ${SRC_PATH} ${DEST_PATH}
   # first group of options is equivalent to -a without the -p (permissions)
