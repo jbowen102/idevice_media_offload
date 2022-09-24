@@ -135,7 +135,7 @@ class iDeviceDCIM(object):
             # iDevice handle exists, but DCIM folder not present.
             # Unlocking doesn't always solve it.
             input("Error: Found %s mount point, but DCIM folder not present.\n"
-                                      "Unlock iDevice (or reconnect) and press "
+                                        "Lock then reconnect iDevice and press "
                                               "Enter to try again." % dir_type)
             print("\n")
             self.find_root()
@@ -146,8 +146,8 @@ class iDeviceDCIM(object):
             # Have not seen this happen. In fact, with two iDevices plugged
             # in, only the first one shows up as a gvfs directory.
         else:
-            input("Error: Can't find iDevice in %s\nPress Enter to try "
-                                                 "again." % IDEVICE_MOUNT_POINT)
+            input("Error: Can't find iDevice in %s\nUnlock device then press "
+                                    "Enter to try again." % IDEVICE_MOUNT_POINT)
             print("\n")
             self.find_root()
             return
@@ -181,11 +181,11 @@ class iDeviceDCIM(object):
                             "Press Enter to attempt to continue offload.\n"
                             "Or press 'q' to quit.\n> ")
         if os_error_response.lower() == 'q':
-            raise iDeviceIOError("Cannot access files on source device for "
-                       "offload. Restart device to fix then run program again.")
+            return False
         else:
             # Re-find gvfs root ("gphoto" handle likely changed)
             self.find_root()
+            return True
 
     def __str__(self):
         return self.get_root()
@@ -509,7 +509,9 @@ class NewRawOffload(RawOffload):
                     except OSError:
                         # iOS has bug that can terminate PC connection.
                         # Requires iDevice restart to fix.
-                        self.src_iDevice_DCIM.reconnect()
+                        reconn_success = self.src_iDevice_DCIM.reconnect()
+                        if not reconn_success:
+                            return
                         # Update local variable that has gvfs root path embedded
                         src_APPLE_path = self.src_iDevice_DCIM.get_APPLE_folder_path(
                                                                    APPLE_folder)
