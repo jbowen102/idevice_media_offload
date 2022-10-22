@@ -80,10 +80,8 @@ class OrganizedGroup(object):
     def search_img(self, target_img_num, remove=False):
         img_path_found = None # fallback if no img found
 
-        for year in self.get_yr_objs().keys():
-            yr_obj = self.get_yr_objs()[year]
-            for month in yr_obj.get_mo_objs().keys():
-                mo_obj = yr_obj.get_mo_objs()[month]
+        for year, yr_obj in self.get_yr_objs().items():
+            for month, mo_obj in yr_obj.get_mo_objs().items():
                 for img_name in mo_obj.get_img_list():
                     # If number that follows the "IMG_" or "IMG_E" matches,
                     # store then return this datestamp.
@@ -219,8 +217,8 @@ class OrganizedGroup(object):
 
         for n, APPLE_dir in enumerate(src_APPLE_folders):
             print("Organizing from raw offload folder %s/%s (%s of %s)" %
-                                        (LastRawOffload.get_dir_name(), APPLE_dir,
-                                            str(n+1), len(src_APPLE_folders)))
+                            (LastRawOffload.get_dir_name(), APPLE_dir, str(n+1),
+                                                        len(src_APPLE_folders)))
 
             for img in tqdm(LastRawOffload.get_APPLE_contents(APPLE_dir)):
                 full_img_path = os.path.join(

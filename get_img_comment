@@ -1,9 +1,0 @@
-#!/bin/bash
-
-
-FILE_PATH="$(realpath "${1}")"
-
-echo "import idevice_media_offload.date_compare as dc ; dc.get_comment('${FILE_PATH}', print_type=True)" | python
-
-# https://stackoverflow.com/questions/21934880/run-function-from-the-command-line-and-pass-arguments-to-function
-# https://stackoverflow.com/questions/4139436/how-to-call-python-functions-when-running-from-terminal

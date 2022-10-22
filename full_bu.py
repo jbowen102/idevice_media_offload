@@ -85,59 +85,60 @@ def call_rs_script(script, src_dir, dest_dir, dest_dir_ssh):
     subprocess.run([shell_command],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
+if __name__ == "__main__":
+    # Don't run if module being imported. Only if script being run directly.
+    while True:
+        device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, '"
+                                        "om' for M iPhone, 'a' for iPad]\n> ")
+        if device_type.lower() in ['oj', 'o']:
+            bu_root = IPHONE_BU_ROOT_J
+            break
+        if device_type.lower() == 'om':
+            bu_root = IPHONE_BU_ROOT_M
+            break
+        elif device_type.lower() == 'a':
+            bu_root = IPAD_BU_ROOT
+            break
+        elif device_type.lower() == 'q':
+            quit()
+        else:
+            print("Input not recognized.")
 
-while True:
-    device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, 'om' "
-                                            "for M iPhone, 'a' for iPad]\n> ")
-    if device_type.lower() in ['oj', 'o']:
-        bu_root = IPHONE_BU_ROOT_J
-        break
-    if device_type.lower() == 'om':
-        bu_root = IPHONE_BU_ROOT_M
-        break
-    elif device_type.lower() == 'a':
-        bu_root = IPAD_BU_ROOT
-        break
-    elif device_type.lower() == 'q':
-        quit()
-    else:
-        print("Input not recognized.")
+    buffer_root = os.path.join(bu_root, "Cat_Buffer/")
 
-buffer_root = os.path.join(bu_root, "Cat_Buffer/")
+    # Main loop
+    while True:
+        prog = input("Choose program to run:\n"
+                    "\tType 'f' to run the OFFLOAD program only.\n"
+                    "\tType 'g' to run the ORGANIZE (by date) program only.\n"
+                    "\tType 'c' to run the CATEGORIZE program only.\n"
+                    "\tType 'a' or press Enter to run all three programs.\n"
+                    "\tType 'q' to quit.\n"
+                    "\tType 'h' for help.\n> ")
 
-# Main loop
-while True:
-    prog = input("Choose program to run:\n"
-                 "\tType 'f' to run the OFFLOAD program only.\n"
-                 "\tType 'g' to run the ORGANIZE (by date) program only.\n"
-                 "\tType 'c' to run the CATEGORIZE program only.\n"
-                 "\tType 'a' or press Enter to run all three programs.\n"
-                 "\tType 'q' to quit.\n"
-                 "\tType 'h' for help.\n> ")
+        if prog.lower() == 'f':
+            run_offload(bu_root)
 
-    if prog.lower() == 'f':
-        run_offload(bu_root)
+        elif prog.lower() == 'g':
+            run_org(bu_root, buffer_root)
 
-    elif prog.lower() == 'g':
-        run_org(bu_root, buffer_root)
+        elif prog.lower() == 'c':
+            run_cat(buffer_root)
 
-    elif prog.lower() == 'c':
-        run_cat(buffer_root)
+        elif prog.lower() == 'q':
+            break
 
-    elif prog.lower() == 'q':
-        break
+        elif prog.lower() == 'a':
+            run_all(bu_root, buffer_root)
+            break
 
-    elif prog.lower() == 'a':
-        run_all(bu_root, buffer_root)
-        break
+        elif prog.lower() == 'h':
+            print("\tBasic workflow:\n"
+                "\t\tRun OFFLOAD and ORGANIZE.\n"
+                "\t\tLook at buffer, move all st vids or other big blocks of pics.\n"
+                "\t\tRun CAT tool on rest of pics in buffer.\n"
+                "\t\tProcess leftover uncategorized pics.\n"
+                "\t\tCopy data to NAS (automatic if NAS share mounted).\n")
 
-    elif prog.lower() == 'h':
-        print("\tBasic workflow:\n"
-            "\t\tRun OFFLOAD and ORGANIZE.\n"
-            "\t\tLook at buffer, move all st vids or other big blocks of pics.\n"
-            "\t\tRun CAT tool on rest of pics in buffer.\n"
-            "\t\tProcess leftover uncategorized pics.\n"
-            "\t\tCopy data to NAS (automatic if NAS share mounted).\n")
-
-    else:
-        print("Invalid response. Try again.")
+        else:
+            print("Invalid response. Try again.")

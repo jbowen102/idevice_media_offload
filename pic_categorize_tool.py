@@ -8,6 +8,9 @@ import hashlib
 #from dir_names import CAT_DIRS
 
 
+class MediaCatPathError(Exception):
+    pass
+
 
 # Phase 3: Display pics one by one and prompt for where to copy each.
 # Have an option to ignore photo (not categorize and copy anywhere).
@@ -129,8 +132,8 @@ class Categorizer(object):
         print("\nCategorizing images from buffer:\n\t%s\n" % self.buffer_root)
         # Print dict of directory mappings
         print("Target directories available (standard):")
-        for key in CAT_DIRS:
-            print(("\t%s:\t%s" % (key, CAT_DIRS[key])).expandtabs(2))
+        for key, cat_path in CAT_DIRS.items():
+            print(("\t%s:\t%s" % (key, cat_path)).expandtabs(2))
 
         print("\nTarget directories available (manual):")
         for dir in self.manual_dir_list:
@@ -173,8 +176,11 @@ class Categorizer(object):
                     img_path = jpg_path
                     # Will sub in jpg file to use for determining where to
                     # transfer. Then apply the transfer to both.
+
                     mod_heif_path = dup_heif_path.replace("IMG_", "IMG_E")
-                    if not os.path.exists(mod_heif_path):
+                    if not os.path.exists(mod_heif_path) or mod_heif_path==dup_heif_path:
+                        # IMG_ --> IMG_E sub may do nothing w/ nonstandard
+                        # naming (e.g. YYYY-MM-DD_VNUF5899.HEIC)
                         mod_heif_path = None
                 else:
                     dup_heif_path = None
@@ -190,7 +196,13 @@ class Categorizer(object):
                 dup_heif_path = None
 
             # Show image and prompt for location.
-            target_dir = self.get_target_dir(img_path)
+            try:
+                target_dir = self.get_target_dir(img_path)
+            except MediaCatPathError:
+                # Runs if file renamed by user during get_target_dir() prompt loop.
+                print("Restarting. Name of target img may have changed.\n")
+                self.photo_transfer()
+                return
 
             # Have to implement (sometimes redundant) check on directory
             # existence because stored directories might have gone stale (e.g.
@@ -290,7 +302,12 @@ class Categorizer(object):
         # Display pic or video and prompt for dest.
         # Continue prompting until valid string input received.
         while True:
+            if not os.path.exists(img_path):
+                # If item renamed after first prompt, this block runs.
+                # Issue will be handled automatically in caller method above.
+                raise MediaCatPathError()
             if not target_input:
+                # Runs first time and if user enters nothing at prompt
                 display_photo(img_path)
                 target_input = input("\nEnter target location for %s (or 'n' "
                                             "for no transfer)\n> " % image_name)
@@ -439,6 +456,9 @@ def same_hash(img1_path, img2_path):
 def os_open(input_path):
     """Passes input to xdg-open. Can pass in file paths or URLs.
     """
+    if not "http" in input_path and not os.path.exists(input_path):
+        raise Exception("Invalid path passed to os_open: %s" % input_path)
+
     CompProc = subprocess.run(['xdg-open', input_path],
                         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     # Check for success. Some img formats like HEIC can't be displayed.

@@ -542,10 +542,12 @@ def get_comment(img_path, print_type=False):
 
     with exiftool.ExifTool() as et:
         metadata = et.get_metadata(img_path)
+
         exif_img_desc = metadata.get("EXIF:ImageDescription")
         caption_abst = metadata.get("IPTC:Caption-Abstract")
         qt_comment = metadata.get("QuickTime:Comment")
         xmp_desc = metadata.get("XMP:Description")
+        png_comment = metadata.get("PNG:Comment")
         basic_comment = metadata.get("File:Comment")
         # File:Comment is tag used by ''$ exiftool -Comment=...'
 
@@ -558,14 +560,16 @@ def get_comment(img_path, print_type=False):
                 print("%s: %s" % ("QuickTime:Comment", qt_comment))
             if xmp_desc:
                 print("%s: %s" % ("XMP:Description", xmp_desc))
+            if png_comment:
+                print("%s: %s" % ("PNG:Comment", png_comment))
             if basic_comment:
                 print("%s: %s" % ("File:Comment", basic_comment))
 
         # Gather all caption candidates into a set and eliminate missing ones.
         # Putting into a set handles duplicate entries
         caption_set = set([exif_img_desc, caption_abst, qt_comment, xmp_desc,
-                                                                 basic_comment])
-        caption_set.discard(None)
+                                                 png_comment, basic_comment])
+        caption_set.discard(None) # remove all caption values that were empty
 
         if len(caption_set) == 1:
             return caption_set.pop()
@@ -633,8 +637,8 @@ def meta_dump(img_path):
 
     with exiftool.ExifTool() as et:
         metadata = et.get_metadata(img_path)
-        for key in metadata:
-             print(str(key) + ": " + str(metadata[key]))
+        for key, value in metadata.items():
+             print(str(key) + ": " + str(value))
 
 
 # References:
