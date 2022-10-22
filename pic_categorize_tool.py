@@ -456,7 +456,7 @@ def same_hash(img1_path, img2_path):
 def os_open(input_path):
     """Passes input to xdg-open. Can pass in file paths or URLs.
     """
-    if not os.path.exists(input_path):
+    if not "http" in input_path and not os.path.exists(input_path):
         raise Exception("Invalid path passed to os_open: %s" % input_path)
 
     CompProc = subprocess.run(['xdg-open', input_path],
