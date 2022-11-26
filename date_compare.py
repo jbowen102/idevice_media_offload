@@ -620,6 +620,8 @@ def append_img_comment(input_path, extra_chars=0, comment_prompt=True,
                             + formatted_comment + os.path.splitext(img_name)[1])
             if rename_in_place:
                 img_new_name = safe_rename(img_path, name_w_comment)
+            else:
+                img_new_name = name_w_comment
 
     return img_new_name
 
