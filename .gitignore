@@ -19,7 +19,8 @@ TEST*
 dir_names.py
 dir_names.sh
 timestamp_compare.py
-
+# Ignore any file/dir/symlink starting w/ these names:
+reference*
 
 
 # case-insensitive

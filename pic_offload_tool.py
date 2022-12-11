@@ -451,9 +451,9 @@ class NewRawOffload(RawOffload):
         os_open(self.full_path)
         os_open(NAS_TRANSFER)
         input("\nManually transfer any images with captions into latest "
-            "Raw_Offload directory (using NAS transfer) since captions aren't "
-            "included in EXIF data when offloaded over USB.\nPress Enter when "
-            "finished.")
+            "Raw_Offload directory (using NAS transfer)\n\tsince captions "
+            "aren't included in EXIF data when offloaded over USB.\n"
+            "Press Enter when finished.")
 
     def create_target_folder(self):
         # Create new directory w/ today's date/time stamp in Raw_Offload.
