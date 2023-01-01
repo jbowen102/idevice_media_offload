@@ -154,7 +154,7 @@ class OrganizedGroup(object):
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 img_time = time.strptime(img_name.split("_")[0], "%Y-%m-%d")
-                bypass_age_warn = True
+                bypass_age_warn = False
             else:
                 # If image can't be found in org structure for whatever reason,
                 # treat it like any other image.
