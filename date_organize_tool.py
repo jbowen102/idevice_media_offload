@@ -77,11 +77,18 @@ class OrganizedGroup(object):
             # put into object dictionary
             self.yr_objs[year] = YearDir(year, self)
 
-    def search_img(self, target_img_num, remove=False):
+    def search_img(self, target_img_num, remove=False, debug=False):
+        """Searches entire org dir tree for a specific image number, returning
+        the path of the last one encountered or None if none encountered.
+        Will delete last one encountered if remove set to True.
+        target_img_num is a string.
+        """
         img_path_found = None # fallback if no img found
 
         for year, yr_obj in self.get_yr_objs().items():
+            if debug: print("Searching year %s" % year)
             for month, mo_obj in yr_obj.get_mo_objs().items():
+                if debug: print("\tSearching month %s" % month)
                 for img_name in mo_obj.get_img_list():
                     # If number that follows the "IMG_" or "IMG_E" matches,
                     # store then return this datestamp.
@@ -89,10 +96,14 @@ class OrganizedGroup(object):
                     if os.path.splitext(img_name)[0][-4:] == target_img_num:
                         img_path_found = os.path.join(mo_obj.get_mo_path(),
                                                                     img_name)
-                        if remove:
-                            os.remove(os.path.join(mo_obj.get_mo_path(),
-                                                                    img_name))
-                        break
+                        if debug: print("\t\t*Found %s in %s/%s" % (img_name, year, month))
+        # For-loop may encounter multiple matching images. At end of iteration,
+        # last-encountered one (matching chronologically most recent) will be
+        # stored in img_path_found.
+
+        if img_path_found and remove:
+            if debug: print("\nRemoving %s" % img_path_found)
+            os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
 
         return img_path_found # will default to None if none found
 
@@ -136,7 +147,7 @@ class OrganizedGroup(object):
             img_num = os.path.splitext(os.path.basename(img_orig_path))[0][-4:]
             img_path_found = self.search_img(img_num)
             # search_img() ends up being called twice, but it runs fast.
-            # runs a second time in YearDir when original gets removed.
+            # Runs a second time in YearDir when original gets removed.
             # Needs to be run first here in case edited photo doesn't have
             # good EXIF datestamp. That way program only prompts once (og pic).
             img_path = img_orig_path
@@ -148,12 +159,12 @@ class OrganizedGroup(object):
                 # If image can't be found in org structure for whatever reason,
                 # treat it like any other image.
                 (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
-                                                img_path, skip_unknown=False)
+                                                   img_path, skip_unknown=False)
                 man_img_date = bypass_age_warn
         else:
             img_path = img_orig_path
             (img_time, bypass_age_warn) = date_compare.get_img_date_plus(
-                                                img_path, skip_unknown=False)
+                                                   img_path, skip_unknown=False)
             man_img_date = bypass_age_warn
 
         if not img_time:
@@ -316,7 +327,8 @@ class YearDir(object):
                 remove_og_img = True
 
             img_path_found = self.OrgGroup.search_img(img_num, remove=remove_og_img)
-
+            # Remove option in search_img() removes from Org dir only.
+            # Below conditional handles occurrence in CAT buffer.
             if img_path_found:
                 img_name = os.path.basename(img_path_found)
                 # Replace "IMG_E" img_time with original's datestamp.
