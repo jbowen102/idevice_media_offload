@@ -106,7 +106,17 @@ class iDeviceDCIM(object):
                         self.find_root()
                         return
 
-        if count == 1 and os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)):
+        try:
+            iDevice_contents = os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle))
+        except OSError:
+            # OSError when trying to access device dir resolved by hitting Eject
+            # in Nemo sidebar and re-selecting (mounting) device there.
+            os_open("/")
+            input("\nCan't access iDevice contents. Eject and re-mount in file manager.\n")
+            self.find_root()
+            return
+
+        if count == 1 and iDevice_contents:
             # Found exactly one "gphoto" folder
             iDevice_root_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
             self.DCIM_path = os.path.join(iDevice_root_path, "DCIM/")
