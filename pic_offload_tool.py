@@ -105,6 +105,9 @@ class iDeviceDCIM(object):
                         print("\n")
                         self.find_root()
                         return
+            else:
+                self.find_root()
+                return
 
         try:
             iDevice_contents = os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle))
@@ -145,8 +148,7 @@ class iDeviceDCIM(object):
             # iDevice handle exists, but DCIM folder not present.
             # Unlocking doesn't always solve it.
             input("Error: Found %s mount point, but DCIM folder not present.\n"
-                                        "Lock then reconnect iDevice and press "
-                                              "Enter to try again." % dir_type)
+                    "Re-mount iDevice and press Enter to try again." % dir_type)
             print("\n")
             self.find_root()
             return
@@ -287,7 +289,7 @@ class RawOffloadGroup(object):
                 else:
                     if not os.listdir(item_path):
                         delete_empty_ro = input("Folder %s in raw_offload "
-                                    "directory is empty, probably from previous "
+                                    "directory is empty, possibly from previous "
                                     "aborted offload.\nPress 'd' to delete "
                                     "folder and continue or any other key to "
                                     "skip.\n> " % offload_item)
