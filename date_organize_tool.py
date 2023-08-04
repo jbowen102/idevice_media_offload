@@ -103,7 +103,7 @@ class OrganizedGroup(object):
 
         if img_path_found and remove:
             if debug: print("\nRemoving %s" % img_path_found)
-            os.remove(os.path.join(mo_obj.get_mo_path(), img_name))
+            os.remove(img_path_found)
 
         return img_path_found # will default to None if none found
 
