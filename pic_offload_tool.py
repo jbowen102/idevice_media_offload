@@ -121,8 +121,8 @@ class iDeviceDCIM(object):
 
         if count == 1 and iDevice_contents:
             # Found exactly one "gphoto" folder
-            iDevice_root_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
-            self.DCIM_path = os.path.join(iDevice_root_path, "DCIM/")
+            self.DCIM_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
+            # DCIM folder no longer exists.
             self.APPLE_folders = os.listdir(self.DCIM_path)
             if not self.APPLE_folders:
                 # Empty DCIM folder indicates temporary issue like locked device.
