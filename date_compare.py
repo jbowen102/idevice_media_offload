@@ -599,23 +599,23 @@ def append_img_comment(input_path, extra_chars=0, comment_prompt=True,
 
     img_new_name=img_name # gets overwritten below only if caption valid and accepted.
 
-    if not img_comment:
+    if img_comment is None:
         pass # do nothing
-    elif len(img_comment) > max_comment_len:
+    elif len(str(img_comment)) > max_comment_len:
         print("Comment found in %s EXIF data: '%s'\n"
-            "Too long to append to filename.\n" % (img_name, img_comment))
-    elif "http" in img_comment.lower():
+            "Too long to append to filename.\n" % (img_name, str(img_comment)))
+    elif "http" in str(img_comment).lower():
         print("Comment found in %s EXIF data: '%s'\n"
-                "Can't add URL to filename.\n" % (img_name, img_comment))
+                "Can't add URL to filename.\n" % (img_name, str(img_comment)))
     else:
         if comment_prompt:
             add_comment = input("Comment found in %s EXIF data: \n\t'%s'\n"
-                    "Append to filename? [Y/N]\n> " % (img_name, img_comment))
+                    "Append to filename? [Y/N]\n> " % (img_name, str(img_comment)))
         if (not comment_prompt) or add_comment in ["y", "Y"]:
             # https://stackoverflow.com/questions/1976007/what-characters-are-forbidden-in-windows-and-linux-directory-names
             # Only character not allowed in UNIX filename is the forward slash.
             # But I also don't like spaces.
-            formatted_comment = img_comment.replace("/", "_").replace(" ", "_")
+            formatted_comment = str(img_comment).replace("/", "_").replace(" ", "_")
             name_w_comment = (os.path.splitext(img_name)[0] + "_"
                             + formatted_comment + os.path.splitext(img_name)[1])
             if rename_in_place:
