@@ -33,10 +33,9 @@ tput setaf 7 # reset terminal output color
 # Display rsync command with resolved pathnames in case user wants to re-invoke.
 set -x
 # https://serverfault.com/questions/16204/how-to-make-bash-scripts-print-out-every-command-before-it-executes
-rsync -rltgoD -zivh --log-file=${LOG_FILENAME} \
+rsync -rtgoD -L -zivh --log-file=${LOG_FILENAME} \
   --partial-dir=${SRC_BU_ROOT}/rsync_partials \
   --omit-dir-times \
   -e "ssh -p ${SSH_PORT}" \
   ${SRC_PATH} ${DEST_PATH}
-  # first group of options is equivalent to -a without the -p (permissions)
 # set +x // disable command printing if needed

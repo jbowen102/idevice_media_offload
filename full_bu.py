@@ -6,7 +6,7 @@ import idevice_media_offload.pic_offload_tool as offload_tool
 import idevice_media_offload.date_organize_tool as org_tool
 import idevice_media_offload.pic_categorize_tool as cat_tool
 
-from idevice_media_offload.dir_names import IPHONE_BU_ROOT_J, IPHONE_BU_ROOT_M, IPAD_BU_ROOT, ST_VID_ROOT
+from idevice_media_offload.dir_names import IPHONE_BU_ROOT_J, IPHONE_BU_ROOT_M, IPAD_BU_ROOT_7, IPAD_BU_ROOT_10, ST_VID_ROOT
 from idevice_media_offload.dir_names import NAS_BU_ROOT, NAS_ST_DIR
 from idevice_media_offload.dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH_PORT
 
@@ -15,12 +15,16 @@ from idevice_media_offload.dir_names import NAS_BU_ROOT_SSH, NAS_ST_DIR_SSH, SSH
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # https://stackoverflow.com/questions/29768937/return-the-file-path-of-the-file-not-the-current-directory
 
+# global vars to update later. Depends on device.
+LOCAL_BU_ROOT=None
+LOCAL_BUFFER_ROOT=None
 
-def run_offload(bu_root_dir):
+
+def run_offload():
     print('\n\t', '*' * 10, 'OFFLOAD program', '*' * 10)
     # Instantiate a RawOffloadGroup instance then call its create_new_offload()
     # method.
-    rog = offload_tool.RawOffloadGroup(bu_root_dir)
+    rog = offload_tool.RawOffloadGroup(LOCAL_BU_ROOT)
     try:
         rog.create_new_offload()
     except KeyboardInterrupt:
@@ -31,8 +35,12 @@ def run_offload(bu_root_dir):
         else:
             pass
 
-    # run rsync script to copy new data to NAS
-    offload_dir = "%sRaw_Offload/" % bu_root_dir
+    if "ipad" in LOCAL_BU_ROOT.lower():
+        bu_root_for_sync = os.path.dirname(LOCAL_BU_ROOT[:-1]) # must strip trailing slash
+    else:
+        bu_root_for_sync = LOCAL_BU_ROOT
+
+    offload_dir = os.path.join(bu_root_for_sync, "Raw_Offload/")
     call_rs_script("NAS_BU_sync.sh", offload_dir, NAS_BU_ROOT, NAS_BU_ROOT_SSH)
 
     print('\t', '*' * 10, 'OFFLOAD program complete', '*' * 10, "\n")
@@ -41,10 +49,10 @@ def run_offload(bu_root_dir):
             "not to run ORG after OFFLOAD is if you never intend to CAT this "
             "offload.\n")
 
-def run_org(bu_root_dir, buffer_root_dir):
+def run_org():
     print('\n\t', '*' * 10, 'ORGANIZE program', '*' * 10)
     # Instantiate an OrganizedGroup instance then call its run_org() method.
-    orgg = org_tool.OrganizedGroup(bu_root_dir, buffer_root_dir)
+    orgg = org_tool.OrganizedGroup(LOCAL_BU_ROOT, LOCAL_BUFFER_ROOT)
     try:
         orgg.run_org()
     except KeyboardInterrupt:
@@ -55,16 +63,21 @@ def run_org(bu_root_dir, buffer_root_dir):
         else:
             pass
 
+    if "ipad" in LOCAL_BU_ROOT.lower():
+        bu_root_for_sync = os.path.dirname(LOCAL_BU_ROOT[:-1]) # must strip trailing slash
+    else:
+        bu_root_for_sync = LOCAL_BU_ROOT
+
     # run rsync script to copy new data to NAS
-    org_dir = "%sOrganized/" % bu_root_dir
+    org_dir = os.path.join(bu_root_for_sync, "Organized/")
     call_rs_script("NAS_BU_sync.sh", org_dir, NAS_BU_ROOT, NAS_BU_ROOT_SSH)
 
     print('\t', '*' * 10, 'ORGANIZE program complete', '*' * 10, '\n')
 
-def run_cat(buffer_root):
+def run_cat():
     print('\n\t', '*' * 10, 'CATEGORIZE program', '*' * 10)
 
-    Cat = cat_tool.Categorizer(buffer_root)
+    Cat = cat_tool.Categorizer(LOCAL_BUFFER_ROOT)
     # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.)
     # Then automatically categorize all.
     try:
@@ -83,10 +96,10 @@ def run_cat(buffer_root):
 
     print('\t', '*' * 10, 'CATEGORIZE program complete', '*' * 10, "\n")
 
-def run_all(bu_root_dir, buffer_root_dir):
-    run_offload(bu_root_dir)
-    run_org(bu_root_dir, buffer_root_dir)
-    run_cat(buffer_root_dir)
+def run_all():
+    run_offload()
+    run_org()
+    run_cat()
 
 
 def call_rs_script(script, src_dir, dest_dir, dest_dir_ssh):
@@ -115,20 +128,29 @@ if __name__ == "__main__":
         device_type = input("Backing up iPhone or iPad? ['oj' for J iPhone, '"
                                         "om' for M iPhone, 'a' for iPad]\n> ")
         if device_type.lower() in ['oj', 'o']:
-            bu_root = IPHONE_BU_ROOT_J
+            LOCAL_BU_ROOT = IPHONE_BU_ROOT_J
             break
         if device_type.lower() == 'om':
-            bu_root = IPHONE_BU_ROOT_M
+            LOCAL_BU_ROOT = IPHONE_BU_ROOT_M
             break
         elif device_type.lower() == 'a':
-            bu_root = IPAD_BU_ROOT
-            break
+            device_ver = input("iPad 7 or 10?\n> ")
+            if device_ver == "7":
+                LOCAL_BU_ROOT = IPAD_BU_ROOT_7
+                break
+            elif device_ver == "10":
+                LOCAL_BU_ROOT = IPAD_BU_ROOT_10
+                break
+            else:
+                print("Input not recognized. Expected '7' or '10'. "
+                                                        "Got %s\n" % device_ver)
+                continue # Try again.
         elif device_type.lower() == 'q':
             quit()
         else:
             print("Input not recognized.")
 
-    buffer_root = os.path.join(bu_root, "Cat_Buffer/")
+    LOCAL_BUFFER_ROOT = os.path.join(LOCAL_BU_ROOT, "Cat_Buffer/")
 
     # Main loop
     while True:
@@ -141,19 +163,19 @@ if __name__ == "__main__":
                     "\tType 'h' for help.\n> ")
 
         if prog.lower() == 'f':
-            run_offload(bu_root)
+            run_offload()
 
         elif prog.lower() == 'g':
-            run_org(bu_root, buffer_root)
+            run_org()
 
         elif prog.lower() == 'c':
-            run_cat(buffer_root)
+            run_cat()
 
         elif prog.lower() == 'q':
             break
 
         elif prog.lower() == 'a':
-            run_all(bu_root, buffer_root)
+            run_all()
             break
 
         elif prog.lower() == 'h':
