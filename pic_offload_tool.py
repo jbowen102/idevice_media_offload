@@ -460,6 +460,9 @@ class NewRawOffload(RawOffload):
         self.create_target_folder()
         self.run_offload()
 
+        while not os.path.exists(NAS_TRANSFER):
+            input("\nCan't reach NAS share. Check network connection and ensure "
+                            "NAS share is mounted.\nPress Enter to try again.")
         os_open(self.full_path)
         os_open(NAS_TRANSFER)
         input("\nManually transfer any images with captions into latest "
