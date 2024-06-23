@@ -63,8 +63,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
             else:
                 pil_metadata = dict()
 
-            with exiftool.ExifTool() as et:
-                exiftool_metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                exiftool_metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -88,8 +88,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                        )).expandtabs(28))
 
         elif img_ext == ".HEIC":
-            with exiftool.ExifTool() as et:
-                exiftool_metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                exiftool_metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -108,8 +108,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                        )).expandtabs(28))
 
         elif img_ext in [".GIF", ".WEBP"]:
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -120,8 +120,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                            )).expandtabs(28))
 
         elif img_ext == ".MOV":
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -144,8 +144,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                            )).expandtabs(28))
 
         elif img_ext == ".3GP":
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -168,8 +168,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                            )).expandtabs(28))
 
         elif img_ext == ".MP4":
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -201,8 +201,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
             else:
                 pil_date_created = None
 
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + ":\n"
@@ -224,8 +224,8 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
                 else:
                     adjustmentTimestamp = None
 
-            with exiftool.ExifTool() as et:
-                metadata = et.get_metadata(img_path)
+            with exiftool.ExifToolHelper() as et:
+                metadata = et.get_metadata(img_path)[0]
 
             # "*" indicates metadata most likely to be actual creation time.
             print((img + "\n"
@@ -392,9 +392,8 @@ def get_img_date_plus(img_path, skip_unknown=True):
                                     % img_name)
         return None
 
-    with exiftool.ExifTool() as et:
-        metadata = et.get_metadata(img_path)
-
+    with exiftool.ExifToolHelper() as et:
+        metadata = et.get_metadata(img_path)[0]
         # Different files have different names for the creation date in the
         # metadata.
         if img_ext in [".JPG", ".JPEG", ".HEIC"]:
@@ -540,8 +539,8 @@ def get_comment(img_path, print_type=False):
         print("Not a valid image path.")
         return None
 
-    with exiftool.ExifTool() as et:
-        metadata = et.get_metadata(img_path)
+    with exiftool.ExifToolHelper() as et:
+        metadata = et.get_metadata(img_path)[0]
 
         exif_img_desc = metadata.get("EXIF:ImageDescription")
         caption_abst = metadata.get("IPTC:Caption-Abstract")
@@ -637,8 +636,8 @@ def meta_dump(img_path):
                                                 % os.path.basename(img_path))
         return None
 
-    with exiftool.ExifTool() as et:
-        metadata = et.get_metadata(img_path)
+    with exiftool.ExifToolHelper() as et:
+        metadata = et.get_metadata(img_path)[0]
         for key, value in metadata.items():
              print(str(key) + ": " + str(value))
 
