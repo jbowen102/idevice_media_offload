@@ -5,7 +5,7 @@
 # param 2 = NAS st vid root
 # param 3 = SSH port
 
-if [[ $# -ne 3 ]]; then
+if [ $# -ne 3 ]; then
   echo "Expected three arguments - source path, destination path, and SSH port." >&2
   exit 2
   # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script

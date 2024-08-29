@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]]; then
+if [ $# -ne 1 ]; then
 	echo "Expected one argument: img/vid path." >&2
 	exit 2
   # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script
@@ -9,8 +9,8 @@ fi
 
 # Validate input path
 FILE_PATH="$(realpath "${1}")"
-if [[ -e "${FILE_PATH}" ]]; then
-  if [[ -d "${FILE_PATH}" ]]; then
+if [ -e "${FILE_PATH}" ]; then
+  if [ -d "${FILE_PATH}" ]; then
     echo "Input path ${1} not valid. Must be file, not directory." >&2
     exit 2
   fi
