@@ -21,7 +21,15 @@ def run_offload(bu_root_dir):
     # Instantiate a RawOffloadGroup instance then call its create_new_offload()
     # method.
     rog = offload_tool.RawOffloadGroup(bu_root_dir)
-    rog.create_new_offload()
+    try:
+        rog.create_new_offload()
+    except KeyboardInterrupt:
+        response = input("\nReceived kbd interrupt. Run rsync job? "
+                    "Press Enter to continue then quit or 'q' to quit now.\n> ")
+        if response.lower() in ['q', 'n']:
+            quit()
+        else:
+            pass
 
     # run rsync script to copy new data to NAS
     offload_dir = "%sRaw_Offload/" % bu_root_dir
@@ -37,7 +45,15 @@ def run_org(bu_root_dir, buffer_root_dir):
     print('\n\t', '*' * 10, 'ORGANIZE program', '*' * 10)
     # Instantiate an OrganizedGroup instance then call its run_org() method.
     orgg = org_tool.OrganizedGroup(bu_root_dir, buffer_root_dir)
-    orgg.run_org()
+    try:
+        orgg.run_org()
+    except KeyboardInterrupt:
+        response = input("\nReceived kbd interrupt. Run rsync job? "
+                    "Press Enter to continue then quit or 'q' to quit now.\n> ")
+        if response.lower() in ['q', 'n']:
+            quit()
+        else:
+            pass
 
     # run rsync script to copy new data to NAS
     org_dir = "%sOrganized/" % bu_root_dir
@@ -51,8 +67,16 @@ def run_cat(buffer_root):
     Cat = cat_tool.Categorizer(buffer_root)
     # Prompt user to put all bulk media in appropriate buffers (ex. st_buffer.)
     # Then automatically categorize all.
-    Cat.run_auto_cat()
-    Cat.photo_transfer()
+    try:
+        Cat.run_auto_cat()
+        Cat.photo_transfer()
+    except KeyboardInterrupt:
+        response = input("\nReceived kbd interrupt. Run rsync job? "
+                    "Press Enter to continue then quit or 'q' to quit now.\n> ")
+        if response.lower() in ['q', 'n']:
+            quit()
+        else:
+            pass
 
     # run rsync script to copy new data to NAS
     call_rs_script("NAS_ST_sync.sh", ST_VID_ROOT, NAS_ST_DIR, NAS_ST_DIR_SSH)

@@ -22,14 +22,21 @@ LOG_FILENAME=${ST_LOCAL_ROOT}/rsync_logs/${TIMESTAMP}_${JOB_NAME};
 SRC_PATH="${1}"
 DEST_PATH="${NAS_ST_DIR}"
 
+tput setaf 6 # set terminal output collor to cyan
+# https://stackoverflow.com/questions/2437976/get-color-output-in-bash
 printf "\n${TIMESTAMP}\n"
 printf -- "------------------------------------\n"
 printf "\t-%s-\n\n" $JOB_NAME
 printf "\t SRC: %s\n" ${SRC_PATH}
 printf "\tDEST: %s\n\n" ${DEST_PATH}
+tput setaf 7 # reset terminal output color
+# Display rsync command with resolved pathnames in case user wants to re-invoke.
+set -x
+# https://serverfault.com/questions/16204/how-to-make-bash-scripts-print-out-every-command-before-it-executes
 rsync -rltgoD -zivh --log-file=${LOG_FILENAME} \
   --partial-dir=${ST_LOCAL_ROOT}/rsync_partials \
   --omit-dir-times \
   -e "ssh -p ${SSH_PORT}" \
   ${SRC_PATH} ${DEST_PATH}
   # first group of options is equivalent to -a without the -p (permissions)
+# set +x // disable command printing if needed

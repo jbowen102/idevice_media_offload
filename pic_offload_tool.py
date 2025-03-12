@@ -105,11 +105,24 @@ class iDeviceDCIM(object):
                         print("\n")
                         self.find_root()
                         return
+            else:
+                self.find_root()
+                return
 
-        if count == 1 and os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)):
+        try:
+            iDevice_contents = os.listdir(os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle))
+        except OSError:
+            # OSError when trying to access device dir resolved by hitting Eject
+            # in Nemo sidebar and re-selecting (mounting) device there.
+            os_open("/")
+            input("\nCan't access iDevice contents. Eject and re-mount in file manager.\n")
+            self.find_root()
+            return
+
+        if count == 1 and iDevice_contents:
             # Found exactly one "gphoto" folder
-            iDevice_root_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
-            self.DCIM_path = os.path.join(iDevice_root_path, "DCIM/")
+            self.DCIM_path = os.path.join(IDEVICE_MOUNT_POINT, iDevice_handle)
+            # DCIM folder no longer exists.
             self.APPLE_folders = os.listdir(self.DCIM_path)
             if not self.APPLE_folders:
                 # Empty DCIM folder indicates temporary issue like locked device.
@@ -135,8 +148,7 @@ class iDeviceDCIM(object):
             # iDevice handle exists, but DCIM folder not present.
             # Unlocking doesn't always solve it.
             input("Error: Found %s mount point, but DCIM folder not present.\n"
-                                        "Lock then reconnect iDevice and press "
-                                              "Enter to try again." % dir_type)
+                    "Re-mount iDevice and press Enter to try again." % dir_type)
             print("\n")
             self.find_root()
             return
@@ -277,7 +289,7 @@ class RawOffloadGroup(object):
                 else:
                     if not os.listdir(item_path):
                         delete_empty_ro = input("Folder %s in raw_offload "
-                                    "directory is empty, probably from previous "
+                                    "directory is empty, possibly from previous "
                                     "aborted offload.\nPress 'd' to delete "
                                     "folder and continue or any other key to "
                                     "skip.\n> " % offload_item)
@@ -451,9 +463,9 @@ class NewRawOffload(RawOffload):
         os_open(self.full_path)
         os_open(NAS_TRANSFER)
         input("\nManually transfer any images with captions into latest "
-            "Raw_Offload directory (using NAS transfer) since captions aren't "
-            "included in EXIF data when offloaded over USB.\nPress Enter when "
-            "finished.")
+            "Raw_Offload directory (using NAS transfer)\n\tsince captions "
+            "aren't included in EXIF data when offloaded over USB.\n"
+            "Press Enter when finished.")
 
     def create_target_folder(self):
         # Create new directory w/ today's date/time stamp in Raw_Offload.
