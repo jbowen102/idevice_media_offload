@@ -396,7 +396,7 @@ def get_img_date_plus(img_path, skip_unknown=True):
         metadata = et.get_metadata(img_path)[0]
         # Different files have different names for the creation date in the
         # metadata.
-        if img_ext in [".JPG", ".JPEG", ".HEIC"]:
+        if img_ext in [".JPG", ".JPEG", ".HEIC", ".CR2"]:
             create_time = metadata.get("EXIF:DateTimeOriginal")
             # ex. 2019:08:26 09:11:21
             format = "%Y:%m:%d %H:%M:%S"
