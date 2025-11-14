@@ -8,8 +8,8 @@ fi
 
 # Validate input path
 FILE_PATH="$(realpath "${1}")"
-if [[ -e "${FILE_PATH}" ]]; then
-  if [[ -d "${FILE_PATH}" ]]; then
+if [ -e "${FILE_PATH}" ]; then
+  if [ -d "${FILE_PATH}" ]; then
     :
   else
     echo "Input path ${1} not valid. Must be directory." >&2
