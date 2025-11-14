@@ -371,6 +371,8 @@ def copy_to_target(img_path, target_dir, new_name=None, move_op=False):
     """Function to copy img to target directory with collision detection.
     If 'move_op' param specified, delete img from current dir."""
 
+    if os.path.isdir(img_path):
+        return
     img = os.path.basename(img_path)
 
     if not new_name:
