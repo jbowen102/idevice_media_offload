@@ -5,7 +5,7 @@ import os
 import time
 import exiftool
 
-from pic_categorize_tool import copy_to_target, display_photo
+from idevice_media_offload.pic_categorize_tool import copy_to_target, display_photo
 
 
 # class ImgTypeError(Exception):
@@ -253,10 +253,13 @@ def list_all_img_dates(path, skip_unknown=True, rename_with_datestamp=False):
             add_datestamp(img_path)
 
 
-def datestamp_all(dir_path, longstamp=False):
+def datestamp_all(dir_path, longstamp=False, skip_nonstandard=True):
     """Function to prepend datestamp to all images in a directory without
     terminal output. Use add_datestamp() function below for each file processed.
-    Second parameter determines if date only or both date/time will be added."""
+    Second parameter determines if date only or both date/time will be added.
+    If skip_nonstandard set to True, will not try to extract date from images
+    w/ nonstandard naming.
+    """
 
     if not os.path.exists(dir_path) or not os.path.isdir(dir_path):
         print("Not a valid directory path.")
@@ -269,13 +272,16 @@ def datestamp_all(dir_path, longstamp=False):
     image_list.sort()
 
     for img in image_list:
-        add_datestamp(os.path.join(dir_path, img), longstamp)
+        add_datestamp(os.path.join(dir_path, img), longstamp, skip_nonstd=skip_nonstandard)
 
 
-def add_datestamp(img_path, long_stamp=False):
+def add_datestamp(img_path, long_stamp=False, skip_nonstd=True):
     """Retrieve and prepend creation timestamp to image filename.
     Uses get_img_date() function below to retrieve date/time from EXIF data.
-    Second parameter determines if date only or both date/time will be added."""
+    Second parameter determines if date only or both date/time will be added.
+    If skip_nonstandard set to True, will not try to extract date from images
+    w/ nonstandard naming.
+    """
     # test rename operation to see if mtime changes
     # need a variable name that stores images best guess-time. look at
     # get_img_date end code.
@@ -287,6 +293,10 @@ def add_datestamp(img_path, long_stamp=False):
     # Separate out image name from directory path
     img_name = os.path.basename(img_path)  # no trailing slash present
     dir_path = os.path.dirname(img_path) + "/"
+
+    if skip_nonstd and img_name[:4] != 'IMG_':
+        # print("%s has non-standard naming. Skipping" % img_name)
+        return None
 
     # See if file already datestamped (regardless of correctness)
     if len(img_name) >= 10:
