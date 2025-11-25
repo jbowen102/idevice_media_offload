@@ -346,7 +346,8 @@ def add_datestamp(img_path, long_stamp=False, skip_nonstd=True):
         else:
             print("Skipped %s\n" % img_name)
     else:
-        safe_rename(img_path, datestamp + '_' + img_name)
+        new_name = safe_rename(img_path, datestamp + '_' + img_name)
+        print(new_name)
 
 
 def safe_rename(img_path, new_img_name):
