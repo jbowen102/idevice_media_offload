@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ $# -ne 1 ]; then
-	echo "Expected one argument: img/vid path." >&2
-	exit 2
-  # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script
+if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+ echo "Expected one or two argument - img/vid path and optional "True" to include timestamp." >&2
+ exit 2
+ # https://stackoverflow.com/questions/18568706/check-number-of-arguments-passed-to-a-bash-script
 fi
 
 # Validate input path
