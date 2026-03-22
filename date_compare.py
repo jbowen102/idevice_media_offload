@@ -510,6 +510,7 @@ def spec_manual_date(img_path):
     elif man_date_response:
         try:
             man_img_time_struct = time.strptime(man_date_response, DATE_FORMAT)
+            assert man_img_time_struct <= time.localtime() # Don't allow future dates.
             return man_img_time_struct
         except ValueError:
             print("Invalid reponse. Confirm proper date format.\n")
